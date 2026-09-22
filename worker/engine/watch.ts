@@ -142,7 +142,7 @@ export async function evaluatePriceWatches(
     }
 
     if (availability === "confirmed_unavailable") {
-      await insertNotification(
+      if (await insertNotification(
         env,
         watch.id,
         "ROOM_UNAVAILABLE",
@@ -150,13 +150,14 @@ export async function evaluatePriceWatches(
         "Loại phòng này hiện không còn",
         "JoTrip đã có xác nhận không còn loại phòng đang theo dõi cho ngày này.",
         { hotelId, checkin, checkout, availability },
-      );
-      notifications++;
+      )) {
+        notifications++;
+      }
     } else if (
       availability === "observed_unavailable" ||
       availability === "limited"
     ) {
-      await insertNotification(
+      if (await insertNotification(
         env,
         watch.id,
         "ROOM_RISK",
@@ -164,8 +165,9 @@ export async function evaluatePriceWatches(
         "Lựa chọn phòng đang thu hẹp",
         "Một số nguồn hiện không còn hoặc chỉ còn hạn chế lựa chọn tương đương. Đây chưa phải xác nhận số phòng còn lại.",
         { hotelId, checkin, checkout, availability },
-      );
-      notifications++;
+      )) {
+        notifications++;
+      }
     }
 
     const snapshots = await env.DB.prepare(

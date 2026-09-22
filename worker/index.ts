@@ -161,28 +161,28 @@ function assistantTextFor(result: ReturnType<typeof buildParseResponse>) {
 
   if (lang === "en") {
     return summary
-      ? `Got it - ${summary}. I’m building a few practical options now.`
-      : "Got it. I’m building a few practical options now.";
+      ? `Yep, I’ve got it: ${summary}. I’ll narrow the trip down first instead of throwing a long list at you.`
+      : "Ask naturally. I’ll only ask for the bits I still need.";
   }
   if (lang === "ko") {
     return summary
-      ? `알겠어요 - ${summary}. 지금 동선까지 같이 계산해볼게요.`
-      : "알겠어요. 지금 여행 동선부터 정리해볼게요.";
+      ? `네, 이렇게 이해했어요: ${summary}. 후보를 길게 나열하지 않고 먼저 동선이 좋은 쪽부터 좁혀볼게요.`
+      : "편하게 말해 주세요. 꼭 필요한 정보만 더 물어볼게요.";
   }
   if (lang === "ru") {
     return summary
-      ? `Понял - ${summary}. Сейчас соберу несколько практичных вариантов.`
-      : "Понял. Сейчас соберу несколько практичных вариантов.";
+      ? `Да, понял: ${summary}. Я сначала сузю варианты по логике поездки, а не выдам длинный список.`
+      : "Спрашивайте свободно. Я уточню только то, чего действительно не хватает.";
   }
   if (lang === "zh") {
     return summary
-      ? `明白了 - ${summary}。我现在开始组合几个实用方案。`
-      : "明白了。我现在开始组合几个实用方案。";
+      ? `嗯，我明白了：${summary}。我先按行程逻辑帮你缩小范围，不会丢一长串选择给你。`
+      : "你直接自然地问就好，我只会追问真正缺的信息。";
   }
 
   return summary
-    ? `Mình hiểu rồi - ${summary}. Để mình ráp vài phương án dễ đi nha.`
-    : "Mình hiểu rồi. Để mình ráp vài phương án dễ đi nha.";
+    ? `Ừ, mình bắt được ý rồi: ${summary}. Mình lọc theo cách đi trước, không quăng một đống lựa chọn cho bạn.`
+    : "Bạn cứ nói tự nhiên nha. Chỗ nào thật sự còn thiếu thì mình mới hỏi thêm.";
 }
 
 export default {

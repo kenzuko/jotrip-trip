@@ -1,0 +1,172 @@
+import knowledge from "../data/destination-knowledge-v0.json";
+
+type Env = { DB?: D1Database };
+
+export type DestinationContextRequest = {
+  zoneCode?: string;
+  latitude?: number;
+  longitude?: number;
+  intents?: string[];
+  daypart?: "morning" | "afternoon" | "evening" | "night";
+  limitPerGroup?: number;
+};
+
+type KnowledgeItem = {
+  id: string;
+  title: string;
+  type: "FOOD" | "PLACE";
+  canonicalEntityId: string | null;
+  zones: string[];
+  intents: string[];
+  summary: string | null;
+  practical: string | null;
+  expectation: string | null;
+  beforeYouGo: string[];
+  map: { lat:number; lon:number; precision?:string|null } | null;
+  address: string | null;
+  updatedAt?: string;
+};
+
+type VenueRow = {
+  id: string;
+  name: string;
+  category: string;
+  zone_code: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  address: string | null;
+  phone: string | null;
+  tags_json: string | null;
+  opening_hours_json: string | null;
+  price_level: string | null;
+  verified_at: string | null;
+  status: string;
+};
+
+function haversineKm(lat1:number, lon1:number, lat2:number, lon2:number) {
+  const R=6371;
+  const dLat=(lat2-lat1)*Math.PI/180;
+  const dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+
+    Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+
+function zoneMatches(item:KnowledgeItem, zone?:string) {
+  if (!zone) return item.zones.includes("islandwide");
+  return item.zones.includes(zone) || item.zones.includes("islandwide");
+}
+
+function rankKnowledge(items:KnowledgeItem[], req:DestinationContextRequest) {
+  const intents=new Set(req.intents||[]);
+  return items
+    .filter(item=>zoneMatches(item,req.zoneCode))
+    .map(item=>{
+      let score=item.zones.includes(req.zoneCode||"") ? 30 : 10;
+      for (const intent of item.intents||[]) if (intents.has(intent)) score+=10;
+      if (req.latitude!=null && req.longitude!=null && item.map) {
+        score += Math.max(0, 20 - haversineKm(req.latitude,req.longitude,item.map.lat,item.map.lon));
+      }
+      return {item,score};
+    })
+    .sort((a,b)=>b.score-a.score || a.item.title.localeCompare(b.item.title,"vi"))
+    .map(x=>x.item);
+}
+
+function venueDistance(row:VenueRow, req:DestinationContextRequest) {
+  if (
+    req.latitude==null || req.longitude==null ||
+    row.latitude==null || row.longitude==null
+  ) return null;
+  return haversineKm(req.latitude,req.longitude,row.latitude,row.longitude);
+}
+
+function toVenue(row:VenueRow, req:DestinationContextRequest) {
+  let tags:string[]=[];
+  try { tags=JSON.parse(row.tags_json||"[]"); } catch {}
+  return {
+    id:row.id,
+    name:row.name,
+    category:row.category,
+    zoneCode:row.zone_code,
+    address:row.address,
+    phone:row.phone,
+    priceLevel:row.price_level,
+    tags,
+    verifiedAt:row.verified_at,
+    distanceKm:venueDistance(row,req),
+  };
+}
+
+async function loadVenues(env:Env, req:DestinationContextRequest) {
+  if (!env.DB) return [] as VenueRow[];
+
+  const categories=["LOCAL_FOOD","RESTAURANT","CAFE","ATTRACTION"];
+  const result=await env.DB.prepare(
+    `SELECT id,name,category,zone_code,latitude,longitude,address,phone,tags_json,
+            opening_hours_json,price_level,verified_at,status
+       FROM destination_venues
+      WHERE status='ACTIVE'
+        AND category IN ('LOCAL_FOOD','RESTAURANT','CAFE','ATTRACTION')
+        AND (? IS NULL OR zone_code = ? OR zone_code IS NULL)
+      ORDER BY
+        CASE WHEN zone_code = ? THEN 0 ELSE 1 END,
+        COALESCE(verified_at,'') DESC,
+        name ASC
+      LIMIT 200`
+  ).bind(req.zoneCode||null,req.zoneCode||null,req.zoneCode||null).all<VenueRow>();
+
+  return result.results||[];
+}
+
+function groupVenue(rows:VenueRow[], req:DestinationContextRequest, category:string, limit:number) {
+  return rows
+    .filter(r=>r.category===category)
+    .map(r=>toVenue(r,req))
+    .sort((a,b)=>{
+      if (a.distanceKm!=null && b.distanceKm!=null) return a.distanceKm-b.distanceKm;
+      if (a.distanceKm!=null) return -1;
+      if (b.distanceKm!=null) return 1;
+      return a.name.localeCompare(b.name,"vi");
+    })
+    .slice(0,limit);
+}
+
+export async function buildDestinationContext(env:Env, req:DestinationContextRequest) {
+  const limit=Math.max(1,Math.min(8,req.limitPerGroup||4));
+  const allKnowledge=(knowledge.items||[]) as KnowledgeItem[];
+  const ranked=rankKnowledge(allKnowledge,req);
+  const venues=await loadVenues(env,req);
+
+  const eatKnowledge=ranked.filter(x=>x.type==="FOOD").slice(0,limit);
+  const doKnowledge=ranked.filter(x=>x.type==="PLACE").slice(0,limit);
+
+  const cafes=groupVenue(venues,req,"CAFE",limit);
+  const restaurants=[
+    ...groupVenue(venues,req,"LOCAL_FOOD",limit),
+    ...groupVenue(venues,req,"RESTAURANT",limit),
+  ].slice(0,limit);
+  const attractions=groupVenue(venues,req,"ATTRACTION",limit);
+
+  return {
+    ok:true,
+    zoneCode:req.zoneCode||null,
+    daypart:req.daypart||null,
+    groups:{
+      eat:{
+        knowledge:eatKnowledge,
+        venues:restaurants,
+        dataState:restaurants.length ? "venue_data_available" : "knowledge_only",
+      },
+      cafe:{
+        venues:cafes,
+        dataState:cafes.length ? "venue_data_available" : "needs_venue_sync",
+      },
+      do:{
+        knowledge:doKnowledge,
+        venues:attractions,
+        dataState:attractions.length ? "venue_data_available" : "knowledge_only",
+      },
+    },
+  };
+}

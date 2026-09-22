@@ -185,6 +185,14 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
     if (airport) {
       distanceKm += Number(airport.distance_km || 0) * 2;
       driveMinutes += Number(airport.normal_minutes || 0) * 2;
+    } else {
+      missingRoutes += 1;
+    }
+
+    // Never turn missing route data into a fake 0-minute / 0-VND advantage.
+    // Until all required legs are known, this hotel stays in planning only.
+    if (missingRoutes > 0) {
+      continue;
     }
 
     const mobilityCostVnd = estimateSevenSeatPrice(distanceKm);
@@ -216,7 +224,6 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
         distanceKm > 0 ? `Ước tính khoảng ${Math.round(distanceKm)} km di chuyển cho các chặng đã biết.` : "",
       ].filter(Boolean),
       cautions: [
-        missingRoutes ? `Thiếu ${missingRoutes} route, thời gian xe còn là ước tính một phần.` : "",
         String(offer.availability_state) === "on_request" ? "Phòng cần JoTrip xác nhận lại." : "",
       ].filter(Boolean),
     });
@@ -241,6 +248,8 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
     activityLines: activities.lines,
     warnings: activities.warnings,
     hotelOfferCount: offers.results?.length || 0,
+    scenarioReadyCount: scenarios.length,
+    scenarioDataIncompleteCount: Math.max(0, (offers.results?.length || 0) - candidates.length),
     scenarios,
   };
 }

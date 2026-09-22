@@ -962,7 +962,9 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="message message--assistant" key={turn.id}>
-                    <div className="message-avatar">J</div>
+                    <div className="message-avatar message-avatar--mascot">
+                      <img src="/assets/jotrip-guide-short.webp" alt="" aria-hidden="true" />
+                    </div>
                     <div>
                       <span>JoTrip</span>
                       <p>{turn.text}</p>

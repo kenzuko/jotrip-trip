@@ -140,3 +140,16 @@ OSRM_BASE_URL=http://your-osrm-host:5000 npm run route:build:osrm
 ```
 
 This produces import-ready rows using the existing internal travel-matrix importer.
+
+
+## Direction matters
+
+The matrix stores road facts directionally.
+
+For exact mobility pricing JoTrip requires:
+- hotel -> destination
+- destination -> hotel
+
+It does not simply double one direction. One-way streets, access roads and different turn movements can make the return leg different.
+
+For planning cards, a one-way hotel -> destination fact is enough to explain approximate access. For exact trip cost, both directions are required.

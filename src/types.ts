@@ -135,6 +135,7 @@ export type TripBuildResponse = {
   planningHotels?: PlanningHotel[];
   stayPreferences?: string[];
   destinationContext?: DestinationContext;
+  advice?: string[];
   insights?: ScenarioInsight[];
   scenarios?: TripScenario[];
 };
@@ -145,6 +146,7 @@ export type AdvisorResponse = {
   mode: "trip_plan" | "food" | "cafe" | "things_to_do" | "where_to_stay" | "compare" | "contact";
   language: "vi" | "en" | "ko" | "ru" | "zh";
   answerText: string;
+  advice?: string[];
   context?: DestinationContext;
   hotels?: Array<{
     hotel: PlanningHotel["hotel"];

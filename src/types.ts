@@ -103,6 +103,7 @@ export type DestinationVenue = {
   priceLevel: string | null;
   tags: string[];
   verifiedAt: string | null;
+  freshness: "current" | "stale" | "unknown";
   distanceKm: number | null;
 };
 

@@ -16,12 +16,11 @@
     "enabled": true
   }
 
-  // Bind D1 only after the first Worker deployment succeeds.
-  // ,"d1_databases": [{
-  //   "binding": "DB",
-  //   "database_name": "jotrip-trip-db",
-  //   "database_id": "PASTE_REAL_D1_DATABASE_UUID"
-  // }]
+  ,"d1_databases": [{
+    "binding": "DB",
+    "database_name": "jotrip-trip-db",
+    "database_id": "17372bb5-7626-4238-8a95-fc0cf31ad18e"
+  }]
 
   // Add only after trip.jotrip.vn is moved away from its current GitHub/P.A Vietnam target.
   // ,"routes": [{

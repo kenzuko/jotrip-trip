@@ -1,5 +1,6 @@
 import { FormEvent, useMemo, useRef, useState } from "react";
 import type { TripBuildResponse, TripParseResponse } from "./types";
+import { directGuide } from "./guideDirector";
 
 const examples = [
   "3 ngày 2 đêm, 2 người, chơi Vin",
@@ -37,6 +38,8 @@ export default function App() {
   const [checkout, setCheckout] = useState("");
   const [busy, setBusy] = useState(false);
   const [voiceOn, setVoiceOn] = useState(true);
+
+  const guideCue = useMemo(() => directGuide(result, plan), [result, plan]);
 
   const summary = useMemo(() => {
     if (!result) return "";
@@ -136,8 +139,16 @@ export default function App() {
       </header>
 
       <section className="hero">
-        <div className="guide-wrap" aria-label="JoTrip Guide">
-          <div className="guide-fallback show">Jo</div>
+        <div className={`guide-wrap guide-${guideCue.state}`} aria-label="JoTrip Guide">
+          <div className="guide-bubble">{guideCue.text}</div>
+          <div
+            className="guide-fallback show"
+            data-action={guideCue.action}
+            data-target={guideCue.target}
+            title={guideCue.target}
+          >
+            Jo
+          </div>
         </div>
 
         <div className="conversation">

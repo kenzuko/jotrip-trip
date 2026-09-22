@@ -7,6 +7,8 @@ import { importPrivateHotelRates } from "./privateHotelImport";
 import { generatePublicHotelOffer } from "./internalOffer";
 import { evaluatePriceWatches } from "./engine/watch";
 import { importTravelMatrix } from "./travelMatrixImport";
+import { buildDestinationContext } from "./destinationContext";
+import { importDestinationVenues } from "./destinationImport";
 
 type Env = {
   DB?: D1Database;
@@ -148,6 +150,30 @@ export default {
       return json({ ...result, assistantText });
     }
 
+    if (url.pathname === "/api/destination/context" && request.method === "POST") {
+      const body = await request
+        .json<{
+          zoneCode?: string;
+          latitude?: number;
+          longitude?: number;
+          intents?: string[];
+          daypart?: "morning" | "afternoon" | "evening" | "night";
+          limitPerGroup?: number;
+        }>()
+        .catch(() => ({}));
+
+      try {
+        return json(await buildDestinationContext(env, body));
+      } catch (error) {
+        console.error("destination_context_failed", error);
+        return json({
+          ok: false,
+          error: "destination_context_failed",
+          message: error instanceof Error ? error.message : String(error),
+        }, 500);
+      }
+    }
+
     if (url.pathname === "/api/trip/build" && request.method === "POST") {
       const body = await request
         .json<{
@@ -167,6 +193,27 @@ export default {
         return json({
           ok: false,
           error: "trip_build_failed",
+          message: error instanceof Error ? error.message : String(error),
+        }, 500);
+      }
+    }
+
+    if (url.pathname === "/api/internal/destination/venues/import" && request.method === "POST") {
+      if (!isInternalAuthorized(request, env)) {
+        return json({ ok: false, error: "unauthorized" }, 401);
+      }
+
+      const body = await request
+        .json<{ rows?: any[] }>()
+        .catch(() => ({}));
+
+      try {
+        return json(await importDestinationVenues(env, body.rows || []));
+      } catch (error) {
+        console.error("destination_venue_import_failed", error);
+        return json({
+          ok: false,
+          error: "destination_venue_import_failed",
           message: error instanceof Error ? error.message : String(error),
         }, 500);
       }

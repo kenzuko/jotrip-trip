@@ -68,8 +68,16 @@ function pickVoice(lang: string) {
   return voices.sort((a, b) => score(b) - score(a))[0] || null;
 }
 
-function speak(text: string, lang = "vi") {
-  if (!("speechSynthesis" in window)) return;
+function speak(
+  text: string,
+  lang = "vi",
+  onStart?: () => void,
+  onEnd?: () => void,
+) {
+  if (!("speechSynthesis" in window)) {
+    onEnd?.();
+    return;
+  }
 
   const engine = window.speechSynthesis;
   engine.cancel();
@@ -91,6 +99,9 @@ function speak(text: string, lang = "vi") {
   const voice = pickVoice(lang);
   if (voice) utterance.voice = voice;
 
+  utterance.onstart = () => onStart?.();
+  utterance.onend = () => onEnd?.();
+  utterance.onerror = () => onEnd?.();
   engine.speak(utterance);
 }
 
@@ -299,14 +310,14 @@ export default function App() {
   const [leadStatus, setLeadStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [replyText, setReplyText] = useState("");
   const [turns, setTurns] = useState<LocalTurn[]>([]);
+  const [speaking, setSpeaking] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const guideCue = useMemo(() => directGuide(result, plan), [result, plan]);
-  const mascotSrc =
+  const mascotPointing =
     guideCue.action === "point" ||
     guideCue.action === "compare" ||
-    guideCue.state === "warning"
-      ? "/assets/jotrip-guide-point.webp"
-      : "/assets/jotrip-guide-short.webp";
+    guideCue.state === "warning";
   const assistantText =
     replyText ||
     advisor?.answerText ||
@@ -326,6 +337,53 @@ export default function App() {
         : "",
     ].filter(Boolean);
   }, [result]);
+
+  const preAdvice =
+    advisor?.advice?.length
+      ? advisor.advice
+      : plan?.advice?.length
+        ? plan.advice
+        : [];
+
+  async function speakResponse(text: string, lang: string) {
+    audioRef.current?.pause();
+    audioRef.current = null;
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    setSpeaking(false);
+
+    try {
+      const response = await fetch("/api/voice", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text, language: lang }),
+      });
+
+      if (response.ok && response.headers.get("content-type")?.includes("audio")) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onplay = () => setSpeaking(true);
+        audio.onended = () => {
+          setSpeaking(false);
+          URL.revokeObjectURL(url);
+          if (audioRef.current === audio) audioRef.current = null;
+        };
+        audio.onerror = () => {
+          setSpeaking(false);
+          URL.revokeObjectURL(url);
+          if (audioRef.current === audio) audioRef.current = null;
+          speak(text, lang, () => setSpeaking(true), () => setSpeaking(false));
+        };
+        await audio.play();
+        return;
+      }
+    } catch {
+      // Natural voice is optional during engine development.
+    }
+
+    speak(text, lang, () => setSpeaking(true), () => setSpeaking(false));
+  }
 
   async function submit(text = input) {
     const value = text.trim();
@@ -410,16 +468,19 @@ export default function App() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            adults: json.parsed.adults || previousResult?.parsed.adults,
-            children: json.parsed.children ?? previousResult?.parsed.children,
+            adults: contextualResult.parsed.adults,
+            children: contextualResult.parsed.children,
             interests: inheritedInterests,
             stayPreferences: inheritedPreferences,
-            budgetVnd: json.parsed.budgetVnd || previousResult?.parsed.budgetVnd,
+            language: contextualResult.parsed.language,
+            days: contextualResult.parsed.days,
+            nights: contextualResult.parsed.nights,
+            budgetVnd: contextualResult.parsed.budgetVnd,
           }),
         });
         const nextPlan = (await planRes.json()) as TripBuildResponse;
         setPlan(nextPlan);
-        spoken = planningReply(json, nextPlan) || spoken;
+        spoken = planningReply(contextualResult, nextPlan) || spoken;
       } else if (json.ok) {
         const advisorRes = await fetch("/api/advisor/answer", {
           method: "POST",
@@ -463,7 +524,9 @@ export default function App() {
       }
 
       if (voiceOn && json.ok && spoken) {
-        window.setTimeout(() => speak(spoken, json.parsed.language), 60);
+        window.setTimeout(() => {
+          void speakResponse(spoken, contextualResult.parsed.language);
+        }, 40);
       }
     } finally {
       setBusy(false);
@@ -490,6 +553,9 @@ export default function App() {
           children: result.parsed.children,
           interests: result.parsed.interests,
           stayPreferences: result.parsed.stayPreferences,
+          language: result.parsed.language,
+          days: result.parsed.days,
+          nights: result.parsed.nights,
           budgetVnd: result.parsed.budgetVnd,
         }),
       });
@@ -550,7 +616,18 @@ export default function App() {
           <span className="language-line">VI · EN · KO · RU · 中文</span>
           <button
             className={voiceOn ? "quiet active" : "quiet"}
-            onClick={() => setVoiceOn((value) => !value)}
+            onClick={() =>
+              setVoiceOn((value) => {
+                const next = !value;
+                if (!next) {
+                  audioRef.current?.pause();
+                  audioRef.current = null;
+                  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+                  setSpeaking(false);
+                }
+                return next;
+              })
+            }
             type="button"
           >
             {voiceOn ? "Giọng nói bật" : "Giọng nói tắt"}
@@ -562,16 +639,38 @@ export default function App() {
         <section className="conversation-hero">
           <div className="hero-copy">
             <span className="eyebrow">JOTRIP · PHÚ QUỐC</span>
-            <h1>Hỏi như đang nói với một người ở đảo.</h1>
+            <h1>Tri thức Phú Quốc biết trò chuyện.</h1>
             <p>
-              Giá phòng, khu ở, xe, vé, ăn gì, cà phê ở đâu, hôm đó nên đi đâu.
-              JoTrip trả lời trước. Khi thấy phương án ổn thì mới chuyển sang booking.
+              Không phải một trang du lịch bắt bạn tự lọc hàng chục lựa chọn.
+              Bạn hỏi như nói với người ở đảo - JoTrip hiểu chuyến đi, giải thích hơn thua,
+              đưa lời khuyên trước rồi mới mở dữ liệu chi tiết. Khi thấy ổn mới chuyển sang booking.
             </p>
           </div>
 
           <div className="assistant-stage">
-            <div className={`mascot-shell mascot-${guideCue.state}`}>
-              <img src={mascotSrc} alt="JoTrip Guide" />
+            <div
+              className={[
+                "mascot-shell",
+                `mascot-${guideCue.state}`,
+                speaking ? "mascot-is-talking" : "",
+                busy ? "mascot-is-thinking" : "",
+                mascotPointing ? "mascot-is-pointing" : "",
+              ].filter(Boolean).join(" ")}
+            >
+              <img
+                className="mascot-frame mascot-frame--idle"
+                src="/assets/jotrip-guide-short.webp"
+                alt="JoTrip Guide"
+              />
+              <img
+                className="mascot-frame mascot-frame--gesture"
+                src="/assets/jotrip-guide-point.webp"
+                alt=""
+                aria-hidden="true"
+              />
+              <div className="voice-bars" aria-hidden="true">
+                <i></i><i></i><i></i><i></i>
+              </div>
             </div>
             <div className="assistant-bubble">
               <span>JoTrip Guide</span>
@@ -643,6 +742,23 @@ export default function App() {
                 </div>
               )}
             </div>
+
+            {preAdvice.length > 0 && (
+              <section className="pre-advice">
+                <div className="pre-advice-head">
+                  <span className="label">TRƯỚC KHI XEM CHI TIẾT</span>
+                  <h2>Mình nghĩ bạn nên để ý mấy điều này.</h2>
+                </div>
+                <div className="pre-advice-list">
+                  {preAdvice.map((tip, index) => (
+                    <article key={tip}>
+                      <span>{String(index + 1).padStart(2, "0")}</span>
+                      <p>{tip}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {advisor?.context && (
               <section className="answer-surface">

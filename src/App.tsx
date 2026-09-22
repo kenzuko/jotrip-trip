@@ -364,6 +364,7 @@ export default function App() {
   const [replyText, setReplyText] = useState("");
   const [turns, setTurns] = useState<LocalTurn[]>([]);
   const [speaking, setSpeaking] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const guideCue = useMemo(() => directGuide(result, plan), [result, plan]);
@@ -374,10 +375,11 @@ export default function App() {
   const firstGreeting =
     "Chào bạn. Mình là JoTrip. Bạn đang tính chuyến đi Phú Quốc thế nào?";
   const assistantText =
-    replyText ||
-    advisor?.answerText ||
-    result?.assistantText ||
-    (result ? guideCue.text : firstGreeting);
+    !result
+      ? firstGreeting
+      : busy
+        ? "Để mình xem cách đi, khu ở và mấy phần ảnh hưởng tới chuyến này một chút nha."
+        : "Mình đang theo chuyến này cùng bạn. Chỗ nào còn lăn tăn thì cứ hỏi tiếp.";
 
   const summaryBits = useMemo(() => {
     if (!result) return [];
@@ -709,12 +711,12 @@ export default function App() {
       <div className="page-shell">
         <section className={hasResponse ? "conversation-hero conversation-hero--active" : "conversation-hero conversation-hero--fresh"}>
           <div className="hero-copy">
-            <span className="eyebrow">TRI THỨC PHÚ QUỐC BIẾT TRÒ CHUYỆN</span>
-            <h1>{hasResponse ? "Mình đang theo chuyến này cùng bạn." : "Bạn cứ kể chuyến đi của mình."}</h1>
+            <span className="eyebrow">JOTRIP · PHÚ QUỐC</span>
+            <h1>{hasResponse ? "Cứ hỏi tiếp, mình đang theo chuyến này." : "Tri thức Phú Quốc biết trò chuyện."}</h1>
             {!hasResponse && (
               <p>
-                JoTrip hiểu cách đi, khu ở, xe, vé và những gì đang diễn ra trên đảo.
-                Mình nói trước điều đáng cân nhắc, rồi mới mở dữ liệu chi tiết khi bạn cần.
+                Cứ kể chuyến đi như bạn vẫn nói với một người ở đảo. JoTrip sẽ hiểu hoàn cảnh,
+                nói trước điều đáng cân nhắc rồi mới mở dữ liệu chi tiết khi cần.
               </p>
             )}
           </div>
@@ -747,6 +749,11 @@ export default function App() {
             <div className="assistant-bubble">
               <span>JoTrip</span>
               <p>{assistantText}</p>
+              {busy && (
+                <div className="working-line" aria-live="polite">
+                  <i></i><span>Đang đọc ngữ cảnh chuyến đi và ráp các phần liên quan</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -754,6 +761,8 @@ export default function App() {
             <textarea
               value={input}
               onChange={(event) => setInput(event.target.value)}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
               placeholder="Cứ nói tự nhiên, ví dụ: nhà mình 3 ngày 2 đêm, có bé, muốn chơi Vin nhưng tối vẫn thích ra ngoài ăn."
               rows={3}
               aria-label="Hỏi JoTrip"
@@ -922,11 +931,10 @@ export default function App() {
             {result.parsed.mode === "trip_plan" && (
               <section className="trip-controls">
                 <div className="trip-controls-copy">
-                  <span className="label">MUỐN TÍNH GIÁ THẬT</span>
-                  <h2>Cho mình ngày đi.</h2>
+                  <span className="label">NẾU MUỐN TÍNH TIẾP</span>
+                  <h2>Cho mình ngày đi nha.</h2>
                   <p>
-                    Chưa có ngày, JoTrip chỉ so khu ở và cách đi. Có ngày mới mở lớp giá phòng,
-                    vé và tổng chi phí.
+                    Có ngày cụ thể thì mình mới kiểm tra tiếp phần phòng, vé và tổng chi phí cho đúng chuyến của nhà mình.
                   </p>
                 </div>
 
@@ -959,25 +967,34 @@ export default function App() {
             )}
 
             {plan?.mode === "planning" && plan.planningHotels?.length ? (
-              <section className="answer-surface">
-                <div className="section-heading">
-                  <span className="label">Ở ĐÂU HỢP HƠN</span>
-                  <h2>JoTrip đang so vị trí trước giá.</h2>
-                  <p>
-                    Một phòng rẻ chưa chắc làm chuyến đi rẻ hơn nếu phải đổi lại bằng nhiều giờ trên xe.
-                  </p>
-                </div>
+              <details className="evidence-drawer">
+                <summary>
+                  <span>
+                    <small>CHI TIẾT PHÍA SAU LỜI KHUYÊN</small>
+                    <b>Xem các chỗ ở mình đang dùng để so</b>
+                  </span>
+                  <em>Xem</em>
+                </summary>
+                <section className="answer-surface answer-surface--inside">
+                  <div className="section-heading">
+                    <span className="label">Ở ĐÂU HỢP HƠN</span>
+                    <h2>Mình đang nhìn vị trí trước giá.</h2>
+                    <p>
+                      Giá phòng là một phần. Mình còn nhìn cách đi, thời gian trên xe và buổi tối quanh chỗ ở.
+                    </p>
+                  </div>
 
-                <div className="hotel-grid">
-                  {plan.planningHotels.map((item) => (
-                    <HotelCard
-                      item={item}
-                      stayPreferences={result.parsed.stayPreferences}
-                      key={item.hotel.id}
-                    />
-                  ))}
-                </div>
-              </section>
+                  <div className="hotel-grid">
+                    {plan.planningHotels.map((item) => (
+                      <HotelCard
+                        item={item}
+                        stayPreferences={result.parsed.stayPreferences}
+                        key={item.hotel.id}
+                      />
+                    ))}
+                  </div>
+                </section>
+              </details>
             ) : null}
 
             {plan?.insights?.length ? (

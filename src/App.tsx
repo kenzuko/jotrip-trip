@@ -7,6 +7,7 @@ import type {
   TripParseResponse,
 } from "./types";
 import { directGuide } from "./guideDirector";
+import { resolveMascotState, runtimeMascotPath } from "./mascotState";
 
 const examples = [
   { label: "Gợi ý", text: "3 ngày 2 đêm, nhà mình có bé, muốn chơi Vin và Safari thì ở đâu hợp?" },
@@ -546,12 +547,6 @@ export default function App() {
         )
       : "";
 
-  const mascotPointing =
-    Boolean(activeDecision) ||
-    guideCue.action === "point" ||
-    guideCue.action === "compare" ||
-    guideCue.state === "warning";
-
   const assistantText =
     !result
       ? firstGreeting
@@ -566,6 +561,21 @@ export default function App() {
               guideCue.text,
             ) ||
             "Mình đang theo chuyến này cùng bạn. Chỗ nào còn lăn tăn thì cứ hỏi tiếp.";
+
+  const mascotState = resolveMascotState({
+    hasResponse: Boolean(result),
+    inputFocused,
+    busy,
+    speaking,
+    comparing: Boolean(activeDecision) || guideCue.state === "compare",
+    // Keep this false until a real review/live-data check is wired.
+    checking: false,
+    confirming: leadStatus === "sent",
+    guiding:
+      guideCue.target.startsWith("map:") ||
+      guideCue.target.startsWith("discovery:"),
+  });
+  const mascotSrc = runtimeMascotPath(mascotState);
 
   async function speakResponse(text: string, lang: string) {
     audioRef.current?.pause();
@@ -830,6 +840,11 @@ export default function App() {
 
   return (
     <main className={hasResponse ? "app app--active" : "app"}>
+      <div className="mascot-preload" aria-hidden="true">
+        {(["greeting","listening","thinking","speaking","guiding","compare","checking","confirm"] as const).map((state) => (
+          <img src={runtimeMascotPath(state)} alt="" key={state} />
+        ))}
+      </div>
       <header className="topbar">
         <a className="brand" href="/" aria-label="JoTrip">
           <img src="/assets/jotrip-logo.webp" alt="JoTrip" />
@@ -875,24 +890,17 @@ export default function App() {
             <div
               className={[
                 "mascot-shell",
-                `mascot-${guideCue.state}`,
+                `mascot-state-${mascotState}`,
                 speaking ? "mascot-is-talking" : "",
                 busy ? "mascot-is-thinking" : "",
-                inputFocused && !busy ? "mascot-is-listening" : "",
-                activeDecision ? "mascot-is-comparing" : "",
-                mascotPointing ? "mascot-is-pointing" : "",
               ].filter(Boolean).join(" ")}
+              data-mascot-state={mascotState}
             >
               <img
-                className="mascot-frame mascot-frame--idle"
-                src="/assets/jotrip-guide-short.webp"
+                key={mascotSrc}
+                className="mascot-frame mascot-frame--state"
+                src={mascotSrc}
                 alt="JoTrip Guide"
-              />
-              <img
-                className="mascot-frame mascot-frame--gesture"
-                src="/assets/jotrip-guide-point.webp"
-                alt=""
-                aria-hidden="true"
               />
               <div className="voice-bars" aria-hidden="true">
                 <i></i><i></i><i></i><i></i>
@@ -963,7 +971,7 @@ export default function App() {
                 ) : (
                   <div className="message message--assistant" key={turn.id}>
                     <div className="message-avatar message-avatar--mascot">
-                      <img src="/assets/jotrip-guide-short.webp" alt="" aria-hidden="true" />
+                      <img src={runtimeMascotPath("speaking")} alt="" aria-hidden="true" />
                     </div>
                     <div>
                       <span>JoTrip</span>

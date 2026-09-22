@@ -1,4 +1,5 @@
 import { loadDestinationKnowledge } from "./openPqSource";
+import { loadOpenPqVenues } from "./openPqVenueSource";
 
 type Env = { DB?: D1Database };
 
@@ -99,7 +100,26 @@ function toVenue(row:VenueRow, req:DestinationContextRequest) {
 }
 
 async function loadVenues(env:Env, req:DestinationContextRequest) {
-  if (!env.DB) return [] as VenueRow[];
+  const canonical = await loadOpenPqVenues();
+  const canonicalRows: VenueRow[] = canonical.rows
+    .filter((row) => row.status !== "CLOSED")
+    .map((row) => ({
+      id: row.id,
+      name: row.name,
+      category: row.category,
+      zone_code: row.zone_code || null,
+      latitude: row.latitude ?? null,
+      longitude: row.longitude ?? null,
+      address: row.address || null,
+      phone: row.phone || null,
+      tags_json: JSON.stringify(row.tags || []),
+      opening_hours_json: row.opening_hours == null ? null : JSON.stringify(row.opening_hours),
+      price_level: row.price_level || null,
+      verified_at: row.verified_at || null,
+      status: row.status || "REVIEW",
+    }));
+
+  if (!env.DB) return canonicalRows;
 
   try {
   const result=await env.DB.prepare(
@@ -116,12 +136,18 @@ async function loadVenues(env:Env, req:DestinationContextRequest) {
       LIMIT 200`
   ).bind(req.zoneCode||null,req.zoneCode||null,req.zoneCode||null).all<VenueRow>();
 
-  return result.results||[];
+  const d1Rows = result.results || [];
+  const byId = new Map<string, VenueRow>();
+  for (const row of d1Rows) byId.set(row.id, row);
+  // Open Phu Quoc CMS is canonical for editorial/operational venue state.
+  // It overrides same-id rows from the local D1 cache/import layer.
+  for (const row of canonicalRows) byId.set(row.id, row);
+  return Array.from(byId.values());
   } catch (error) {
-    // Migration 0008 may not have been applied yet. Destination knowledge
-    // must keep working even when the fast-changing venue layer is absent.
+    // Migration 0008 may not have been applied yet. Canonical Open Phu Quoc
+    // venue data should still work without the local D1 acceleration layer.
     console.warn("destination_venues_unavailable", error);
-    return [];
+    return canonicalRows;
   }
 }
 
@@ -158,6 +184,7 @@ export async function buildDestinationContext(env:Env, req:DestinationContextReq
   return {
     ok:true,
     knowledgeSource: knowledge.sourceState,
+    venueSource: venues.length ? "openpq_or_d1" : "none",
     zoneCode:req.zoneCode||null,
     daypart:req.daypart||null,
     groups:{

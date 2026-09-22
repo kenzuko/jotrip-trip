@@ -6,9 +6,11 @@ import { explainTopScenarios } from "./explain";
 import { buildDestinationContext } from "../destinationContext";
 import { buildStayContext, type StayPreference } from "./stayContext";
 import { buildAdvice } from "../advice";
+import { computeGoogleRouteMatrix, type GoogleRoutePoint } from "../googleRoutes";
 
 type Env = {
   DB?: D1Database;
+  GOOGLE_MAPS_API_KEY?: string;
 };
 
 type BuildTripRequest = {
@@ -144,6 +146,78 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
     })
     .slice(0, 4);
 
+  const routeTargets: GoogleRoutePoint[] = [];
+  const addRouteTarget = (target: GoogleRoutePoint) => {
+    if (!routeTargets.some((item) => item.id === target.id) && routeTargets.length < 4) {
+      routeTargets.push(target);
+    }
+  };
+
+  if (interests.includes("VinWonders")) {
+    addRouteTarget({
+      id: "activity:vinwonders",
+      label: "VinWonders Phú Quốc",
+      address: "VinWonders Phu Quoc, Bãi Dài, Gành Dầu, Phú Quốc, Việt Nam",
+    });
+  }
+  if (interests.includes("Safari")) {
+    addRouteTarget({
+      id: "activity:safari",
+      label: "Vinpearl Safari Phú Quốc",
+      address: "Vinpearl Safari Phu Quoc, Gành Dầu, Phú Quốc, Việt Nam",
+    });
+  }
+  if (interests.includes("Hòn Thơm")) {
+    addRouteTarget({
+      id: "activity:hon-thom",
+      label: "Ga cáp treo Hòn Thơm",
+      address: "Ga An Thới - Cáp treo Hòn Thơm, Sunset Town, An Thới, Phú Quốc, Việt Nam",
+    });
+  }
+  if (interests.includes("Sunset Town")) {
+    addRouteTarget({
+      id: "activity:sunset-town",
+      label: "Sunset Town",
+      address: "Sunset Town, An Thới, Phú Quốc, Việt Nam",
+    });
+  }
+
+  const caresAboutEvening = stayPreferences.some((value) =>
+    ["evening", "walkable", "food", "cafe"].includes(value),
+  );
+  if (caresAboutEvening || interests.includes("Chợ đêm")) {
+    addRouteTarget({
+      id: "center:duong-dong",
+      label: "Trung tâm Dương Đông",
+      address: "Chợ đêm Phú Quốc, Dương Đông, Phú Quốc, Việt Nam",
+    });
+  }
+
+  if (stayPreferences.includes("airport")) {
+    addRouteTarget({
+      id: "airport:pq",
+      label: "Sân bay Phú Quốc",
+      address: "Phu Quoc International Airport, Phú Quốc, Việt Nam",
+    });
+  }
+
+  const routeOrigins: GoogleRoutePoint[] = planningTop
+    .filter((item) => Boolean(item.hotel.address))
+    .map((item) => ({
+      id: item.hotel.id,
+      label: item.hotel.canonical_name,
+      address: item.hotel.address,
+    }));
+
+  const routeMatrix =
+    routeOrigins.length && routeTargets.length
+      ? await computeGoogleRouteMatrix(env, routeOrigins, routeTargets, {
+          // Planning uses a stable baseline. Live traffic belongs to "right now" decisions,
+          // not a future hotel comparison.
+          trafficAware: false,
+        })
+      : { ok: false as const, facts: [] };
+
   const planningHotels = await Promise.all(
     planningTop.map(async (item) => ({
       ...item,
@@ -152,6 +226,12 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
         intents: contextIntents,
         limitPerGroup: 2,
       }),
+      routeFacts: routeMatrix.facts
+        .filter((fact) => fact.originId === item.hotel.id)
+        .map((fact) => ({
+          ...fact,
+          label: routeTargets.find((target) => target.id === fact.destinationId)?.label || fact.destinationId,
+        })),
     })),
   );
 

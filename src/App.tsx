@@ -311,6 +311,7 @@ export default function App() {
                       <strong>{venue.name}</strong>
                       {venue.address && <span>{venue.address}</span>}
                       {venue.distanceKm != null && <small>~{venue.distanceKm.toFixed(1)} km</small>}
+                      {venue.freshness === "stale" && <small>Cần kiểm tra lại thông tin hiện hành</small>}
                     </div>
                   ))}
                   {plan.destinationContext.groups.eat.knowledge.slice(0,4).map((item) => (
@@ -329,6 +330,7 @@ export default function App() {
                         <strong>{venue.name}</strong>
                         {venue.address && <span>{venue.address}</span>}
                         {venue.distanceKm != null && <small>~{venue.distanceKm.toFixed(1)} km</small>}
+                      {venue.freshness === "stale" && <small>Cần kiểm tra lại thông tin hiện hành</small>}
                       </div>
                     ))
                   ) : (
@@ -343,6 +345,7 @@ export default function App() {
                       <strong>{venue.name}</strong>
                       {venue.address && <span>{venue.address}</span>}
                       {venue.distanceKm != null && <small>~{venue.distanceKm.toFixed(1)} km</small>}
+                      {venue.freshness === "stale" && <small>Cần kiểm tra lại thông tin hiện hành</small>}
                     </div>
                   ))}
                   {plan.destinationContext.groups.do.knowledge.slice(0,4).map((item) => (

@@ -4,6 +4,7 @@ import { chatAnalyticsOverview, isInternalAuthorized } from "./internal";
 import { quotePublicActivity } from "./publicCatalog";
 import { buildTripScenarios } from "./engine/buildTrip";
 import { importPrivateHotelRates } from "./privateHotelImport";
+import { generatePublicHotelOffer } from "./internalOffer";
 
 type Env = {
   DB?: D1Database;
@@ -164,6 +165,26 @@ export default {
         return json({
           ok: false,
           error: "trip_build_failed",
+          message: error instanceof Error ? error.message : String(error),
+        }, 500);
+      }
+    }
+
+    if (url.pathname === "/api/internal/hotel-offers/generate" && request.method === "POST") {
+      if (!isInternalAuthorized(request, env)) {
+        return json({ ok: false, error: "unauthorized" }, 401);
+      }
+
+      const body = await request.json().catch(() => null);
+      if (!body) return json({ ok: false, error: "invalid_json" }, 400);
+
+      try {
+        return json(await generatePublicHotelOffer(env, body as any));
+      } catch (error) {
+        console.error("offer_generation_failed", error);
+        return json({
+          ok: false,
+          error: "offer_generation_failed",
           message: error instanceof Error ? error.message : String(error),
         }, 500);
       }

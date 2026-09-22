@@ -5,6 +5,7 @@ export type ParsedTrip = {
   children?: number;
   budgetVnd?: number;
   interests: string[];
+  stayPreferences: string[];
   raw: string;
 };
 

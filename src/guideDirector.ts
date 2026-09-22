@@ -92,6 +92,42 @@ export function directGuide(
     };
   }
 
+  if (parsed.parsed.mode === "contact") {
+    return {
+      state: "confirm",
+      action: "point",
+      target: "price:total",
+      text: "Khi bạn thấy phương án ổn, mình chuyển đúng ngữ cảnh này cho JoTrip kiểm tra booking.",
+    };
+  }
+
+  if (parsed.parsed.mode === "compare") {
+    return {
+      state: "compare",
+      action: "compare",
+      target: "scenario:comparison",
+      text: "Mình sẽ đặt các phương án cạnh nhau để nhìn tổng tiền, thời gian và cách sống quanh khu ở.",
+    };
+  }
+
+  if (parsed.parsed.mode === "things_to_do") {
+    return {
+      state: "speaking",
+      action: "point",
+      target: "discovery:do",
+      text: "Mình sẽ trả lời đúng khu bạn hỏi, không xổ cả danh sách Phú Quốc.",
+    };
+  }
+
+  if (parsed.parsed.mode === "where_to_stay") {
+    return {
+      state: "speaking",
+      action: "point",
+      target: "hotel:candidate",
+      text: "Mình so khu ở trước, rồi mới tới khách sạn và giá.",
+    };
+  }
+
   const warning = plan?.warnings?.[0];
   if (warning) {
     return {

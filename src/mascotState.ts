@@ -21,6 +21,17 @@ export const MASCOT_CANONICAL_FILES: Record<MascotState, string> = {
   confirm: "08_confirm_thumbs_up.png",
 };
 
+export const MASCOT_RUNTIME_FILES: Record<MascotState, string> = {
+  greeting: "01_greeting_wave.webp",
+  listening: "02_listening.webp",
+  thinking: "03_thinking.webp",
+  speaking: "04_speaking.webp",
+  guiding: "05_guiding_map.webp",
+  compare: "06_compare_two_directions.webp",
+  checking: "07_checking_phone_review.webp",
+  confirm: "08_confirm_thumbs_up.webp",
+};
+
 export const MASCOT_CANONICAL_SHA256: Record<MascotState, string> = {
   greeting: "96f376e65d4602a092a2954ebab7ce62bb8f9191c0afbf69b4e31465c450eb40",
   listening: "c94b5f6666028778907c8c971828a369487a7e35642d36828d6e725100e6384e",
@@ -36,10 +47,14 @@ export function canonicalMascotPath(state: MascotState) {
   return `/assets/mascot-v1/${MASCOT_CANONICAL_FILES[state]}`;
 }
 
+export function runtimeMascotPath(state: MascotState) {
+  return `/assets/mascot-v1/${MASCOT_RUNTIME_FILES[state]}`;
+}
+
 /**
- * The semantic state resolver is independent from the actual binary asset.
- * This lets product behavior be built safely before the locked binary pack
- * is installed in the runtime repo.
+ * Semantic state resolver for the locked runtime mascot pack.
+ * The runtime WebP derivatives are mechanically transcoded from the
+ * canonical locked PNG states - never regenerated or redrawn.
  */
 export function resolveMascotState(input: {
   hasResponse: boolean;

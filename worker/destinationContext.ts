@@ -101,7 +101,7 @@ function toVenue(row:VenueRow, req:DestinationContextRequest) {
 async function loadVenues(env:Env, req:DestinationContextRequest) {
   if (!env.DB) return [] as VenueRow[];
 
-  const categories=["LOCAL_FOOD","RESTAURANT","CAFE","ATTRACTION"];
+  try {
   const result=await env.DB.prepare(
     `SELECT id,name,category,zone_code,latitude,longitude,address,phone,tags_json,
             opening_hours_json,price_level,verified_at,status
@@ -117,6 +117,12 @@ async function loadVenues(env:Env, req:DestinationContextRequest) {
   ).bind(req.zoneCode||null,req.zoneCode||null,req.zoneCode||null).all<VenueRow>();
 
   return result.results||[];
+  } catch (error) {
+    // Migration 0008 may not have been applied yet. Destination knowledge
+    // must keep working even when the fast-changing venue layer is absent.
+    console.warn("destination_venues_unavailable", error);
+    return [];
+  }
 }
 
 function groupVenue(rows:VenueRow[], req:DestinationContextRequest, category:string, limit:number) {

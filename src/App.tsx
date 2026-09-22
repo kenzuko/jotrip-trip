@@ -228,6 +228,65 @@ function compactBubbleText(text: string) {
   return picked.length <= 240 ? picked : picked.slice(0, 237).trimEnd() + "...";
 }
 
+function decisionTradeoffs(
+  item: PlanningHotel,
+  interests: string[],
+  stayPreferences: string[],
+) {
+  const area = item.hotel.area_code;
+  const likesEvening = stayPreferences.some((value) =>
+    ["evening", "walkable", "food", "cafe"].includes(value),
+  );
+  const hasNorth = interests.some((value) => ["VinWonders", "Safari"].includes(value));
+  const hasSouth = interests.some((value) => ["Hòn Thơm", "Sunset Town"].includes(value));
+  const center = item.routeFacts?.find((fact) => fact.destinationId === "center:duong-dong");
+
+  if (area === "north") {
+    return {
+      gain: hasNorth ? "Ban ngày đi Vin/Safari nhẹ hơn" : "Thuận các điểm phía Bắc",
+      trade: likesEvening
+        ? center
+          ? `Tối xuống Dương Đông khoảng ${center.minutes} phút/lượt`
+          : "Tối xuống Dương Đông phải tính thêm xe"
+        : "Ít linh hoạt hơn nếu tối hay ra trung tâm",
+    };
+  }
+
+  if (area === "duong_dong") {
+    return {
+      gain: likesEvening
+        ? "Tối dễ ăn uống, cafe và đi dạo"
+        : "Thuận sinh hoạt và trung tâm",
+      trade: hasNorth
+        ? "Đi Vin/Safari sẽ dài hơn"
+        : hasSouth
+          ? "Đi Nam đảo vẫn cần thêm thời gian xe"
+          : "Không sát hẳn một cụm vui chơi lớn",
+    };
+  }
+
+  if (area === "south") {
+    return {
+      gain: hasSouth ? "Hòn Thơm/Sunset Town nhẹ hơn" : "Thuận lịch Nam đảo",
+      trade: hasNorth
+        ? "Nếu còn đi Bắc đảo thì quãng xe tăng đáng kể"
+        : "Xa trung tâm hơn nếu tối hay lên Dương Đông",
+    };
+  }
+
+  if (area === "long_beach") {
+    return {
+      gain: "Cân giữa hơn khi lịch chia nhiều hướng",
+      trade: "Không sát hẳn cụm Bắc hay Nam đảo",
+    };
+  }
+
+  return {
+    gain: "Có một vài điểm hợp với lịch của nhà mình",
+    trade: "Mình vẫn cần nhìn thêm cách đi trước khi chốt",
+  };
+}
+
 function decisionGuideText(
   item: PlanningHotel,
   interests: string[],
@@ -976,6 +1035,26 @@ export default function App() {
                         </div>
                         <h3>{item.hotel.canonical_name}</h3>
                         <p>{item.stayContext.summary}</p>
+
+                        {(() => {
+                          const tradeoff = decisionTradeoffs(
+                            item,
+                            result.parsed.interests,
+                            result.parsed.stayPreferences,
+                          );
+                          return (
+                            <div className="decision-tradeoffs">
+                              <div>
+                                <span>Được</span>
+                                <b>{tradeoff.gain}</b>
+                              </div>
+                              <div>
+                                <span>Đổi lại</span>
+                                <b>{tradeoff.trade}</b>
+                              </div>
+                            </div>
+                          );
+                        })()}
 
                         {item.routeFacts?.length ? (
                           <div className="decision-route-list">

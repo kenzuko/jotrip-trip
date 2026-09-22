@@ -205,6 +205,34 @@ export default function App() {
             </div>
           </div>
 
+          {plan?.mode === "planning" && plan.planningHotels && plan.planningHotels.length > 0 && (
+            <div className="planning-hotels">
+              <div className="section-heading">
+                <span className="label">Ở đâu hợp với ý định này?</span>
+                <h3>Mình xem vị trí trước, chưa dùng giá phòng khi bạn chưa chọn ngày</h3>
+              </div>
+              <div className="scenario-list">
+                {plan.planningHotels.map((item) => (
+                  <article className="scenario-card planning-card" key={item.hotel.id}>
+                    <div>
+                      <span className="fit-pill">
+                        {item.spatialFit === "direct"
+                          ? "Đúng khu hoạt động"
+                          : item.spatialFit === "balanced"
+                            ? "Vị trí cân bằng"
+                            : "Có thể cân nhắc"}
+                      </span>
+                      <h3>{item.hotel.canonical_name}</h3>
+                      {item.hotel.address && <p className="hotel-address">{item.hotel.address}</p>}
+                    </div>
+                    {item.reasons.map((reason) => <p key={reason}>{reason}</p>)}
+                    {item.cautions.map((warning) => <p className="caution" key={warning}>{warning}</p>)}
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+
           {plan?.scenarios && plan.scenarios.length > 0 && (
             <div className="scenario-list">
               {plan.scenarios.map((scenario) => (

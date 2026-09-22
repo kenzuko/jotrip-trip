@@ -179,8 +179,8 @@ function assistantTextFor(result: ReturnType<typeof buildParseResponse>) {
   }
 
   return summary
-    ? `Mình hiểu rồi - ${summary}. Để mình ráp vài phương án thực dụng nha.`
-    : "Mình hiểu rồi. Để mình ráp vài phương án thực dụng nha.";
+    ? `Mình hiểu rồi - ${summary}. Để mình ráp vài phương án dễ đi nha.`
+    : "Mình hiểu rồi. Để mình ráp vài phương án dễ đi nha.";
 }
 
 export default {

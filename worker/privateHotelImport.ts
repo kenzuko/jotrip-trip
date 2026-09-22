@@ -21,6 +21,13 @@ export type HotelImportRow = {
   discountValue?: number | null;
   sourceLocator?: string | null;
   sourceVersion?: string | null;
+  ratePlan?: string | null;
+  minimumStay?: number | null;
+  minimumAdvanceDays?: number | null;
+  nonRefundable?: boolean;
+  taxIncluded?: boolean | null;
+  breakfastIncluded?: boolean | null;
+  blackoutDates?: string[];
 };
 
 export type HotelImportPayload = {
@@ -116,8 +123,10 @@ export async function importPrivateHotelRates(
           (id, batch_id, hotel_key, room_key, market_scope, stay_from, stay_to,
            booking_from, booking_to, meal_plan, occupancy_key, base_net_vnd,
            discount_type, discount_value, effective_net_vnd, review_state,
-           review_reason, normalized_json, source_locator)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           review_reason, normalized_json, source_locator, rate_plan,
+           minimum_stay, minimum_advance_days, non_refundable, tax_included,
+           breakfast_included, blackout_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).bind(
         importRowId,
         batchId,
@@ -138,6 +147,13 @@ export async function importPrivateHotelRates(
         row.reviewReason,
         JSON.stringify(row),
         row.sourceLocator || null,
+        row.ratePlan || null,
+        row.minimumStay ?? null,
+        row.minimumAdvanceDays ?? null,
+        row.nonRefundable ? 1 : 0,
+        row.taxIncluded == null ? null : row.taxIncluded ? 1 : 0,
+        row.breakfastIncluded == null ? null : row.breakfastIncluded ? 1 : 0,
+        JSON.stringify(row.blackoutDates || []),
       ),
     );
 
@@ -164,8 +180,10 @@ export async function importPrivateHotelRates(
             (id, hotel_id, room_key, market_scope, stay_from, stay_to,
              booking_from, booking_to, meal_plan, occupancy_key, base_net_vnd,
              discount_type, discount_value, effective_net_vnd, source_ref,
-             source_version, rule_state)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACCEPTED')`,
+             source_version, rule_state, rate_plan, minimum_stay,
+             minimum_advance_days, non_refundable, tax_included,
+             breakfast_included, blackout_json)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACCEPTED', ?, ?, ?, ?, ?, ?, ?)`,
         ).bind(
           crypto.randomUUID(),
           row.hotelId,
@@ -183,6 +201,13 @@ export async function importPrivateHotelRates(
           row.effectiveNetVnd,
           `batch:${batchId}`,
           row.sourceVersion || payload.sourceVersion || null,
+          row.ratePlan || null,
+          row.minimumStay ?? null,
+          row.minimumAdvanceDays ?? null,
+          row.nonRefundable ? 1 : 0,
+          row.taxIncluded == null ? null : row.taxIncluded ? 1 : 0,
+          row.breakfastIncluded == null ? null : row.breakfastIncluded ? 1 : 0,
+          JSON.stringify(row.blackoutDates || []),
         ),
       );
     }

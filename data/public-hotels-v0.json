@@ -1,0 +1,215 @@
+{
+  "observed_at": "2026-09-22",
+  "hotels": [
+    {
+      "id": "crowne-plaza-phu-quoc-starbay",
+      "canonical_name": "CROWNE PLAZA PHU QUOC STARBAY",
+      "slug": "crowne-plaza-phu-quoc-starbay",
+      "address": "Bãi Dài, Gành Dầu, Phú Quốc",
+      "area_code": "north",
+      "fit_tags": [
+        "north",
+        "vinwonders",
+        "safari",
+        "grand-world"
+      ],
+      "public_status": "content_only"
+    },
+    {
+      "id": "wyndham-grand-phu-quoc",
+      "canonical_name": "WYNDHAM GRAND PHU QUOC",
+      "slug": "wyndham-grand-phu-quoc",
+      "address": "Bãi Dài, Gành Dầu, Phú Quốc, Kiên Giang",
+      "area_code": "north",
+      "fit_tags": [
+        "north",
+        "vinwonders",
+        "safari",
+        "grand-world"
+      ],
+      "public_status": "content_only"
+    },
+    {
+      "id": "wyndham-garden-grandworld-phu-quoc",
+      "canonical_name": "WYNDHAM GARDEN GRANDWORLD PHU QUOC",
+      "slug": "wyndham-garden-grandworld-phu-quoc",
+      "address": "Bãi Dài, Gành Dầu, Phú Quốc",
+      "area_code": "north",
+      "fit_tags": [
+        "north",
+        "vinwonders",
+        "safari",
+        "grand-world"
+      ],
+      "public_status": "content_only"
+    },
+    {
+      "id": "la-festa-phu-quoc",
+      "canonical_name": "LA FESTA PHU QUOC",
+      "slug": "la-festa-phu-quoc",
+      "address": "Sunset Town, An Thoi, Phú Quốc, Việt Nam",
+      "area_code": "south",
+      "fit_tags": [
+        "south",
+        "sunset-town",
+        "hon-thom",
+        "south-island"
+      ],
+      "public_status": "content_only"
+    },
+    {
+      "id": "new-world-phu-quoc-resort",
+      "canonical_name": "NEW WORLD PHÚ QUỐC RESORT",
+      "slug": "new-world-phu-quoc-resort",
+      "address": "Bãi Khem, An Thới, Phú Quốc",
+      "area_code": "south",
+      "fit_tags": [
+        "south",
+        "sunset-town",
+        "hon-thom",
+        "south-island"
+      ],
+      "public_status": "content_only"
+    },
+    {
+      "id": "premier-residences-phu-quoc-emerald-bay-managed-by-accor",
+      "canonical_name": "PREMIER RESIDENCES PHÚ QUỐC EMERALD BAY MANAGED BY ACCOR",
+      "slug": "premier-residences-phu-quoc-emerald-bay-managed-by-accor",
+      "address": "Bãi Khem, An Thới, Phú Quốc",
+      "area_code": "south",
+      "fit_tags": [
+        "south",
+        "sunset-town",
+        "hon-thom",
+        "south-island"
+      ],
+      "public_status": "content_only"
+    },
+    {
+      "id": "intercontinental-phu-quoc-long-beach-resort",
+      "canonical_name": "INTERCONTINENTAL PHU QUOC LONG BEACH RESORT",
+      "slug": "intercontinental-phu-quoc-long-beach-resort",
+      "address": "Bãi Trường, Dương Tơ, Phú Quốc, Kiên Giang",
+      "area_code": "long_beach",
+      "fit_tags": [
+        "long-beach",
+        "airport-friendly",
+        "balanced",
+        "sunset"
+      ],
+      "public_status": "content_only"
+    },
+    {
+      "id": "regent-phu-quoc",
+      "canonical_name": "REGENT PHU QUOC",
+      "slug": "regent-phu-quoc",
+      "address": "Bãi Trường, Dương Tơ, Phú Quốc, Kiên Giang",
+      "area_code": "long_beach",
+      "fit_tags": [
+        "long-beach",
+        "airport-friendly",
+        "balanced",
+        "sunset"
+      ],
+      "public_status": "content_only"
+    },
+    {
+      "id": "the-residence-resort-villas-phu-quoc",
+      "canonical_name": "THE RESIDENCE RESORT & VILLAS PHU QUOC",
+      "slug": "the-residence-resort-villas-phu-quoc",
+      "address": "Khu THDL Sonaseas, Tổ 5, Ấp, Đường Bào, Phú Quốc, Kiên Giang",
+      "area_code": "long_beach",
+      "fit_tags": [
+        "long-beach",
+        "airport-friendly",
+        "balanced",
+        "sunset"
+      ],
+      "public_status": "content_only"
+    },
+    {
+      "id": "klc-holidays-phu-quoc",
+      "canonical_name": "KLC HOLIDAYS PHU QUOC",
+      "slug": "klc-holidays-phu-quoc",
+      "address": "126 Đường Trần Hưng Đạo, Khu phố 7, Đặc Khu Phú Quốc, An Giang",
+      "area_code": "duong_dong",
+      "fit_tags": [
+        "duong-dong",
+        "local-access",
+        "night-market",
+        "explorer-friendly"
+      ],
+      "public_status": "content_only"
+    },
+    {
+      "id": "movenpick-resort-waverly-phu-quoc",
+      "canonical_name": "MOVENPICK RESORT WAVERLY PHÚ QUỐC",
+      "slug": "movenpick-resort-waverly-phu-quoc",
+      "address": "Ông Lang, Cửa Dương, Phú Quốc",
+      "area_code": "north_central",
+      "fit_tags": [
+        "north-central",
+        "quiet",
+        "resort-first"
+      ],
+      "public_status": "content_only"
+    },
+    {
+      "id": "ocean-bay-phu-quoc-resort-spa",
+      "canonical_name": "OCEAN BAY PHU QUOC RESORT & SPA",
+      "slug": "ocean-bay-phu-quoc-resort-spa",
+      "address": "Đường Dinh Bà, Ông Lang, Phú Quốc, Kiên Giang",
+      "area_code": "north_central",
+      "fit_tags": [
+        "north-central",
+        "quiet",
+        "resort-first"
+      ],
+      "public_status": "content_only"
+    },
+    {
+      "id": "sea-sense-resort-spa-phu-quoc",
+      "canonical_name": "SEA SENSE RESORT & SPA PHU QUOC",
+      "slug": "sea-sense-resort-spa-phu-quoc",
+      "address": "Tổ 3, Ông Lang, Phú Quốc",
+      "area_code": "north_central",
+      "fit_tags": [
+        "north-central",
+        "quiet",
+        "resort-first"
+      ],
+      "public_status": "content_only"
+    },
+    {
+      "id": "the-shells-phu-quoc",
+      "canonical_name": "THE SHELLS PHU QUOC",
+      "slug": "the-shells-phu-quoc",
+      "address": "Biển Gành Gió, Dương Đông, Phú Quốc",
+      "area_code": "north_central",
+      "fit_tags": [
+        "north-central",
+        "quiet",
+        "resort-first"
+      ],
+      "public_status": "content_only"
+    },
+    {
+      "id": "dusit-princess-moonrise-beach-resort-phu-quoc",
+      "canonical_name": "DUSIT PRINCESS MOONRISE BEACH RESORT PHÚ QUỐC",
+      "slug": "dusit-princess-moonrise-beach-resort-phu-quoc",
+      "address": null,
+      "area_code": "unknown",
+      "fit_tags": [],
+      "public_status": "content_only"
+    },
+    {
+      "id": "novotel-phu-quoc-resort",
+      "canonical_name": "NOVOTEL PHÚ QUỐC RESORT",
+      "slug": "novotel-phu-quoc-resort",
+      "address": null,
+      "area_code": "unknown",
+      "fit_tags": [],
+      "public_status": "content_only"
+    }
+  ]
+}

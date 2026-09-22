@@ -59,6 +59,43 @@ export type ScenarioInsight = {
   data: Record<string, number | string>;
 };
 
+export type DestinationKnowledge = {
+  id: string;
+  title: string;
+  type: "FOOD" | "PLACE";
+  canonicalEntityId: string | null;
+  zones: string[];
+  summary: string | null;
+  practical: string | null;
+  expectation: string | null;
+  beforeYouGo: string[];
+  address: string | null;
+};
+
+export type DestinationVenue = {
+  id: string;
+  name: string;
+  category: string;
+  zoneCode: string | null;
+  address: string | null;
+  phone: string | null;
+  priceLevel: string | null;
+  tags: string[];
+  verifiedAt: string | null;
+  distanceKm: number | null;
+};
+
+export type DestinationContext = {
+  ok: boolean;
+  zoneCode: string | null;
+  daypart: string | null;
+  groups: {
+    eat: { knowledge: DestinationKnowledge[]; venues: DestinationVenue[]; dataState: string };
+    cafe: { venues: DestinationVenue[]; dataState: string };
+    do: { knowledge: DestinationKnowledge[]; venues: DestinationVenue[]; dataState: string };
+  };
+};
+
 export type TripBuildResponse = {
   ok: boolean;
   mode?: "planning" | "priced";
@@ -69,6 +106,7 @@ export type TripBuildResponse = {
   nextNeeded?: string[];
   hotelOfferCount?: number;
   planningHotels?: PlanningHotel[];
+  destinationContext?: DestinationContext;
   insights?: ScenarioInsight[];
   scenarios?: TripScenario[];
 };

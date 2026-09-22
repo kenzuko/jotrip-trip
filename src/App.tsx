@@ -27,7 +27,7 @@ function getSessionId() {
 }
 
 export default function App() {
-  const sessionIdRef = useRef<string>();
+  const sessionIdRef = useRef<string | null>(null);
   if (!sessionIdRef.current) sessionIdRef.current = getSessionId();
 
   const [input, setInput] = useState("");

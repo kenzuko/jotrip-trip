@@ -50,24 +50,26 @@ export function buildAdvice(input:AdviceInput): string[] {
 
   if(lang==="vi"){
     if(shortTrip && hasNorth && hasSouth){
-      tips.push("Chuyến ngắn mà chạy cả Bắc lẫn Nam đảo sẽ mất khá nhiều thời gian trên xe. Mình sẽ ưu tiên gom điểm cùng hướng.");
+      tips.push("Chuyến ngắn mà đi cả Bắc lẫn Nam đảo thì nhà mình sẽ có khá nhiều thời gian trên xe. Mình sẽ thử gom lại theo từng hướng để lịch nhẹ hơn.");
     } else if(shortTrip){
-      tips.push("Với chuyến ngắn, đừng cố nhét quá nhiều điểm. Một lịch ít chặng nhưng đúng hướng thường dễ chịu hơn.");
+      tips.push("Chuyến ngắn thì mình thích để lịch thoáng một chút. Ít chặng hơn nhưng đi cùng hướng thường dễ chịu hơn cho cả nhà.");
     }
-    if(area){
-      tips.push(`Mình đang nghiêng về ${area}. Đừng chỉ nhìn giá phòng - xem buổi tối quanh đó có tiện ăn uống, đi bộ và gọi xe không.`);
+    if(area === "Bắc đảo" && (preferences.includes("evening") || preferences.includes("food") || preferences.includes("cafe") || preferences.includes("walkable"))){
+      tips.push("Mình hơi nghiêng về Bắc đảo cho phần đi chơi ban ngày. Nhưng nếu tối nhà mình hay xuống Dương Đông thì tiền xe với thời gian đi lại cũng nên tính vào.");
+    } else if(area){
+      tips.push(`Mình hơi nghiêng về ${area} trước. Mình sẽ nhìn thêm chuyện đi lại và buổi tối quanh chỗ ở rồi mới nói nhà mình nên chọn hướng nào.`);
     }
     if(preferences.includes("food") || interests.includes("Ăn uống")){
-      tips.push("Quán nổi tiếng chưa chắc hợp lịch. JoTrip ưu tiên món đáng thử trước, rồi mới chọn quán đúng khu và còn đủ dữ liệu.");
+      tips.push("Ăn gì thì mình coi món đáng thử trước, rồi mới chọn quán đúng khu và tiện với lịch của nhà mình. Quán nổi tiếng mà phải vòng xa quá thì chưa chắc đáng.");
     }
     if(preferences.includes("cafe") || interests.includes("Cà phê")){
-      tips.push("Nếu đi cà phê, mình ưu tiên quán cùng khu hoặc cùng hướng đi thay vì bắt bạn vòng xa chỉ để check-in.");
+      tips.push("Nếu muốn đi cà phê, mình sẽ ưu tiên quán cùng khu hoặc tiện đường trước. Không cần chạy vòng xa chỉ vì một chỗ đang nổi.");
     }
     if(input.children){
-      tips.push("Có trẻ em thì nên chừa khoảng nghỉ và hạn chế đổi khu liên tục trong ngày.");
+      tips.push("Có bé thì mình sẽ chừa khoảng nghỉ và hạn chế đổi khu liên tục trong ngày. Lịch nhẹ một chút thường vui hơn.");
     }
     if(!tips.length){
-      tips.push("Mình sẽ nhìn cả thời gian di chuyển, nhịp sống quanh chỗ ở và chi phí tổng - không chỉ nhìn một giá phòng.");
+      tips.push("Mình sẽ nhìn cả cách đi, buổi tối quanh chỗ ở và chi phí tổng. Giá phòng chỉ là một phần thôi.");
     }
   }
 

@@ -162,6 +162,9 @@ function groupVenue(rows:VenueRow[], req:DestinationContextRequest, category:str
     .filter(r=>r.category===category)
     .map(r=>toVenue(r,req))
     .sort((a,b)=>{
+      const freshnessRank=(value:string)=>value==="current"?0:value==="unknown"?1:2;
+      const freshnessDelta=freshnessRank(a.freshness)-freshnessRank(b.freshness);
+      if(freshnessDelta!==0)return freshnessDelta;
       if (a.distanceKm!=null && b.distanceKm!=null) return a.distanceKm-b.distanceKm;
       if (a.distanceKm!=null) return -1;
       if (b.distanceKm!=null) return 1;
@@ -197,16 +200,22 @@ export async function buildDestinationContext(env:Env, req:DestinationContextReq
       eat:{
         knowledge:eatKnowledge,
         venues:restaurants,
-        dataState:restaurants.length ? "venue_data_available" : "knowledge_only",
+        dataState:restaurants.length
+          ? (restaurants.some((x)=>x.freshness==="current") ? "venue_data_current" : "venue_data_stale")
+          : "knowledge_only",
       },
       cafe:{
         venues:cafes,
-        dataState:cafes.length ? "venue_data_available" : "needs_venue_sync",
+        dataState:cafes.length
+          ? (cafes.some((x)=>x.freshness==="current") ? "venue_data_current" : "venue_data_stale")
+          : "needs_venue_sync",
       },
       do:{
         knowledge:doKnowledge,
         venues:attractions,
-        dataState:attractions.length ? "venue_data_available" : "knowledge_only",
+        dataState:attractions.length
+          ? (attractions.some((x)=>x.freshness==="current") ? "venue_data_current" : "venue_data_stale")
+          : "knowledge_only",
       },
     },
   };

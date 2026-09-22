@@ -176,11 +176,11 @@ export async function buildStayContext(
     note: value.note,
   }));
 
-  const requested = preferences.length ? preferences : ["family", "airport"] as StayPreference[];
+  const requested = preferences;
   const picked = signals.filter((signal) => requested.includes(signal.key));
   const ordinalTotal = picked.reduce((sum, signal) => sum + scorePreference(signal, signal.key), 0);
   const max = Math.max(1, picked.length * 3);
-  const fitScore = Math.round((ordinalTotal / max) * 100);
+  const fitScore = picked.length ? Math.round((ordinalTotal / max) * 100) : 60;
 
   const reasons = picked
     .filter((signal) => signal.level === "strong")

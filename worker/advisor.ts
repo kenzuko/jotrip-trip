@@ -2,6 +2,7 @@ import { buildDestinationContext } from "./destinationContext";
 import { matchPlanningHotels } from "./publicHotels";
 import { buildStayContext, type StayPreference } from "./engine/stayContext";
 import type { TripLanguage } from "./scenario";
+import { buildAdvice } from "./advice";
 
 type Env = { DB?: D1Database };
 
@@ -219,12 +220,12 @@ export async function answerAdvisor(env:Env, req:AdvisorRequest) {
   }
 
   if(req.mode==="compare"){
-    return {ok:true,mode:req.mode,language,answerText:text.compare};
+    return {ok:true,mode:req.mode,language,answerText:text.compare,advice:buildAdvice({language,interests,stayPreferences,topArea:req.mentionedZone,mode:req.mode})};
   }
 
   if(req.mode==="contact"){
-    return {ok:true,mode:req.mode,language,answerText:text.contact};
+    return {ok:true,mode:req.mode,language,answerText:text.contact,advice:buildAdvice({language,interests,stayPreferences,topArea:req.mentionedZone,mode:req.mode})};
   }
 
-  return {ok:true,mode:req.mode,language,answerText:text.fallback};
+  return {ok:true,mode:req.mode,language,answerText:text.fallback,advice:buildAdvice({language,interests,stayPreferences,topArea:req.mentionedZone,mode:req.mode})};
 }

@@ -86,6 +86,7 @@ async function main() {
   ]);
 
   const targets = (routePointDoc.points || [])
+    .filter((p) => p.routing_ok === true)
     .filter((p) => isCoord(p.latitude) && isCoord(p.longitude))
     .filter((p) => ["activity", "center", "airport"].includes(p.kind));
 
@@ -93,7 +94,9 @@ async function main() {
     .filter((p) => !isCoord(p.latitude) || !isCoord(p.longitude))
     .map((p) => ({ ref: p.ref, label: p.label, address: p.address || null }));
 
+  const acceptedHotelPrecisions = new Set(["site_centroid", "route_anchor"]);
   const origins = (hotelDoc.hotels || [])
+    .filter((h) => acceptedHotelPrecisions.has(h.route_precision))
     .filter((h) => isCoord(h.latitude) && isCoord(h.longitude))
     .map((h) => ({
       ref: `hotel:${h.id}`,

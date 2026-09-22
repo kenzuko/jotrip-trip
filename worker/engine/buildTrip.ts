@@ -3,6 +3,7 @@ import { estimateSevenSeatPrice } from "../rules/mobility";
 import { selectMeaningfulScenarios, type TripScenarioInput } from "./tripScenario";
 import { matchPlanningHotels } from "../publicHotels";
 import { explainTopScenarios } from "./explain";
+import { buildDestinationContext } from "../destinationContext";
 
 type Env = {
   DB?: D1Database;
@@ -102,6 +103,16 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
   const nights = nightsBetween(request.checkin, request.checkout);
   const activities = activityCost(interests, adults, children, referenceDate);
   const planningHotels = matchPlanningHotels(interests, 4);
+  const contextIntents = [
+    interests.includes("Ăn uống") ? "eat" : null,
+    interests.includes("Cà phê") ? "cafe" : null,
+    interests.some((x) => ["VinWonders","Safari","Hòn Thơm","Sunset Town","Biển","Chợ đêm"].includes(x)) ? "do" : null,
+  ].filter(Boolean) as string[];
+  const destinationContext = await buildDestinationContext(env, {
+    zoneCode: planningHotels[0]?.hotel.area_code,
+    intents: contextIntents,
+    limitPerGroup: 4,
+  });
 
   if (!env.DB || !request.checkin || !request.checkout || !nights) {
     return {
@@ -117,6 +128,7 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
       activityLines: activities.lines,
       warnings: activities.warnings,
       planningHotels,
+      destinationContext,
       scenarios: [],
       nextNeeded: [
         !request.checkin || !request.checkout ? "travel_dates" : null,
@@ -242,6 +254,7 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
     ok: true,
     mode: "priced",
     planningHotels,
+    destinationContext,
     insights,
     referenceDate,
     checkin: request.checkin,

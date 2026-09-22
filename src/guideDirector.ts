@@ -29,7 +29,7 @@ function cueForPlanningHotel(item?: PlanningHotel): GuideCue | null {
       state: "speaking",
       action: "point",
       target: "map:north",
-      text: "Chuyến này đang nghiêng về phía Bắc đảo. Mình xem khu này trước nha.",
+      text: "Nếu lịch của nhà mình nằm nhiều ở phía Bắc thì mình xem khu này trước nha. Mình vẫn tính phần buổi tối và đi xe rồi mới nói nên ở đâu.",
     };
   }
 
@@ -38,7 +38,7 @@ function cueForPlanningHotel(item?: PlanningHotel): GuideCue | null {
       state: "speaking",
       action: "point",
       target: "map:south",
-      text: "Các hoạt động bạn chọn đang nghiêng về phía Nam đảo. Mình xem khu này trước.",
+      text: "Lịch của nhà mình đang có nhiều điểm phía Nam. Mình xem khu này trước, rồi đặt cạnh một hướng khác nếu nó giúp mình nhìn rõ hơn.",
     };
   }
 
@@ -46,7 +46,7 @@ function cueForPlanningHotel(item?: PlanningHotel): GuideCue | null {
     state: "speaking",
     action: "point",
     target: "map:center",
-    text: "Mình đang ưu tiên vị trí để giảm quãng đường cho chuyến này.",
+    text: "Mình đang nhìn cách đi trước. Chỗ ở nào làm lịch nhẹ hơn thì mình giữ lại để so.",
   };
 }
 
@@ -106,7 +106,7 @@ export function directGuide(
       state: "compare",
       action: "compare",
       target: "scenario:comparison",
-      text: "Mình sẽ đặt các phương án cạnh nhau để nhìn tổng tiền, thời gian và cách sống quanh khu ở.",
+      text: "Mình đặt hai cách đi cạnh nhau cho dễ nhìn nha. Mỗi hướng tiện một kiểu, nhà mình coi phần nào quan trọng hơn thì chọn theo phần đó.",
     };
   }
 
@@ -115,7 +115,7 @@ export function directGuide(
       state: "speaking",
       action: "point",
       target: "discovery:do",
-      text: "Mình sẽ trả lời đúng khu bạn hỏi, không xổ cả danh sách Phú Quốc.",
+      text: "Mình xem đúng khu bạn đang hỏi trước nha. Không cần kéo cả Phú Quốc vào làm mình rối thêm.",
     };
   }
 
@@ -124,7 +124,7 @@ export function directGuide(
       state: "speaking",
       action: "point",
       target: "hotel:candidate",
-      text: "Mình so khu ở trước, rồi mới tới khách sạn và giá.",
+      text: "Mình nhìn khu ở với cách đi trước nha. Khi hướng đã hợp rồi mình mới xuống khách sạn với giá.",
     };
   }
 
@@ -146,7 +146,7 @@ export function directGuide(
       state: "speaking",
       action: "point",
       target: "discovery:cafe",
-      text: "Mình sẽ xem quán cà phê trong đúng khu bạn ở, không bắt bạn chạy xa chỉ vì một quán nổi tiếng.",
+      text: "Mình xem quán cùng khu hoặc tiện đường trước nha. Không cần chạy vòng xa chỉ vì một chỗ đang nổi.",
     };
   }
 
@@ -155,7 +155,7 @@ export function directGuide(
       state: "speaking",
       action: "point",
       target: "discovery:eat",
-      text: "Mình tách hai chuyện: ở khu này nên ăn món gì, và quán nào đang đủ dữ liệu để gợi ý.",
+      text: "Mình coi trước khu này đáng ăn món gì, rồi mới chọn quán nào tiện lịch và dữ liệu còn đủ mới.",
     };
   }
 
@@ -167,7 +167,7 @@ export function directGuide(
       state: "speaking",
       action: "point",
       target: "dates",
-      text: "Mình đã hiểu ý chuyến đi. Chọn ngày để mình tính giá phòng thật.",
+      text: "Mình hiểu hướng chuyến đi rồi. Có ngày cụ thể thì mình mới tính tiếp phần phòng, vé và tổng tiền cho chắc.",
     };
   }
 
@@ -176,7 +176,7 @@ export function directGuide(
       state: "confirm",
       action: "point",
       target: "scenario:comparison",
-      text: "Mình đã có các phương án có thể so trực tiếp về tổng tiền và thời gian di chuyển.",
+      text: "Mình đã ráp được các phần chính rồi. Giờ mình đặt tổng tiền với thời gian đi lại cạnh nhau cho nhà mình dễ nhìn.",
     };
   }
 
@@ -184,6 +184,6 @@ export function directGuide(
     state: "thinking",
     action: "none",
     target: "prompt",
-    text: "Mình đang ráp các phần của chuyến đi.",
+    text: "Để mình ráp cách đi, khu ở và mấy phần ảnh hưởng tới chuyến này nha.",
   };
 }

@@ -2,6 +2,7 @@ import { quotePublicActivity } from "../publicCatalog";
 import { estimateSevenSeatPrice } from "../rules/mobility";
 import { selectMeaningfulScenarios, type TripScenarioInput } from "./tripScenario";
 import { matchPlanningHotels } from "../publicHotels";
+import { explainTopScenarios } from "./explain";
 
 type Env = {
   DB?: D1Database;
@@ -235,10 +236,13 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
     maxResults: 4,
   });
 
+  const insights = explainTopScenarios(scenarios);
+
   return {
     ok: true,
     mode: "priced",
     planningHotels,
+    insights,
     referenceDate,
     checkin: request.checkin,
     checkout: request.checkout,

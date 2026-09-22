@@ -338,6 +338,9 @@ export default {
           children?: number;
           interests?: string[];
           stayPreferences?: Array<"food" | "cafe" | "evening" | "walkable" | "quiet" | "local" | "family" | "airport">;
+          language?: "vi" | "en" | "ko" | "ru" | "zh";
+          days?: number;
+          nights?: number;
           budgetVnd?: number;
         }>()
         .catch(() => ({}));

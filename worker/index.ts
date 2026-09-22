@@ -9,6 +9,7 @@ import { evaluatePriceWatches } from "./engine/watch";
 import { importTravelMatrix } from "./travelMatrixImport";
 import { buildDestinationContext } from "./destinationContext";
 import { importDestinationVenues } from "./destinationImport";
+import { answerAdvisor } from "./advisor";
 
 type Env = {
   DB?: D1Database;
@@ -181,6 +182,41 @@ export default {
       }
 
       return json({ ...result, assistantText });
+    }
+
+    if (url.pathname === "/api/advisor/answer" && request.method === "POST") {
+      const body = await request
+        .json<{
+          rawText?: string;
+          language?: "vi" | "en" | "ko" | "ru" | "zh";
+          mode?: "trip_plan" | "food" | "cafe" | "things_to_do" | "where_to_stay" | "compare" | "contact";
+          interests?: string[];
+          stayPreferences?: Array<"food" | "cafe" | "evening" | "walkable" | "quiet" | "local" | "family" | "airport">;
+          mentionedZone?: string | null;
+        }>()
+        .catch(() => ({}));
+
+      if (!body.rawText?.trim() || !body.language || !body.mode) {
+        return json({ ok: false, error: "advisor_request_incomplete" }, 400);
+      }
+
+      try {
+        return json(await answerAdvisor(env, {
+          rawText: body.rawText,
+          language: body.language,
+          mode: body.mode,
+          interests: body.interests || [],
+          stayPreferences: body.stayPreferences || [],
+          mentionedZone: body.mentionedZone || null,
+        }));
+      } catch (error) {
+        console.error("advisor_answer_failed", error);
+        return json({
+          ok: false,
+          error: "advisor_answer_failed",
+          message: error instanceof Error ? error.message : String(error),
+        }, 500);
+      }
     }
 
     if (url.pathname === "/api/destination/context" && request.method === "POST") {

@@ -1,0 +1,132 @@
+{
+  "observed_at": "2026-09-22",
+  "currency": "VND",
+  "products": [
+    {
+      "id": "vinwonders-phu-quoc-standard",
+      "provider": "VinWonders",
+      "name": "VinWonders Phú Quốc",
+      "rates": [
+        {"audience":"adult","price_vnd":950000,"valid_from":"2026-03-20","valid_to":"2026-09-30","benefit":"food_voucher_150000","status":"source_image"},
+        {"audience":"child_or_elderly","price_vnd":710000,"valid_from":"2026-03-20","valid_to":"2026-09-30","benefit":"food_voucher_100000","status":"source_image"},
+        {"audience":"adult","price_vnd":1050000,"valid_from":"2026-10-01","valid_to":null,"benefit":"teddy_bear_museum_ticket","status":"source_image"},
+        {"audience":"child","price_vnd":800000,"valid_from":"2026-10-01","valid_to":null,"benefit":"teddy_bear_museum_ticket","status":"source_image"},
+        {"audience":"elderly","price_vnd":800000,"valid_from":"2026-10-01","valid_to":null,"benefit":"teddy_bear_museum_ticket","status":"source_image"}
+      ]
+    },
+    {
+      "id": "vinpearl-safari-standard",
+      "provider": "Vinpearl Safari",
+      "name": "Vinpearl Safari Phú Quốc",
+      "rates": [
+        {"audience":"adult","price_vnd":850000,"valid_from":"2026-03-20","valid_to":"2026-09-30","benefit":"food_voucher_150000","status":"source_image"},
+        {"audience":"child_or_elderly","price_vnd":650000,"valid_from":"2026-03-20","valid_to":"2026-09-30","benefit":"food_voucher_100000","status":"source_image"},
+        {"audience":"adult","price_vnd":950000,"valid_from":"2026-10-01","valid_to":null,"benefit":"teddy_bear_museum_ticket","status":"source_image"},
+        {"audience":"child","price_vnd":710000,"valid_from":"2026-10-01","valid_to":null,"benefit":"teddy_bear_museum_ticket","status":"source_image"},
+        {"audience":"elderly","price_vnd":710000,"valid_from":"2026-10-01","valid_to":null,"benefit":"teddy_bear_museum_ticket","status":"source_image"}
+      ]
+    },
+    {
+      "id": "vinwonders-safari-combo-1d",
+      "provider": "VinWonders / Vinpearl Safari",
+      "name": "Combo VinWonders + Safari 1 ngày",
+      "rates": [
+        {"audience":"adult","price_vnd":1500000,"valid_from":"2026-03-20","valid_to":"2026-09-30","benefit":"food_voucher_200000","status":"source_image"},
+        {"audience":"child_or_elderly","price_vnd":1100000,"valid_from":"2026-03-20","valid_to":"2026-09-30","benefit":"food_voucher_100000","status":"source_image"},
+        {"audience":"adult","price_vnd":1500000,"valid_from":"2026-10-01","valid_to":null,"status":"source_image"},
+        {"audience":"child","price_vnd":1100000,"valid_from":"2026-10-01","valid_to":null,"status":"source_image"},
+        {"audience":"elderly","price_vnd":1100000,"valid_from":"2026-10-01","valid_to":null,"status":"source_image"}
+      ]
+    },
+    {
+      "id": "vinwonders-safari-combo-2d",
+      "provider": "VinWonders / Vinpearl Safari",
+      "name": "Combo VinWonders + Safari 2 ngày",
+      "rates": [
+        {"audience":"adult","price_vnd":1700000,"valid_from":"2026-03-20","valid_to":"2026-09-30","benefit":"food_voucher_250000","status":"source_image"},
+        {"audience":"child_or_elderly","price_vnd":1300000,"valid_from":"2026-03-20","valid_to":"2026-09-30","benefit":"food_voucher_150000","status":"source_image"},
+        {"audience":"adult","price_vnd":1700000,"valid_from":"2026-10-01","valid_to":null,"benefit":"teddy_bear_museum_ticket","status":"source_image"},
+        {"audience":"child","price_vnd":1300000,"valid_from":"2026-10-01","valid_to":null,"benefit":"teddy_bear_museum_ticket","status":"source_image"},
+        {"audience":"elderly","price_vnd":1300000,"valid_from":"2026-10-01","valid_to":null,"benefit":"teddy_bear_museum_ticket","status":"source_image"}
+      ]
+    },
+    {
+      "id": "grand-world-venice-teddy-tinh-hoa",
+      "provider": "Grand World Phú Quốc",
+      "name": "Combo Venice + Teddy Bear Museum + Tinh Hoa Việt Nam",
+      "rates": [
+        {"audience":"adult_140cm_plus","price_vnd":500000,"valid_from":null,"valid_to":null,"status":"pending_validity"},
+        {"audience":"child_100_139cm_or_elderly_60plus","price_vnd":380000,"valid_from":null,"valid_to":null,"status":"pending_validity"}
+      ]
+    },
+    {
+      "id": "grand-world-venice-tinh-hoa",
+      "provider": "Grand World Phú Quốc",
+      "name": "Combo Venice + Tinh Hoa Việt Nam",
+      "rates": [
+        {"audience":"adult_140cm_plus","price_vnd":400000,"valid_from":null,"valid_to":null,"status":"pending_validity"},
+        {"audience":"child_100_139cm_or_elderly_60plus","price_vnd":300000,"valid_from":null,"valid_to":null,"status":"pending_validity"}
+      ]
+    },
+    {
+      "id": "grand-world-venice-teddy",
+      "provider": "Grand World Phú Quốc",
+      "name": "Combo Venice + Teddy Bear Museum",
+      "rates": [
+        {"audience":"adult_140cm_plus","price_vnd":300000,"valid_from":null,"valid_to":null,"status":"pending_validity"},
+        {"audience":"child_100_139cm_or_elderly_60plus","price_vnd":225000,"valid_from":null,"valid_to":null,"status":"pending_validity"}
+      ]
+    },
+    {
+      "id": "sunworld-hon-thom-cablecar-2way",
+      "provider": "Sun World Hòn Thơm",
+      "name": "Cáp treo Hòn Thơm 2 chiều + Cầu Hôn",
+      "rates": [
+        {"audience":"adult","price_vnd":850000,"valid_from":null,"valid_to":null,"status":"pending_validity"},
+        {"audience":"child","price_vnd":700000,"valid_from":null,"valid_to":null,"status":"pending_validity"}
+      ]
+    },
+    {
+      "id": "sunworld-hon-thom-cablecar-buffet-2way",
+      "provider": "Sun World Hòn Thơm",
+      "name": "Cáp treo Hòn Thơm 2 chiều + Buffet + Cầu Hôn",
+      "rates": [
+        {"audience":"adult","price_vnd":1150000,"valid_from":null,"valid_to":null,"status":"pending_validity"},
+        {"audience":"child","price_vnd":900000,"valid_from":null,"valid_to":null,"status":"pending_validity"}
+      ]
+    },
+    {
+      "id": "kiss-of-the-sea",
+      "provider": "Sun World Hòn Thơm",
+      "name": "Kiss of the Sea",
+      "schedule": "21:00-21:30",
+      "rates": [{"audience":"adult_or_child_from_1m","price_vnd":750000,"valid_from":null,"valid_to":null,"status":"pending_validity"}]
+    },
+    {
+      "id": "symphony-of-the-sea",
+      "provider": "Sun World Hòn Thơm",
+      "name": "Symphony of the Sea - Sunset Beach",
+      "schedule": "19:45-20:05",
+      "rates": [{"audience":"general","price_vnd":660000,"valid_from":null,"valid_to":null,"status":"pending_validity"}]
+    },
+    {
+      "id": "dinner-symphony",
+      "provider": "Sun World Hòn Thơm",
+      "name": "Dinner + Symphony Show - Sun Bavaria Gastropub",
+      "rates": [{"audience":"general","price_vnd":1000000,"valid_from":null,"valid_to":null,"status":"pending_validity"}]
+    },
+    {
+      "id": "kiss-symphony-combo",
+      "provider": "Sun World Hòn Thơm",
+      "name": "Combo Kiss of the Sea + Symphony of the Sea",
+      "rates": [{"audience":"adult_or_child_from_1m","price_vnd":1200000,"valid_from":null,"valid_to":null,"status":"pending_validity"}]
+    },
+    {
+      "id": "night-safari",
+      "provider": "Vinpearl Safari",
+      "name": "Night Safari",
+      "rates": [],
+      "status": "content_received_rate_missing"
+    }
+  ]
+}

@@ -152,6 +152,18 @@ function levelLabel(value: string) {
   return "hạn chế";
 }
 
+function areaDisplay(value: string) {
+  const labels: Record<string, string> = {
+    north: "Bắc đảo",
+    south: "Nam đảo",
+    duong_dong: "Dương Đông",
+    long_beach: "Bãi Trường",
+    north_central: "Ông Lang",
+    east: "Đông đảo",
+  };
+  return labels[value] || value;
+}
+
 function money(value?: number) {
   if (!value) return "Chưa tính";
   return new Intl.NumberFormat("vi-VN").format(value) + "đ";
@@ -387,6 +399,22 @@ export default function App() {
       : plan?.advice?.length
         ? plan.advice
         : [];
+
+  const compareDirections = useMemo(() => {
+    const hotels = plan?.planningHotels || [];
+    const picked: typeof hotels = [];
+    const areas = new Set<string>();
+
+    for (const item of hotels) {
+      if (!areas.has(item.hotel.area_code)) {
+        areas.add(item.hotel.area_code);
+        picked.push(item);
+      }
+      if (picked.length === 2) break;
+    }
+
+    return picked;
+  }, [plan]);
 
   async function speakResponse(text: string, lang: string) {
     audioRef.current?.pause();
@@ -803,6 +831,46 @@ export default function App() {
                     <article key={tip}>
                       <span>{String(index + 1).padStart(2, "0")}</span>
                       <p>{tip}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {result.parsed.mode === "trip_plan" && compareDirections.length >= 2 && (
+              <section className="decision-canvas" aria-label="So sánh hai cách ở">
+                <div className="decision-canvas-head">
+                  <span className="label">MÌNH ĐẶT HAI HƯỚNG CẠNH NHAU</span>
+                  <h2>Nhà mình thích kiểu nào hơn?</h2>
+                  <p>
+                    Không có hướng nào thắng tuyệt đối. Mỗi chỗ sẽ nhẹ ở một phần và đổi lại ở một phần khác.
+                  </p>
+                </div>
+
+                <div className="decision-cards">
+                  {compareDirections.map((item) => (
+                    <article className="decision-card" key={item.hotel.id}>
+                      <div className="decision-card-top">
+                        <span>{areaDisplay(item.hotel.area_code)}</span>
+                        <small>Mốc đang so</small>
+                      </div>
+                      <h3>{item.hotel.canonical_name}</h3>
+                      <p>{item.stayContext.summary}</p>
+
+                      {item.routeFacts?.length ? (
+                        <div className="decision-route-list">
+                          {item.routeFacts.slice(0, 3).map((fact) => (
+                            <div key={fact.destinationId}>
+                              <span>{fact.label}</span>
+                              <b>~{fact.minutes} phút · {fact.distanceKm.toFixed(1)} km</b>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="decision-route-pending">
+                          Mình chưa có đủ số km/phút cho mốc này, nên chưa dùng con số để thuyết phục bạn.
+                        </div>
+                      )}
                     </article>
                   ))}
                 </div>

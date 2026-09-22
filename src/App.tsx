@@ -850,7 +850,14 @@ export default function App() {
       </div>
       <header className="topbar">
         <a className="brand" href="/" aria-label="JoTrip">
-          <img src="/assets/jotrip-logo.webp" alt="JoTrip" />
+          {hasResponse ? (
+            <img src="/assets/jotrip-logo.webp" alt="JoTrip" />
+          ) : (
+            <picture>
+              <source media="(max-width: 560px)" srcSet="/assets/approved-jo-trip-intro.png" />
+              <img src="/assets/jotrip-logo.webp" alt="JoTrip" />
+            </picture>
+          )}
         </a>
 
         <div className="top-actions">
@@ -878,9 +885,10 @@ export default function App() {
 
       <div className="page-shell">
         <section className={hasResponse ? "conversation-hero conversation-hero--active" : "conversation-hero conversation-hero--fresh"}>
+          {!hasResponse && <div className="warm-island-scene" aria-hidden="true" />}
           <div className="hero-copy">
             <span className="eyebrow">JOTRIP · PHÚ QUỐC</span>
-            <h1>{hasResponse ? "Cứ hỏi tiếp, mình đang theo chuyến này." : "Tri thức Phú Quốc biết trò chuyện."}</h1>
+            <h1>{hasResponse ? "Cứ hỏi tiếp, mình đang theo chuyến này." : <>Tri thức <span className="welcome-destination">Phú Quốc</span><br className="welcome-mobile-break" />{" "}biết trò chuyện.</>}</h1>
             {!hasResponse && (
               <p>
                 Cứ kể chuyến đi như bạn vẫn nói với một người ở đảo. JoTrip sẽ hiểu hoàn cảnh,
@@ -969,6 +977,7 @@ export default function App() {
             <span>Không bịa giá, quán hay tồn phòng</span>
             <span>Thấy ổn rồi mới chuyển sang booking</span>
           </div>
+          {!hasResponse && <div className="warm-brand-whisper" aria-hidden="true">PHÚ QUỐC · NHIỀU HƠN MỘT CHUYẾN ĐI</div>}
         </section>
 
         {result && (

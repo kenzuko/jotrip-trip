@@ -10,8 +10,12 @@ Base Cloudflare Worker deployment is green.
 
 Implemented foundation:
 
-- conversational homepage shell
-- Vietnamese browser speech output
+- conversational homepage built around “Tri thức Phú Quốc biết trò chuyện”
+- multi-turn follow-up context
+- multilingual search/intent parsing: VI / EN / KO / RU / 中文
+- pre-read human advice before detail surfaces
+- animated JoTrip Guide states: idle / thinking / talking / pointing
+- optional natural TTS endpoint with browser premium-voice fallback only
 - deterministic trip intent parser
 - anonymous chat session ID
 - D1 schemas for accounts, trips, chat history, intent analytics and price watches
@@ -40,7 +44,18 @@ Current Git deployment can keep:
 
 Next infrastructure step is binding D1 `jotrip-trip-db` as `DB` and applying migrations. The D1 UUID and runtime secrets are intentionally not committed.
 
-Workers AI is **not required for V0**. It will be an optional fallback parser later.
+Workers AI is **not required for V0**.
+
+### Voice
+
+The frontend first calls `POST /api/voice`.
+
+- If Worker secret `OPENAI_API_KEY` is configured, the Worker generates natural speech server-side.
+- The key never goes to the browser and must never be committed.
+- If natural TTS is not configured, the UI only uses a browser voice when a higher-quality local voice is detected; it no longer forces a poor default robotic voice.
+- Keep spoken replies short. Detailed facts stay on screen.
+
+The product must never imply that the website is using the exact ChatGPT app voice. JoTrip has its own synthetic guide voice.
 
 ## Never commit
 

@@ -38,7 +38,7 @@ Current Git deployment can keep:
 - Build command: `None`
 - Deploy command: `npx wrangler deploy`
 
-Next infrastructure step is binding D1 `jotripa-trip-db` as `DB` and applying migrations. The D1 UUID and runtime secrets are intentionally not committed.
+Next infrastructure step is binding D1 `jotrip-trip-db` as `DB` and applying migrations. The D1 UUID and runtime secrets are intentionally not committed.
 
 Workers AI is **not required for V0**. It will be an optional fallback parser later.
 

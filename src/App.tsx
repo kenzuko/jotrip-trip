@@ -220,6 +220,70 @@ function planningReply(result: TripParseResponse, plan: TripBuildResponse) {
   return "Với chuyến này mình hơi nghiêng về " + label + " trước. Mình muốn nhìn cả cách đi, buổi tối quanh chỗ ở và tiền xe chứ chưa chọn theo giá phòng ngay. Tuỳ nhà mình thích kiểu nào hơn, mình đặt các hướng cạnh nhau cho dễ nhìn nha.";
 }
 
+function compactBubbleText(text: string) {
+  const value = text.replace(/\s+/g, " ").trim();
+  if (!value) return "";
+  const sentences = value.split(/(?<=[.!?])\s+/).filter(Boolean);
+  const picked = sentences.slice(0, 2).join(" ");
+  return picked.length <= 240 ? picked : picked.slice(0, 237).trimEnd() + "...";
+}
+
+function decisionGuideText(
+  item: PlanningHotel,
+  interests: string[],
+  stayPreferences: string[],
+) {
+  const area = item.hotel.area_code;
+  const facts = item.routeFacts || [];
+  const findFact = (id: string) => facts.find((fact) => fact.destinationId === id);
+  const vin = findFact("activity:vinwonders");
+  const safari = findFact("activity:safari");
+  const center = findFact("center:duong-dong");
+  const likesEvening = stayPreferences.some((value) =>
+    ["evening", "walkable", "food", "cafe"].includes(value),
+  );
+  const hasNorth = interests.some((value) => ["VinWonders", "Safari"].includes(value));
+
+  if (area === "north" && hasNorth) {
+    const dayBits = [
+      vin ? `VinWonders khoảng ${vin.minutes} phút` : "",
+      safari ? `Safari khoảng ${safari.minutes} phút` : "",
+    ].filter(Boolean);
+
+    if (dayBits.length && center && likesEvening) {
+      return `Ở hướng Bắc thì phần ban ngày nhẹ hơn: ${dayBits.join(", ")}. Đổi lại nếu tối xuống Dương Đông thì khoảng ${center.minutes} phút một chiều. Nhà mình coi phần nào quan trọng hơn thì chọn theo phần đó nha.`;
+    }
+
+    if (dayBits.length) {
+      return `Ở hướng Bắc thì ${dayBits.join(", ")} từ mốc này. Mình thích hướng này nếu Vin với Safari là phần chính, nhưng vẫn nên nhìn phần buổi tối trước khi chốt.`;
+    }
+
+    return "Hướng Bắc làm lịch Vin với Safari gọn hơn. Mình chưa có đủ số km/phút cho mốc này nên chưa dùng con số để thuyết phục nhà mình.";
+  }
+
+  if (area === "duong_dong") {
+    if (likesEvening && (vin || safari)) {
+      const farBits = [
+        vin ? `VinWonders khoảng ${vin.minutes} phút` : "",
+        safari ? `Safari khoảng ${safari.minutes} phút` : "",
+      ].filter(Boolean);
+      return `Ở Dương Đông thì buổi tối linh hoạt hơn. Đổi lại phần đi Bắc đảo sẽ dài hơn: ${farBits.join(", ")} từ mốc đang so. Nếu nhà mình hay ra ngoài buổi tối thì hướng này đáng cân nhắc.`;
+    }
+
+    return "Dương Đông dễ xoay xở hơn cho ăn uống và buổi tối. Đổi lại, nếu lịch chính nằm ở Bắc hoặc Nam đảo thì sẽ có thêm thời gian trên xe.";
+  }
+
+  if (area === "south") {
+    return "Ở phía Nam thì lịch Hòn Thơm và Sunset Town sẽ nhẹ hơn. Nếu nhà mình còn nhiều điểm phía Bắc thì mình sẽ đặt phần di chuyển cạnh nhau trước khi chọn.";
+  }
+
+  if (area === "long_beach") {
+    return "Bãi Trường là kiểu ở cân giữa hơn. Không sát hẳn một cụm vui chơi, nhưng dễ chia lịch theo nhiều hướng hơn nếu chuyến đi của nhà mình không nghiêng hẳn về Bắc hay Nam.";
+  }
+
+  return `${areaDisplay(area)} là một hướng có thể cân nhắc. Mình sẽ nhìn cách đi và sinh hoạt quanh chỗ ở trước rồi mới bàn tới giá phòng.`;
+}
+
 function Discovery({
   context,
   compact = false,
@@ -365,21 +429,12 @@ export default function App() {
   const [turns, setTurns] = useState<LocalTurn[]>([]);
   const [speaking, setSpeaking] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
+  const [activeDecisionArea, setActiveDecisionArea] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const guideCue = useMemo(() => directGuide(result, plan), [result, plan]);
-  const mascotPointing =
-    guideCue.action === "point" ||
-    guideCue.action === "compare" ||
-    guideCue.state === "warning";
   const firstGreeting =
     "Chào bạn. Mình là JoTrip. Bạn đang tính chuyến đi Phú Quốc thế nào?";
-  const assistantText =
-    !result
-      ? firstGreeting
-      : busy
-        ? "Để mình xem cách đi, khu ở và mấy phần ảnh hưởng tới chuyến này một chút nha."
-        : "Mình đang theo chuyến này cùng bạn. Chỗ nào còn lăn tăn thì cứ hỏi tiếp.";
 
   const summaryBits = useMemo(() => {
     if (!result) return [];
@@ -417,6 +472,41 @@ export default function App() {
 
     return picked;
   }, [plan]);
+
+  const activeDecision =
+    compareDirections.find((item) => item.hotel.area_code === activeDecisionArea) ||
+    compareDirections[0] ||
+    null;
+
+  const activeDecisionText =
+    activeDecision && result
+      ? decisionGuideText(
+          activeDecision,
+          result.parsed.interests,
+          result.parsed.stayPreferences,
+        )
+      : "";
+
+  const mascotPointing =
+    Boolean(activeDecision) ||
+    guideCue.action === "point" ||
+    guideCue.action === "compare" ||
+    guideCue.state === "warning";
+
+  const assistantText =
+    !result
+      ? firstGreeting
+      : busy
+        ? "Để mình xem cách đi, khu ở và mấy phần ảnh hưởng tới chuyến này một chút nha."
+        : activeDecisionText
+          ? compactBubbleText(activeDecisionText)
+          : compactBubbleText(
+              replyText ||
+              advisor?.answerText ||
+              result.assistantText ||
+              guideCue.text,
+            ) ||
+            "Mình đang theo chuyến này cùng bạn. Chỗ nào còn lăn tăn thì cứ hỏi tiếp.";
 
   async function speakResponse(text: string, lang: string) {
     audioRef.current?.pause();
@@ -469,6 +559,7 @@ export default function App() {
     setBusy(true);
     setHandoffOpen(false);
     setLeadStatus("idle");
+    setActiveDecisionArea(null);
     setTurns((items) => [
       ...items,
       { id: crypto.randomUUID(), role: "user", text: value },
@@ -728,6 +819,8 @@ export default function App() {
                 `mascot-${guideCue.state}`,
                 speaking ? "mascot-is-talking" : "",
                 busy ? "mascot-is-thinking" : "",
+                inputFocused && !busy ? "mascot-is-listening" : "",
+                activeDecision ? "mascot-is-comparing" : "",
                 mascotPointing ? "mascot-is-pointing" : "",
               ].filter(Boolean).join(" ")}
             >
@@ -746,7 +839,7 @@ export default function App() {
                 <i></i><i></i><i></i><i></i>
               </div>
             </div>
-            <div className="assistant-bubble">
+            <div className="assistant-bubble" aria-live="polite">
               <span>JoTrip</span>
               <p>{assistantText}</p>
               {busy && (
@@ -856,32 +949,51 @@ export default function App() {
                   </p>
                 </div>
 
-                <div className="decision-cards">
-                  {compareDirections.map((item) => (
-                    <article className="decision-card" key={item.hotel.id}>
-                      <div className="decision-card-top">
-                        <span>{areaDisplay(item.hotel.area_code)}</span>
-                        <small>Mốc đang so</small>
-                      </div>
-                      <h3>{item.hotel.canonical_name}</h3>
-                      <p>{item.stayContext.summary}</p>
+                <div className="decision-hint">Chạm từng hướng - JoTrip sẽ nói phần được và phần đổi lại.</div>
 
-                      {item.routeFacts?.length ? (
-                        <div className="decision-route-list">
-                          {item.routeFacts.slice(0, 3).map((fact) => (
-                            <div key={fact.destinationId}>
-                              <span>{fact.label}</span>
-                              <b>~{fact.minutes} phút · {fact.distanceKm.toFixed(1)} km</b>
-                            </div>
-                          ))}
+                <div className="decision-cards">
+                  {compareDirections.map((item) => {
+                    const isActive = activeDecision?.hotel.area_code === item.hotel.area_code;
+                    return (
+                      <button
+                        className={isActive ? "decision-card decision-card--active" : "decision-card"}
+                        key={item.hotel.id}
+                        type="button"
+                        aria-pressed={isActive}
+                        onClick={() => {
+                          setActiveDecisionArea(item.hotel.area_code);
+                          const text = decisionGuideText(
+                            item,
+                            result.parsed.interests,
+                            result.parsed.stayPreferences,
+                          );
+                          if (voiceOn && text) void speakResponse(text, result.parsed.language);
+                        }}
+                      >
+                        <div className="decision-card-top">
+                          <span>{areaDisplay(item.hotel.area_code)}</span>
+                          <small>{isActive ? "JoTrip đang nói về hướng này" : "Chạm để nghe"}</small>
                         </div>
-                      ) : (
-                        <div className="decision-route-pending">
-                          Mình chưa có đủ số km/phút cho mốc này, nên chưa dùng con số để thuyết phục bạn.
-                        </div>
-                      )}
-                    </article>
-                  ))}
+                        <h3>{item.hotel.canonical_name}</h3>
+                        <p>{item.stayContext.summary}</p>
+
+                        {item.routeFacts?.length ? (
+                          <div className="decision-route-list">
+                            {item.routeFacts.slice(0, 3).map((fact) => (
+                              <div key={fact.destinationId}>
+                                <span>{fact.label}</span>
+                                <b>~{fact.minutes} phút · {fact.distanceKm.toFixed(1)} km</b>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="decision-route-pending">
+                            Mình chưa có đủ số km/phút cho mốc này, nên chưa dùng con số để thuyết phục bạn.
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </section>
             )}

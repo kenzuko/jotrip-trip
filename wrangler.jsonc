@@ -19,7 +19,7 @@
   // Bind D1 only after the first Worker deployment succeeds.
   // ,"d1_databases": [{
   //   "binding": "DB",
-  //   "database_name": "jotripa-trip-db",
+  //   "database_name": "jotrip-trip-db",
   //   "database_id": "PASTE_REAL_D1_DATABASE_UUID"
   // }]
 

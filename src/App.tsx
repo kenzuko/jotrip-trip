@@ -142,6 +142,35 @@ function money(value?: number) {
   return new Intl.NumberFormat("vi-VN").format(value) + "đ";
 }
 
+type LocalTurn = {
+  id: string;
+  role: "user" | "assistant";
+  text: string;
+  language?: string;
+};
+
+function planningReply(result: TripParseResponse, plan: TripBuildResponse) {
+  const lang = result.parsed.language;
+  const top = plan.planningHotels?.[0];
+  if (!top) return result.assistantText || "";
+
+  const area = top.hotel.area_code;
+  const areaNames: Record<string, Record<string, string>> = {
+    north: { vi: "Bắc đảo", en: "the north", ko: "북부", ru: "север острова", zh: "北岛" },
+    south: { vi: "Nam đảo", en: "the south", ko: "남부", ru: "юг острова", zh: "南岛" },
+    duong_dong: { vi: "Dương Đông", en: "Duong Dong", ko: "즈엉동", ru: "Зыонгдонг", zh: "阳东" },
+    long_beach: { vi: "Bãi Trường", en: "Long Beach", ko: "롱비치", ru: "Лонг-Бич", zh: "长滩" },
+    north_central: { vi: "Ông Lang", en: "Ong Lang", ko: "옹랑", ru: "Онг Ланг", zh: "翁朗" },
+  };
+  const label = areaNames[area]?.[lang] || area;
+
+  if (lang === "en") return "I’d look at " + label + " first for this trip. Before you choose dates, I’m comparing the area, travel time and what life around the hotel is like.";
+  if (lang === "ko") return "이 일정은 우선 " + label + " 쪽부터 볼게요. 날짜를 정하기 전에는 객실 가격보다 위치, 이동 시간, 숙소 주변 생활을 먼저 비교합니다.";
+  if (lang === "ru") return "Для этой поездки я бы сначала посмотрел район " + label + ". До выбора дат сравниваю расположение, дорогу и то, насколько удобно жить вокруг отеля.";
+  if (lang === "zh") return "这趟行程我会先看" + label + "。在你选日期之前，我先比较区域、交通时间和酒店周边是否方便。";
+  return "Với chuyến này, mình sẽ nhìn " + label + " trước. Chưa có ngày thì mình chưa vội dùng giá phòng, mà so khu ở, thời gian đi xe và sống quanh khách sạn có tiện không.";
+}
+
 function Discovery({
   context,
   compact = false,
@@ -268,6 +297,8 @@ export default function App() {
   const [leadContact, setLeadContact] = useState("");
   const [leadConsent, setLeadConsent] = useState(false);
   const [leadStatus, setLeadStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [replyText, setReplyText] = useState("");
+  const [turns, setTurns] = useState<LocalTurn[]>([]);
 
   const guideCue = useMemo(() => directGuide(result, plan), [result, plan]);
   const mascotSrc =
@@ -277,6 +308,7 @@ export default function App() {
       ? "/assets/jotrip-guide-point.webp"
       : "/assets/jotrip-guide-short.webp";
   const assistantText =
+    replyText ||
     advisor?.answerText ||
     result?.assistantText ||
     guideCue.text;
@@ -299,11 +331,17 @@ export default function App() {
     const value = text.trim();
     if (!value) return;
 
+    const previousResult = result;
+    const previousPlan = plan;
+    const previousAdvisor = advisor;
+
     setBusy(true);
-    setPlan(null);
-    setAdvisor(null);
     setHandoffOpen(false);
     setLeadStatus("idle");
+    setTurns((items) => [
+      ...items,
+      { id: crypto.randomUUID(), role: "user", text: value },
+    ].slice(-12));
 
     try {
       const res = await fetch("/api/trip/parse", {
@@ -318,22 +356,46 @@ export default function App() {
       const json = (await res.json()) as TripParseResponse;
       setResult(json);
 
+      const isFreshTrip = Boolean(json.parsed.days || json.parsed.nights);
+      const inheritedInterests =
+        previousResult && !isFreshTrip
+          ? Array.from(new Set([
+              ...previousResult.parsed.interests,
+              ...json.parsed.interests,
+            ]))
+          : json.parsed.interests;
+      const inheritedPreferences =
+        previousResult && !isFreshTrip
+          ? Array.from(new Set([
+              ...previousResult.parsed.stayPreferences,
+              ...json.parsed.stayPreferences,
+            ]))
+          : json.parsed.stayPreferences;
+      const inheritedZone =
+        json.parsed.mentionedZone ||
+        previousPlan?.planningHotels?.[0]?.hotel.area_code ||
+        previousAdvisor?.hotels?.[0]?.hotel.area_code ||
+        previousAdvisor?.context?.zoneCode ||
+        undefined;
+
       let spoken = json.assistantText || "";
 
       if (json.ok && json.parsed.mode === "trip_plan") {
+        setAdvisor(null);
         const planRes = await fetch("/api/trip/build", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            adults: json.parsed.adults,
-            children: json.parsed.children,
-            interests: json.parsed.interests,
-            stayPreferences: json.parsed.stayPreferences,
-            budgetVnd: json.parsed.budgetVnd,
+            adults: json.parsed.adults || previousResult?.parsed.adults,
+            children: json.parsed.children ?? previousResult?.parsed.children,
+            interests: inheritedInterests,
+            stayPreferences: inheritedPreferences,
+            budgetVnd: json.parsed.budgetVnd || previousResult?.parsed.budgetVnd,
           }),
         });
         const nextPlan = (await planRes.json()) as TripBuildResponse;
         setPlan(nextPlan);
+        spoken = planningReply(json, nextPlan) || spoken;
       } else if (json.ok) {
         const advisorRes = await fetch("/api/advisor/answer", {
           method: "POST",
@@ -342,14 +404,38 @@ export default function App() {
             rawText: json.parsed.raw,
             language: json.parsed.language,
             mode: json.parsed.mode,
-            interests: json.parsed.interests,
-            stayPreferences: json.parsed.stayPreferences,
-            mentionedZone: json.parsed.mentionedZone,
+            interests: inheritedInterests,
+            stayPreferences: inheritedPreferences,
+            mentionedZone: inheritedZone,
           }),
         });
         const nextAdvisor = (await advisorRes.json()) as AdvisorResponse;
-        setAdvisor(nextAdvisor);
-        spoken = nextAdvisor.answerText || spoken;
+
+        if (json.parsed.mode === "contact") {
+          setHandoffOpen(true);
+          spoken = nextAdvisor.answerText || spoken;
+        } else if (json.parsed.mode === "compare") {
+          spoken =
+            json.parsed.language === "vi" && previousPlan?.insights?.[0]?.body
+              ? previousPlan.insights[0].body
+              : nextAdvisor.answerText || spoken;
+        } else {
+          setAdvisor(nextAdvisor);
+          spoken = nextAdvisor.answerText || spoken;
+        }
+      }
+
+      setReplyText(spoken);
+      if (spoken) {
+        setTurns((items) => [
+          ...items,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            text: spoken,
+            language: json.parsed.language,
+          },
+        ].slice(-12));
       }
 
       if (voiceOn && json.ok && spoken) {
@@ -507,23 +593,31 @@ export default function App() {
         {result && (
           <section className="workspace">
             <div className="conversation-thread">
-              <div className="message message--user">
-                <span>Bạn</span>
-                <p>{result.parsed.raw}</p>
-              </div>
-              <div className="message message--assistant">
-                <div className="message-avatar">J</div>
-                <div>
-                  <span>JoTrip</span>
-                  <p>{assistantText}</p>
-                  <div className="understood-meta">
-                    <span className="language-pill">
-                      {languageNames[result.parsed.language] || result.parsed.language}
-                    </span>
-                    {summaryBits.map((bit) => <span key={bit}>{bit}</span>)}
+              {turns.map((turn) =>
+                turn.role === "user" ? (
+                  <div className="message message--user" key={turn.id}>
+                    <span>Bạn</span>
+                    <p>{turn.text}</p>
                   </div>
+                ) : (
+                  <div className="message message--assistant" key={turn.id}>
+                    <div className="message-avatar">J</div>
+                    <div>
+                      <span>JoTrip</span>
+                      <p>{turn.text}</p>
+                    </div>
+                  </div>
+                ),
+              )}
+
+              {summaryBits.length > 0 && (
+                <div className="conversation-context">
+                  <span className="language-pill">
+                    {languageNames[result.parsed.language] || result.parsed.language}
+                  </span>
+                  {summaryBits.map((bit) => <span key={bit}>{bit}</span>)}
                 </div>
-              </div>
+              )}
             </div>
 
             {advisor?.context && (

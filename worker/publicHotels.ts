@@ -5,6 +5,8 @@ export type PlanningHotel = {
   canonical_name: string;
   slug: string;
   address: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   area_code: string;
   fit_tags: string[];
   public_status: string;

@@ -89,3 +89,54 @@ Then the interface may show:
 No route row -> no numeric route claim.
 
 Missing data is never converted to zero minutes, zero kilometers, or zero transport cost.
+
+## Route weighting
+
+JoTrip does not invent road weights.
+
+OSRM uses the OpenStreetMap road graph plus the driving profile to choose a road route and calculate baseline distance/duration.
+
+The practical evidence order is:
+
+1. **field-corrected / operator-confirmed route fact** when JoTrip has a known real-world correction
+2. **OSM + OSRM driving route**
+3. **zone knowledge** only for qualitative language such as "cùng hướng" or "khác đầu đảo"
+
+Zone knowledge is never used to manufacture numeric km/minute values.
+
+## Quality gate
+
+Generated OSRM rows go through a basic plausibility check before import:
+
+- road distance must not be shorter than straight-line distance
+- extreme detour ratios are held for review
+- implausible average speeds are held for review
+- unresolved hotel/POI entrance coordinates are skipped
+
+Output:
+- `private-data/route-matrix-osrm.json` -> accepted rows
+- `private-data/route-matrix-osrm-review.json` -> unresolved/review/failure report
+
+The route builder never silently substitutes a zone centroid for a hotel entrance.
+
+## Local build
+
+Run a local/self-hosted OSRM instance built from OpenStreetMap data for Phu Quoc, then:
+
+```
+npm run route:build:osrm
+```
+
+Default endpoint:
+
+```
+http://127.0.0.1:5000
+```
+
+Override when needed:
+
+```
+OSRM_BASE_URL=http://your-osrm-host:5000 npm run route:build:osrm
+```
+
+This produces import-ready rows using the existing internal travel-matrix importer.

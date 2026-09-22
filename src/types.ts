@@ -15,3 +15,35 @@ export type TripParseResponse = {
   nextNeeded: string[];
   assistantText?: string;
 };
+
+export type TripScenario = {
+  id: string;
+  hotelRef: string;
+  hotelName: string;
+  hotelCostVnd: number;
+  mobilityCostVnd: number;
+  activityCostVnd: number;
+  driveMinutes: number;
+  stayFit: number;
+  confidence: number;
+  guestReasons: string[];
+  cautions: string[];
+  metrics: {
+    totalCostVnd: number;
+    driveMinutes: number;
+    stayFit: number;
+    confidence: number;
+  };
+};
+
+export type TripBuildResponse = {
+  ok: boolean;
+  mode?: "planning" | "priced";
+  referenceDate?: string;
+  activityCostVnd?: number;
+  warnings?: string[];
+  assumptions?: string[];
+  nextNeeded?: string[];
+  hotelOfferCount?: number;
+  scenarios?: TripScenario[];
+};

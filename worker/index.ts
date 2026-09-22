@@ -2,6 +2,8 @@ import { buildParseResponse } from "./scenario";
 import { estimateSevenSeatPrice } from "./rules/mobility";
 import { chatAnalyticsOverview, isInternalAuthorized } from "./internal";
 import { quotePublicActivity } from "./publicCatalog";
+import { buildTripScenarios } from "./engine/buildTrip";
+import { importPrivateHotelRates } from "./privateHotelImport";
 
 type Env = {
   DB?: D1Database;
@@ -141,6 +143,50 @@ export default {
       }
 
       return json({ ...result, assistantText });
+    }
+
+    if (url.pathname === "/api/trip/build" && request.method === "POST") {
+      const body = await request
+        .json<{
+          checkin?: string;
+          checkout?: string;
+          adults?: number;
+          children?: number;
+          interests?: string[];
+          budgetVnd?: number;
+        }>()
+        .catch(() => ({}));
+
+      try {
+        return json(await buildTripScenarios(env, body));
+      } catch (error) {
+        console.error("trip_build_failed", error);
+        return json({
+          ok: false,
+          error: "trip_build_failed",
+          message: error instanceof Error ? error.message : String(error),
+        }, 500);
+      }
+    }
+
+    if (url.pathname === "/api/internal/hotel-rates/import" && request.method === "POST") {
+      if (!isInternalAuthorized(request, env)) {
+        return json({ ok: false, error: "unauthorized" }, 401);
+      }
+
+      const body = await request.json().catch(() => null);
+      if (!body) return json({ ok: false, error: "invalid_json" }, 400);
+
+      try {
+        return json(await importPrivateHotelRates(env, body as any));
+      } catch (error) {
+        console.error("hotel_import_failed", error);
+        return json({
+          ok: false,
+          error: "hotel_import_failed",
+          message: error instanceof Error ? error.message : String(error),
+        }, 500);
+      }
     }
 
     if (url.pathname === "/api/activity/quote" && request.method === "GET") {

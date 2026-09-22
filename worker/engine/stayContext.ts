@@ -1,5 +1,3 @@
-import { loadOpenPqVenues } from "../openPqVenueSource";
-
 type Env = { DB?: D1Database };
 
 export type StayPreference =
@@ -125,53 +123,28 @@ const ZONE_BASELINES: Record<string, {
 };
 
 async function verifiedVenueCounts(env: Env, zoneCode: string) {
-  const canonical = await loadOpenPqVenues();
-  const byId = new Map<string, string>();
-
-  for (const row of canonical.rows) {
-    if ((row.status || "REVIEW") !== "ACTIVE") continue;
-    if (row.zone_code && row.zone_code !== zoneCode) continue;
-    if (!row.verified_at) continue;
-    byId.set(row.id, row.category);
-  }
-
-  if (!env.DB) {
-    const counts = { food: 0, cafe: 0, attraction: 0 };
-    for (const category of byId.values()) {
-      if (category === "LOCAL_FOOD" || category === "RESTAURANT") counts.food += 1;
-      if (category === "CAFE") counts.cafe += 1;
-      if (category === "ATTRACTION") counts.attraction += 1;
-    }
-    return counts.food || counts.cafe || counts.attraction ? counts : null;
-  }
+  if (!env.DB) return null;
 
   try {
     const result = await env.DB.prepare(
-      `SELECT id, category
+      `SELECT category, COUNT(*) AS count
        FROM destination_venues
        WHERE status='ACTIVE'
          AND zone_code=?
          AND category IN ('LOCAL_FOOD','RESTAURANT','CAFE','ATTRACTION')
-         AND verified_at IS NOT NULL`,
-    ).bind(zoneCode).all<{id:string;category:string}>();
-
-    for (const row of result.results || []) byId.set(row.id, row.category);
+         AND verified_at IS NOT NULL
+       GROUP BY category`,
+    ).bind(zoneCode).all<{category:string;count:number}>();
 
     const counts = { food: 0, cafe: 0, attraction: 0 };
-    for (const category of byId.values()) {
-      if (category === "LOCAL_FOOD" || category === "RESTAURANT") counts.food += 1;
-      if (category === "CAFE") counts.cafe += 1;
-      if (category === "ATTRACTION") counts.attraction += 1;
+    for (const row of result.results || []) {
+      if (row.category === "LOCAL_FOOD" || row.category === "RESTAURANT") counts.food += Number(row.count || 0);
+      if (row.category === "CAFE") counts.cafe += Number(row.count || 0);
+      if (row.category === "ATTRACTION") counts.attraction += Number(row.count || 0);
     }
     return counts.food || counts.cafe || counts.attraction ? counts : null;
   } catch {
-    const counts = { food: 0, cafe: 0, attraction: 0 };
-    for (const category of byId.values()) {
-      if (category === "LOCAL_FOOD" || category === "RESTAURANT") counts.food += 1;
-      if (category === "CAFE") counts.cafe += 1;
-      if (category === "ATTRACTION") counts.attraction += 1;
-    }
-    return counts.food || counts.cafe || counts.attraction ? counts : null;
+    return null;
   }
 }
 

@@ -130,29 +130,41 @@ async function main() {
 
   for (const origin of origins) {
     for (const destination of targets) {
-      try {
-        const result = await route(origin, destination);
-        const q = quality(origin, destination, result.distanceKm, result.normalMinutes);
-        const row = {
-          fromRef: origin.ref,
-          toRef: destination.ref,
-          distanceKm: result.distanceKm,
-          normalMinutes: result.normalMinutes,
-          source: "osm_osrm_driving_v1",
-          checkedAt,
-        };
+      const directions = [
+        { from: origin, to: destination },
+        { from: destination, to: origin },
+      ];
 
-        if (q.state === "ACCEPT") {
-          accepted.push(row);
-        } else {
-          review.push({ ...row, quality: q });
+      for (const direction of directions) {
+        try {
+          const result = await route(direction.from, direction.to);
+          const q = quality(
+            direction.from,
+            direction.to,
+            result.distanceKm,
+            result.normalMinutes,
+          );
+          const row = {
+            fromRef: direction.from.ref,
+            toRef: direction.to.ref,
+            distanceKm: result.distanceKm,
+            normalMinutes: result.normalMinutes,
+            source: "osm_osrm_driving_v1",
+            checkedAt,
+          };
+
+          if (q.state === "ACCEPT") {
+            accepted.push(row);
+          } else {
+            review.push({ ...row, quality: q });
+          }
+        } catch (error) {
+          failures.push({
+            fromRef: direction.from.ref,
+            toRef: direction.to.ref,
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
-      } catch (error) {
-        failures.push({
-          fromRef: origin.ref,
-          toRef: destination.ref,
-          error: error instanceof Error ? error.message : String(error),
-        });
       }
     }
   }

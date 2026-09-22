@@ -1860,3 +1860,81 @@ a {
     white-space: nowrap;
   }
 }
+
+
+.decision-hint {
+  margin-top: -2px;
+  color: #728c88;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.decision-card {
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    transform .18s ease,
+    border-color .18s ease,
+    box-shadow .18s ease,
+    background .18s ease;
+}
+
+.decision-card:hover {
+  border-color: #c9e3df;
+}
+
+.decision-card:focus-visible {
+  outline: 3px solid rgba(84,212,203,.24);
+  outline-offset: 2px;
+}
+
+.decision-card--active {
+  border-color: #86d7d0;
+  background:
+    linear-gradient(180deg, #ffffff, #f0fbf9);
+  box-shadow:
+    0 0 0 2px rgba(84,212,203,.10),
+    0 15px 34px rgba(18,61,59,.08);
+  transform: translateY(-2px);
+}
+
+.decision-card--active .decision-card-top > span {
+  color: #0f625c;
+  background: #d7f4ef;
+}
+
+.decision-card--active .decision-card-top small {
+  color: #25766f;
+  font-weight: 850;
+}
+
+.mascot-shell.mascot-is-comparing .mascot-frame--gesture {
+  opacity: 1;
+  transform: translateY(-1px) scale(1.015);
+}
+
+.mascot-shell.mascot-is-comparing .mascot-frame--idle {
+  opacity: 0;
+}
+
+@media (max-width: 560px) {
+  .decision-hint {
+    padding-right: 17px;
+    font-size: 10.5px;
+  }
+
+  .decision-card {
+    border: 1px solid #dfecea;
+  }
+
+  .decision-card--active {
+    transform: none;
+    border-color: #78d1c9;
+    box-shadow:
+      0 0 0 2px rgba(84,212,203,.10),
+      0 12px 26px rgba(18,61,59,.07);
+  }
+}

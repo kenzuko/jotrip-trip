@@ -7,6 +7,8 @@ type Env = {
   INTERNAL_API_TOKEN?: string;
 };
 
+type ParsedShape = ReturnType<typeof buildParseResponse>["parsed"];
+
 function json(data: unknown, status = 200) {
   return Response.json(data, {
     status,
@@ -18,12 +20,13 @@ async function logConversationTurn(
   env: Env,
   sessionId: string | undefined,
   userText: string,
-  parsed: unknown,
+  parsed: ParsedShape,
   assistantText: string,
 ) {
   if (!env.DB || !sessionId) return;
 
   const now = new Date().toISOString();
+  const userMessageId = crypto.randomUUID();
 
   await env.DB.batch([
     env.DB.prepare(
@@ -36,7 +39,7 @@ async function logConversationTurn(
         (id, session_id, role, content, parsed_intent_json, created_at)
        VALUES (?, ?, 'user', ?, ?, ?)`,
     ).bind(
-      crypto.randomUUID(),
+      userMessageId,
       sessionId,
       userText,
       JSON.stringify(parsed),
@@ -50,6 +53,22 @@ async function logConversationTurn(
       crypto.randomUUID(),
       sessionId,
       assistantText,
+      now,
+    ),
+    env.DB.prepare(
+      `INSERT INTO trip_intent_events
+        (id, session_id, message_id, days, nights, adults, children, budget_vnd, interests_json, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(
+      crypto.randomUUID(),
+      sessionId,
+      userMessageId,
+      parsed.days ?? null,
+      parsed.nights ?? null,
+      parsed.adults ?? null,
+      parsed.children ?? null,
+      parsed.budgetVnd ?? null,
+      JSON.stringify(parsed.interests || []),
       now,
     ),
   ]);

@@ -7,6 +7,9 @@ export type ParsedTrip = {
   interests: string[];
   stayPreferences: string[];
   language: "vi" | "en" | "ko" | "ru" | "zh";
+  mode: "trip_plan" | "food" | "cafe" | "things_to_do" | "where_to_stay" | "compare" | "contact";
+  mentionedZone?: string;
+  mentionedPlace?: string;
   raw: string;
 };
 
@@ -134,4 +137,20 @@ export type TripBuildResponse = {
   destinationContext?: DestinationContext;
   insights?: ScenarioInsight[];
   scenarios?: TripScenario[];
+};
+
+
+export type AdvisorResponse = {
+  ok: boolean;
+  mode: "trip_plan" | "food" | "cafe" | "things_to_do" | "where_to_stay" | "compare" | "contact";
+  language: "vi" | "en" | "ko" | "ru" | "zh";
+  answerText: string;
+  context?: DestinationContext;
+  hotels?: Array<{
+    hotel: PlanningHotel["hotel"];
+    spatialFit: PlanningHotel["spatialFit"];
+    reasons: string[];
+    cautions: string[];
+    stayContext: StayContext;
+  }>;
 };

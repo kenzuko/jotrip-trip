@@ -69,6 +69,7 @@ export type PlanningHotel = {
   reasons: string[];
   cautions: string[];
   stayContext: StayContext;
+  nearby: DestinationContext;
 };
 
 export type ScenarioInsight = {

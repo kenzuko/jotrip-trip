@@ -96,11 +96,22 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === "/api/health") {
+      let schemaReady = false;
+      if (env.DB) {
+        try {
+          await env.DB.prepare("SELECT 1 FROM chat_sessions LIMIT 1").first();
+          schemaReady = true;
+        } catch {
+          schemaReady = false;
+        }
+      }
+
       return json({
         ok: true,
         service: "jotrip-trip",
         dbBound: Boolean(env.DB),
-        chatLoggingReady: Boolean(env.DB),
+        schemaReady,
+        chatLoggingReady: Boolean(env.DB) && schemaReady,
         time: new Date().toISOString(),
       });
     }

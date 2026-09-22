@@ -1000,3 +1000,25 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+
+.conversation-context {
+  justify-self: start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-left: 52px;
+}
+.conversation-context > span {
+  padding: 6px 8px;
+  border-radius: 999px;
+  color: #57726f;
+  background: #f2f8f7;
+  font-size: 10px;
+  font-weight: 800;
+}
+@media (max-width: 560px) {
+  .conversation-context {
+    padding-left: 46px;
+  }
+}

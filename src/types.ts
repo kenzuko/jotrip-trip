@@ -36,6 +36,20 @@ export type TripScenario = {
   };
 };
 
+export type PlanningHotel = {
+  hotel: {
+    id: string;
+    canonical_name: string;
+    slug: string;
+    address: string | null;
+    area_code: string;
+    fit_tags: string[];
+  };
+  spatialFit: "direct" | "balanced" | "neutral";
+  reasons: string[];
+  cautions: string[];
+};
+
 export type TripBuildResponse = {
   ok: boolean;
   mode?: "planning" | "priced";
@@ -45,5 +59,6 @@ export type TripBuildResponse = {
   assumptions?: string[];
   nextNeeded?: string[];
   hotelOfferCount?: number;
+  planningHotels?: PlanningHotel[];
   scenarios?: TripScenario[];
 };

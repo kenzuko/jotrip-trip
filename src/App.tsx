@@ -1,20 +1,26 @@
 import { FormEvent, useMemo, useRef, useState } from "react";
-import type { TripBuildResponse, TripParseResponse } from "./types";
+import type {
+  AdvisorResponse,
+  DestinationContext,
+  PlanningHotel,
+  TripBuildResponse,
+  TripParseResponse,
+} from "./types";
 import { directGuide } from "./guideDirector";
 
 const examples = [
-  { label: "VI", text: "3 ngày 2 đêm, 2 người, muốn ăn ngon và chơi Vin" },
-  { label: "EN", text: "3 days 2 nights, 2 adults, beach, coffee and Safari" },
-  { label: "한국어", text: "성인 2명, 3박 4일, 사파리와 카페, 조용한 숙소" },
-  { label: "RU", text: "4 дня 3 ночи, 2 взрослых, пляж, кафе и Сафари" },
-  { label: "中文", text: "4天3晚，2位成人，想去海滩、咖啡店和Safari" },
+  { label: "VI", text: "3 ngày 2 đêm, 2 người, chơi Vin, thích ăn ngon và cà phê" },
+  { label: "EN", text: "Where should we stay for Safari, coffee and quiet evenings?" },
+  { label: "한국어", text: "선셋타운 근처에서 저녁에 뭐 하고 어디서 먹어요?" },
+  { label: "RU", text: "Где лучше жить, если хотим Сафари и хорошие кафе?" },
+  { label: "中文", text: "住在日落小镇附近有什么好吃的和可以玩的？" },
 ];
 
 const languageNames: Record<string, string> = {
-  vi: "Tiếng Việt",
-  en: "English",
-  ko: "한국어",
-  ru: "Русский",
+  vi: "VI",
+  en: "EN",
+  ko: "KO",
+  ru: "RU",
   zh: "中文",
 };
 
@@ -29,44 +35,58 @@ function voiceLocale(lang = "vi") {
 }
 
 function voiceRate(lang = "vi") {
-  return lang === "vi" ? 1.1 : lang === "zh" || lang === "ko" ? 1.04 : 1.06;
+  if (lang === "vi") return 1.18;
+  if (lang === "ko" || lang === "zh") return 1.1;
+  return 1.14;
 }
 
 function pickVoice(lang: string) {
   if (!("speechSynthesis" in window)) return null;
+
   const locale = voiceLocale(lang).toLowerCase();
   const base = locale.split("-")[0];
-  const voices = window.speechSynthesis.getVoices();
-  const candidates = voices.filter((voice) => {
-    const value = String(voice.lang || "").toLowerCase();
-    return value === locale || value.startsWith(base);
-  });
+  const preferredNames =
+    lang === "vi"
+      ? /linh|hoai|mai|siri|natural|premium|enhanced|neural/i
+      : /siri|natural|premium|enhanced|neural|google|microsoft/i;
 
-  const quality = (voice: SpeechSynthesisVoice) => {
-    const name = voice.name.toLowerCase();
-    let score = voice.lang.toLowerCase() === locale ? 30 : 10;
-    if (/premium|enhanced|natural|neural|siri/.test(name)) score += 30;
-    if (/google|microsoft|apple/.test(name)) score += 10;
-    if (voice.localService) score += 4;
-    return score;
+  const voices = window.speechSynthesis
+    .getVoices()
+    .filter((voice) => {
+      const value = String(voice.lang || "").toLowerCase();
+      return value === locale || value.startsWith(base);
+    });
+
+  const score = (voice: SpeechSynthesisVoice) => {
+    let value = voice.lang.toLowerCase() === locale ? 40 : 15;
+    if (preferredNames.test(voice.name)) value += 40;
+    if (/apple|google|microsoft/i.test(voice.name)) value += 12;
+    if (voice.localService) value += 5;
+    return value;
   };
 
-  return candidates.sort((a, b) => quality(b) - quality(a))[0] || null;
+  return voices.sort((a, b) => score(b) - score(a))[0] || null;
 }
 
 function speak(text: string, lang = "vi") {
   if (!("speechSynthesis" in window)) return;
+
   const engine = window.speechSynthesis;
   engine.cancel();
 
-  const compact = text.replace(/\s+/g, " ").trim().slice(0, 240);
+  const compact = text
+    .replace(/\s+/g, " ")
+    .replace(/\s*[-:]+\s*/g, ", ")
+    .trim()
+    .slice(0, 165);
+
   if (!compact) return;
 
   const utterance = new SpeechSynthesisUtterance(compact);
   utterance.lang = voiceLocale(lang);
   utterance.rate = voiceRate(lang);
-  utterance.pitch = 1;
-  utterance.volume = 0.95;
+  utterance.pitch = 1.02;
+  utterance.volume = 0.94;
 
   const voice = pickVoice(lang);
   if (voice) utterance.voice = voice;
@@ -112,14 +132,124 @@ function signalLabel(value: string) {
 }
 
 function levelLabel(value: string) {
-  if (value === "strong") return "Tốt";
-  if (value === "moderate") return "Khá";
-  return "Hạn chế";
+  if (value === "strong") return "tốt";
+  if (value === "moderate") return "khá";
+  return "hạn chế";
 }
 
 function money(value?: number) {
   if (!value) return "Chưa tính";
   return new Intl.NumberFormat("vi-VN").format(value) + "đ";
+}
+
+function Discovery({
+  context,
+  compact = false,
+}: {
+  context?: DestinationContext;
+  compact?: boolean;
+}) {
+  if (!context) return null;
+
+  const eat = context.groups.eat;
+  const cafe = context.groups.cafe;
+  const things = context.groups.do;
+
+  return (
+    <div className={compact ? "discovery discovery--compact" : "discovery"}>
+      <article>
+        <span className="discovery-kicker">Ăn gì</span>
+        {eat.venues.slice(0, compact ? 2 : 4).map((venue) => (
+          <div className="discovery-row" key={venue.id}>
+            <strong>{venue.name}</strong>
+            {venue.distanceKm != null && <small>~{venue.distanceKm.toFixed(1)} km</small>}
+          </div>
+        ))}
+        {eat.knowledge.slice(0, compact ? 2 : 3).map((item) => (
+          <div className="discovery-row discovery-row--knowledge" key={item.id}>
+            <strong>{item.title}</strong>
+            {!compact && item.summary && <p>{item.summary}</p>}
+          </div>
+        ))}
+      </article>
+
+      <article>
+        <span className="discovery-kicker">Cà phê</span>
+        {cafe.venues.length ? (
+          cafe.venues.slice(0, compact ? 2 : 4).map((venue) => (
+            <div className="discovery-row" key={venue.id}>
+              <strong>{venue.name}</strong>
+              {venue.distanceKm != null && <small>~{venue.distanceKm.toFixed(1)} km</small>}
+            </div>
+          ))
+        ) : (
+          <p className="empty-note">Chưa có quán đủ dữ liệu trong lớp test này.</p>
+        )}
+      </article>
+
+      <article>
+        <span className="discovery-kicker">Có gì làm</span>
+        {things.venues.slice(0, compact ? 2 : 4).map((venue) => (
+          <div className="discovery-row" key={venue.id}>
+            <strong>{venue.name}</strong>
+            {venue.distanceKm != null && <small>~{venue.distanceKm.toFixed(1)} km</small>}
+          </div>
+        ))}
+        {things.knowledge.slice(0, compact ? 2 : 3).map((item) => (
+          <div className="discovery-row discovery-row--knowledge" key={item.id}>
+            <strong>{item.title}</strong>
+            {!compact && item.summary && <p>{item.summary}</p>}
+          </div>
+        ))}
+      </article>
+    </div>
+  );
+}
+
+function HotelCard({
+  item,
+  stayPreferences,
+}: {
+  item: PlanningHotel;
+  stayPreferences: string[];
+}) {
+  return (
+    <article className="hotel-card">
+      <div className="hotel-card-head">
+        <span className={`fit-pill fit-${item.spatialFit}`}>
+          {item.spatialFit === "direct"
+            ? "Đúng hướng đi"
+            : item.spatialFit === "balanced"
+              ? "Cân bằng"
+              : "Có thể cân nhắc"}
+        </span>
+        <small>{item.hotel.area_code}</small>
+      </div>
+
+      <h3>{item.hotel.canonical_name}</h3>
+      {item.hotel.address && <p className="hotel-address">{item.hotel.address}</p>}
+      <p className="stay-summary">{item.stayContext.summary}</p>
+
+      {stayPreferences.length > 0 && (
+        <div className="stay-signal-row">
+          {item.stayContext.signals
+            .filter((signal) => stayPreferences.includes(signal.key))
+            .slice(0, 4)
+            .map((signal) => (
+              <span
+                className={`stay-signal stay-signal--${signal.level}`}
+                key={signal.key}
+                title={signal.note}
+              >
+                {signalLabel(signal.key)} {levelLabel(signal.level)}
+              </span>
+            ))}
+        </div>
+      )}
+
+      <Discovery context={item.nearby} compact />
+    </article>
+  );
 }
 
 export default function App() {
@@ -129,16 +259,21 @@ export default function App() {
   const [input, setInput] = useState("");
   const [result, setResult] = useState<TripParseResponse | null>(null);
   const [plan, setPlan] = useState<TripBuildResponse | null>(null);
+  const [advisor, setAdvisor] = useState<AdvisorResponse | null>(null);
   const [checkin, setCheckin] = useState("");
   const [checkout, setCheckout] = useState("");
   const [busy, setBusy] = useState(false);
   const [voiceOn, setVoiceOn] = useState(true);
+  const [handoffOpen, setHandoffOpen] = useState(false);
+  const [leadContact, setLeadContact] = useState("");
+  const [leadConsent, setLeadConsent] = useState(false);
+  const [leadStatus, setLeadStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
   const guideCue = useMemo(() => directGuide(result, plan), [result, plan]);
-  const guideText =
-    result && result.parsed.language !== "vi"
-      ? result.assistantText || guideCue.text
-      : guideCue.text;
+  const assistantText =
+    advisor?.answerText ||
+    result?.assistantText ||
+    guideCue.text;
 
   const summaryBits = useMemo(() => {
     if (!result) return [];
@@ -160,6 +295,9 @@ export default function App() {
 
     setBusy(true);
     setPlan(null);
+    setAdvisor(null);
+    setHandoffOpen(false);
+    setLeadStatus("idle");
 
     try {
       const res = await fetch("/api/trip/parse", {
@@ -174,7 +312,9 @@ export default function App() {
       const json = (await res.json()) as TripParseResponse;
       setResult(json);
 
-      if (json.ok) {
+      let spoken = json.assistantText || "";
+
+      if (json.ok && json.parsed.mode === "trip_plan") {
         const planRes = await fetch("/api/trip/build", {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -186,12 +326,28 @@ export default function App() {
             budgetVnd: json.parsed.budgetVnd,
           }),
         });
-        setPlan((await planRes.json()) as TripBuildResponse);
+        const nextPlan = (await planRes.json()) as TripBuildResponse;
+        setPlan(nextPlan);
+      } else if (json.ok) {
+        const advisorRes = await fetch("/api/advisor/answer", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            rawText: json.parsed.raw,
+            language: json.parsed.language,
+            mode: json.parsed.mode,
+            interests: json.parsed.interests,
+            stayPreferences: json.parsed.stayPreferences,
+            mentionedZone: json.parsed.mentionedZone,
+          }),
+        });
+        const nextAdvisor = (await advisorRes.json()) as AdvisorResponse;
+        setAdvisor(nextAdvisor);
+        spoken = nextAdvisor.answerText || spoken;
       }
 
-      if (voiceOn && json.ok) {
-        const spoken = json.assistantText || "Mình hiểu rồi. Để mình tính tiếp nha.";
-        window.setTimeout(() => speak(spoken, json.parsed.language), 80);
+      if (voiceOn && json.ok && spoken) {
+        window.setTimeout(() => speak(spoken, json.parsed.language), 60);
       }
     } finally {
       setBusy(false);
@@ -227,118 +383,195 @@ export default function App() {
     }
   }
 
+  async function sendLead(event: FormEvent) {
+    event.preventDefault();
+    if (!result || !leadContact.trim() || !leadConsent) return;
+
+    setLeadStatus("sending");
+    try {
+      const res = await fetch("/api/booking/lead", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          sessionId: sessionIdRef.current,
+          contact: leadContact.trim(),
+          language: result.parsed.language,
+          consent: leadConsent,
+          tripContext: {
+            query: result.parsed.raw,
+            parsed: result.parsed,
+            checkin,
+            checkout,
+            plan,
+            advisorMode: advisor?.mode,
+          },
+        }),
+      });
+      const json = await res.json();
+      setLeadStatus(json.ok ? "sent" : "error");
+    } catch {
+      setLeadStatus("error");
+    }
+  }
+
+  const hasResponse = Boolean(result);
+  const canHandoff = Boolean(
+    result &&
+      (plan?.planningHotels?.length ||
+        plan?.scenarios?.length ||
+        advisor?.context ||
+        advisor?.hotels?.length),
+  );
+
   return (
-    <main className="app">
+    <main className={hasResponse ? "app app--active" : "app"}>
       <header className="topbar">
         <a className="brand" href="/" aria-label="JoTrip">
           <img src="/assets/jotrip-logo.webp" alt="JoTrip" />
         </a>
+
         <div className="top-actions">
-          <span className="engine-badge">ENGINE TEST</span>
+          <span className="language-line">VI · EN · KO · RU · 中文</span>
           <button
             className={voiceOn ? "quiet active" : "quiet"}
             onClick={() => setVoiceOn((value) => !value)}
             type="button"
           >
-            {voiceOn ? "Âm thanh bật" : "Âm thanh tắt"}
+            {voiceOn ? "Giọng nói bật" : "Giọng nói tắt"}
           </button>
         </div>
       </header>
 
       <div className="page-shell">
-        <section className="hero">
-          <aside className={`guide-card guide-${guideCue.state}`}>
-            <div className="guide-photo">
+        <section className="conversation-hero">
+          <div className="hero-copy">
+            <span className="eyebrow">JOTRIP · PHÚ QUỐC</span>
+            <h1>Hỏi như đang nói với một người ở đảo.</h1>
+            <p>
+              Giá phòng, khu ở, xe, vé, ăn gì, cà phê ở đâu, hôm đó nên đi đâu.
+              JoTrip trả lời trước. Khi thấy phương án ổn thì mới chuyển sang booking.
+            </p>
+          </div>
+
+          <div className="assistant-stage">
+            <div className={`mascot-shell mascot-${guideCue.state}`}>
               <img src="/assets/jotrip-guide-short.webp" alt="JoTrip Guide" />
             </div>
-            <div className="guide-copy">
-              <span>JOTRIP GUIDE</span>
-              <p>{guideText}</p>
+            <div className="assistant-bubble">
+              <span>JoTrip Guide</span>
+              <p>{assistantText || "Bạn cứ hỏi. Mình tính phần khó."}</p>
             </div>
-          </aside>
+          </div>
 
-          <div className="search-panel">
-            <div className="search-heading">
-              <span>TRIP ENGINE · PHÚ QUỐC</span>
-              <h1>Bạn cứ nói chuyến đi mình muốn.</h1>
-              <p>
-                Mình sẽ tính giúp khu ở, thời gian đi xe, vé và giá phòng - rồi cho bạn thấy
-                phương án nào hợp hơn. Có thể gõ bằng Tiếng Việt, English, 한국어, Русский hoặc 中文.
-              </p>
-            </div>
+          <form className="prompt" onSubmit={onSubmit}>
+            <textarea
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              placeholder="Ví dụ: 3 ngày 2 đêm chơi Vin thì nên ở đâu? Tối muốn đi bộ và ăn ngon."
+              rows={3}
+              aria-label="Hỏi JoTrip"
+            />
+            <button type="submit" disabled={busy}>
+              {busy ? "Đang xem..." : "Hỏi JoTrip"}
+            </button>
+          </form>
 
-            <form className="prompt" onSubmit={onSubmit}>
-              <textarea
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
-                    event.preventDefault();
-                    void submit();
-                  }
+          <div className="example-chips" aria-label="Ví dụ đa ngôn ngữ">
+            {examples.map((example) => (
+              <button
+                key={example.label}
+                type="button"
+                onClick={() => {
+                  setInput(example.text);
+                  void submit(example.text);
                 }}
-                placeholder="Ví dụ: 3 ngày 2 đêm, 2 người, thích ăn ngon, cà phê và biển..."
-                rows={3}
-                aria-label="Mô tả chuyến đi"
-              />
-              <button type="submit" disabled={busy}>
-                {busy ? "Đang tính..." : "Lên chuyến đi"}
+              >
+                <b>{example.label}</b>
+                <span>{example.text}</span>
               </button>
-            </form>
+            ))}
+          </div>
 
-            <div className="examples" aria-label="Ví dụ đa ngôn ngữ">
-              {examples.map((example) => (
-                <button
-                  key={example.label}
-                  type="button"
-                  onClick={() => {
-                    setInput(example.text);
-                    void submit(example.text);
-                  }}
-                >
-                  <b>{example.label}</b>
-                  <span>{example.text}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="engine-notes">
-              <span>Dữ liệu test hiện dùng snapshot + D1 hiện có</span>
-              <span>Không tự bịa giá hoặc quán khi thiếu dữ liệu</span>
-            </div>
+          <div className="trust-line">
+            <span>Không đủ dữ liệu thì nói chưa đủ</span>
+            <span>Không tự bịa giá, quán hay tồn phòng</span>
           </div>
         </section>
 
         {result && (
           <section className="workspace">
-            <div className="understood card">
-              <div>
-                <span className="label">JOTRIP ĐÃ HIỂU</span>
-                <h2>{result.parsed.raw}</h2>
+            <div className="conversation-thread">
+              <div className="message message--user">
+                <span>Bạn</span>
+                <p>{result.parsed.raw}</p>
               </div>
-              <div className="understood-meta">
-                <span className="language-pill">
-                  {languageNames[result.parsed.language] || result.parsed.language}
-                </span>
-                {summaryBits.map((bit) => <span key={bit}>{bit}</span>)}
+              <div className="message message--assistant">
+                <div className="message-avatar">J</div>
+                <div>
+                  <span>JoTrip</span>
+                  <p>{assistantText}</p>
+                  <div className="understood-meta">
+                    <span className="language-pill">
+                      {languageNames[result.parsed.language] || result.parsed.language}
+                    </span>
+                    {summaryBits.map((bit) => <span key={bit}>{bit}</span>)}
+                  </div>
+                </div>
               </div>
-              {result.assumptions.length > 0 && (
-                <p className="soft-note">{result.assumptions.join(" ")}</p>
-              )}
             </div>
 
-            <section className="scenario-shell card">
-              <div className="scenario-heading">
-                <span className="label">TÍNH THEO ĐÚNG NGÀY</span>
-                <h2>
-                  {plan?.mode === "priced"
-                    ? "Các phương án cho ngày bạn chọn"
-                    : "Chọn ngày để mở lớp giá phòng"}
-                </h2>
-                <p>
-                  Engine giữ riêng giá phòng, vé và xe để nhìn rõ trade-off, thay vì
-                  gom thành một con số khó kiểm tra.
-                </p>
+            {advisor?.context && (
+              <section className="answer-surface">
+                <Discovery context={advisor.context} />
+              </section>
+            )}
+
+            {advisor?.hotels?.length ? (
+              <section className="answer-surface">
+                <div className="section-heading">
+                  <span className="label">Ở KHU NÀO HỢP HƠN</span>
+                  <h2>So cách sống quanh khách sạn, không chỉ nhìn phòng.</h2>
+                </div>
+                <div className="hotel-grid">
+                  {advisor.hotels.map((item) => (
+                    <article className="hotel-card" key={item.hotel.id}>
+                      <div className="hotel-card-head">
+                        <span className={`fit-pill fit-${item.spatialFit}`}>
+                          {item.spatialFit === "direct" ? "Đúng hướng đi" : "Cân nhắc"}
+                        </span>
+                        <small>{item.hotel.area_code}</small>
+                      </div>
+                      <h3>{item.hotel.canonical_name}</h3>
+                      <p className="stay-summary">{item.stayContext.summary}</p>
+                      <div className="stay-signal-row">
+                        {item.stayContext.signals
+                          .filter((signal) => result.parsed.stayPreferences.includes(signal.key))
+                          .slice(0, 4)
+                          .map((signal) => (
+                            <span
+                              className={`stay-signal stay-signal--${signal.level}`}
+                              key={signal.key}
+                            >
+                              {signalLabel(signal.key)} {levelLabel(signal.level)}
+                            </span>
+                          ))}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {result.parsed.mode === "trip_plan" && (
+              <section className="trip-controls">
+                <div className="trip-controls-copy">
+                  <span className="label">MUỐN TÍNH GIÁ THẬT</span>
+                  <h2>Cho mình ngày đi.</h2>
+                  <p>
+                    Chưa có ngày, JoTrip chỉ so khu ở và cách đi. Có ngày mới mở lớp giá phòng,
+                    vé và tổng chi phí.
+                  </p>
+                </div>
 
                 <div className="date-row">
                   <label>
@@ -362,197 +595,33 @@ export default function App() {
                     onClick={() => void repriceWithDates()}
                     type="button"
                   >
-                    Kiểm tra ngày này
+                    Tính theo ngày này
                   </button>
                 </div>
-              </div>
-
-              <div className="status-grid">
-                <article>
-                  <span>Vé tạm tính</span>
-                  <strong>{money(plan?.activityCostVnd)}</strong>
-                  <small>Theo ngày hiệu lực</small>
-                </article>
-                <article>
-                  <span>Giá phòng</span>
-                  <strong>
-                    {plan?.mode === "priced"
-                      ? plan.hotelOfferCount
-                        ? `${plan.hotelOfferCount} mức giá`
-                        : "Chưa có giá phù hợp"
-                      : "Chờ ngày"}
-                  </strong>
-                  <small>Không dùng giá cũ để lấp chỗ trống</small>
-                </article>
-                <article>
-                  <span>Xe riêng</span>
-                  <strong>Theo tuyến</strong>
-                  <small>Tính từ các chặng đã biết</small>
-                </article>
-                <article>
-                  <span>Nguồn test</span>
-                  <strong>Snapshot + D1</strong>
-                  <small>CMS sync để giai đoạn sau</small>
-                </article>
-              </div>
-            </section>
+              </section>
+            )}
 
             {plan?.mode === "planning" && plan.planningHotels?.length ? (
-              <section className="content-section">
+              <section className="answer-surface">
                 <div className="section-heading">
-                  <span className="label">Ở ĐÂU HỢP HƠN?</span>
-                  <h2>So vị trí trước khi so giá.</h2>
+                  <span className="label">Ở ĐÂU HỢP HƠN</span>
+                  <h2>JoTrip đang so vị trí trước giá.</h2>
                   <p>
-                    Chưa có ngày thì chỉ đánh giá khu ở, nhịp sống quanh khách sạn và
-                    quãng đường - chưa dùng giá phòng.
+                    Một phòng rẻ chưa chắc làm chuyến đi rẻ hơn nếu phải đổi lại bằng nhiều giờ trên xe.
                   </p>
                 </div>
 
                 <div className="hotel-grid">
                   {plan.planningHotels.map((item) => (
-                    <article className="hotel-card" key={item.hotel.id}>
-                      <div className="hotel-card-head">
-                        <span className={`fit-pill fit-${item.spatialFit}`}>
-                          {item.spatialFit === "direct"
-                            ? "Đúng khu"
-                            : item.spatialFit === "balanced"
-                              ? "Cân bằng"
-                              : "Cân nhắc"}
-                        </span>
-                        <small>{item.hotel.area_code}</small>
-                      </div>
-
-                      <h3>{item.hotel.canonical_name}</h3>
-                      {item.hotel.address && <p>{item.hotel.address}</p>}
-                      <p className="stay-summary">{item.stayContext.summary}</p>
-
-                      {result.parsed.stayPreferences.length > 0 && (
-                        <div className="stay-signal-row">
-                          {item.stayContext.signals
-                            .filter((signal) =>
-                              result.parsed.stayPreferences.includes(signal.key),
-                            )
-                            .slice(0, 4)
-                            .map((signal) => (
-                              <span
-                                className={`stay-signal stay-signal--${signal.level}`}
-                                key={signal.key}
-                                title={signal.note}
-                              >
-                                {signalLabel(signal.key)} · {levelLabel(signal.level)}
-                              </span>
-                            ))}
-                        </div>
-                      )}
-
-                      <div className="hotel-nearby-preview">
-                        {item.nearby.groups.eat.knowledge[0] && (
-                          <span>
-                            <b>Ăn:</b> {item.nearby.groups.eat.knowledge[0].title}
-                          </span>
-                        )}
-                        {item.nearby.groups.cafe.venues[0] && (
-                          <span>
-                            <b>Cà phê:</b> {item.nearby.groups.cafe.venues[0].name}
-                          </span>
-                        )}
-                        {(item.nearby.groups.do.venues[0] ||
-                          item.nearby.groups.do.knowledge[0]) && (
-                          <span>
-                            <b>Chơi:</b>{" "}
-                            {item.nearby.groups.do.venues[0]?.name ||
-                              item.nearby.groups.do.knowledge[0]?.title}
-                          </span>
-                        )}
-                      </div>
-
-                      {item.cautions.slice(0, 2).map((warning) => (
-                        <p className="caution" key={warning}>{warning}</p>
-                      ))}
-                    </article>
+                    <HotelCard
+                      item={item}
+                      stayPreferences={result.parsed.stayPreferences}
+                      key={item.hotel.id}
+                    />
                   ))}
                 </div>
               </section>
             ) : null}
-
-            {plan?.destinationContext && (
-              <section className="discover-panel card">
-                <div className="section-heading compact">
-                  <span className="label">SỐNG QUANH KHU NÀY</span>
-                  <h2>Ăn gì, cà phê ở đâu, chơi gì?</h2>
-                  <p>
-                    Mục nào chưa đủ dữ liệu venue thì engine chỉ dùng kiến thức khu vực
-                    để gợi ý hướng đi, không dựng tên quán giả.
-                  </p>
-                </div>
-
-                <div className="discover-grid">
-                  <article className="discover-column">
-                    <div className="discover-title">Ăn gì</div>
-                    {plan.destinationContext.groups.eat.venues.map((venue) => (
-                      <div className="discover-item venue" key={venue.id}>
-                        <strong>{venue.name}</strong>
-                        {venue.address && <span>{venue.address}</span>}
-                        {venue.distanceKm != null && (
-                          <small>~{venue.distanceKm.toFixed(1)} km</small>
-                        )}
-                        {venue.freshness === "stale" && (
-                          <small>Cần kiểm tra lại thông tin hiện hành</small>
-                        )}
-                      </div>
-                    ))}
-                    {plan.destinationContext.groups.eat.knowledge
-                      .slice(0, 3)
-                      .map((item) => (
-                        <div className="discover-item knowledge" key={item.id}>
-                          <strong>{item.title}</strong>
-                          {item.summary && <span>{item.summary}</span>}
-                        </div>
-                      ))}
-                  </article>
-
-                  <article className="discover-column">
-                    <div className="discover-title">Cà phê</div>
-                    {plan.destinationContext.groups.cafe.venues.length ? (
-                      plan.destinationContext.groups.cafe.venues.map((venue) => (
-                        <div className="discover-item venue" key={venue.id}>
-                          <strong>{venue.name}</strong>
-                          {venue.address && <span>{venue.address}</span>}
-                          {venue.distanceKm != null && (
-                            <small>~{venue.distanceKm.toFixed(1)} km</small>
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      <p className="discover-empty">
-                        Chưa có quán cà phê đủ dữ liệu trong lớp test này.
-                      </p>
-                    )}
-                  </article>
-
-                  <article className="discover-column">
-                    <div className="discover-title">Chơi gì</div>
-                    {plan.destinationContext.groups.do.venues.map((venue) => (
-                      <div className="discover-item venue" key={venue.id}>
-                        <strong>{venue.name}</strong>
-                        {venue.address && <span>{venue.address}</span>}
-                        {venue.distanceKm != null && (
-                          <small>~{venue.distanceKm.toFixed(1)} km</small>
-                        )}
-                      </div>
-                    ))}
-                    {plan.destinationContext.groups.do.knowledge
-                      .slice(0, 3)
-                      .map((item) => (
-                        <div className="discover-item knowledge" key={item.id}>
-                          <strong>{item.title}</strong>
-                          {item.summary && <span>{item.summary}</span>}
-                        </div>
-                      ))}
-                  </article>
-                </div>
-              </section>
-            )}
 
             {plan?.insights?.length ? (
               <section className="insight-list">
@@ -567,11 +636,12 @@ export default function App() {
             ) : null}
 
             {plan?.scenarios?.length ? (
-              <section className="content-section">
+              <section className="answer-surface">
                 <div className="section-heading">
                   <span className="label">SO PHƯƠNG ÁN</span>
-                  <h2>Nhìn tổng tiền và thời gian cạnh nhau.</h2>
+                  <h2>Tổng tiền và thời gian đặt cạnh nhau.</h2>
                 </div>
+
                 <div className="scenario-list">
                   {plan.scenarios.map((scenario) => (
                     <article className="scenario-card" key={scenario.id}>
@@ -596,15 +666,68 @@ export default function App() {
                           <span>{scenario.stayContext.summary}</span>
                         </div>
                       )}
-
-                      {scenario.cautions.map((warning) => (
-                        <p className="caution" key={warning}>{warning}</p>
-                      ))}
                     </article>
                   ))}
                 </div>
               </section>
             ) : null}
+
+            {plan?.destinationContext && result.parsed.mode === "trip_plan" && (
+              <section className="answer-surface">
+                <div className="section-heading">
+                  <span className="label">QUANH KHU NÀY</span>
+                  <h2>Ăn gì, cà phê ở đâu, còn gì để làm?</h2>
+                </div>
+                <Discovery context={plan.destinationContext} />
+              </section>
+            )}
+
+            {canHandoff && (
+              <section className="handoff-card">
+                <div>
+                  <span className="label">KHI BẠN THẤY ỔN</span>
+                  <h2>Chuyển phương án này cho JoTrip kiểm tra booking.</h2>
+                  <p>
+                    Chưa thanh toán ở đây. JoTrip sẽ kiểm tra lại phòng, vé và xe rồi mới liên hệ xác nhận.
+                  </p>
+                </div>
+
+                {!handoffOpen ? (
+                  <button className="handoff-button" onClick={() => setHandoffOpen(true)} type="button">
+                    Tôi muốn JoTrip kiểm tra
+                  </button>
+                ) : (
+                  <form className="handoff-form" onSubmit={sendLead}>
+                    <input
+                      value={leadContact}
+                      onChange={(event) => setLeadContact(event.target.value)}
+                      placeholder="Số điện thoại, email hoặc WhatsApp"
+                      aria-label="Thông tin liên hệ"
+                    />
+                    <label className="consent-row">
+                      <input
+                        type="checkbox"
+                        checked={leadConsent}
+                        onChange={(event) => setLeadConsent(event.target.checked)}
+                      />
+                      <span>Tôi đồng ý để JoTrip liên hệ về chuyến đi này.</span>
+                    </label>
+                    <button
+                      type="submit"
+                      disabled={!leadContact.trim() || !leadConsent || leadStatus === "sending"}
+                    >
+                      {leadStatus === "sending" ? "Đang gửi..." : "Gửi cho JoTrip"}
+                    </button>
+                    {leadStatus === "sent" && (
+                      <p className="lead-success">Đã nhận. JoTrip sẽ dùng đúng phương án bạn vừa xem để kiểm tra lại.</p>
+                    )}
+                    {leadStatus === "error" && (
+                      <p className="lead-error">Chưa gửi được. Thử lại sau một chút.</p>
+                    )}
+                  </form>
+                )}
+              </section>
+            )}
           </section>
         )}
       </div>

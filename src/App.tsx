@@ -763,12 +763,12 @@ export default function App() {
               onChange={(event) => setInput(event.target.value)}
               onFocus={() => setInputFocused(true)}
               onBlur={() => setInputFocused(false)}
-              placeholder="Cứ nói tự nhiên, ví dụ: nhà mình 3 ngày 2 đêm, có bé, muốn chơi Vin nhưng tối vẫn thích ra ngoài ăn."
+              placeholder={hasResponse ? "Hỏi tiếp JoTrip..." : "Cứ nói tự nhiên, ví dụ: nhà mình 3 ngày 2 đêm, có bé, muốn chơi Vin nhưng tối vẫn thích ra ngoài ăn."}
               rows={3}
               aria-label="Hỏi JoTrip"
             />
             <button type="submit" disabled={busy}>
-              {busy ? "Đang xem..." : "Hỏi JoTrip"}
+              {busy ? "Đang xem..." : hasResponse ? "Gửi" : "Hỏi JoTrip"}
             </button>
           </form>
 

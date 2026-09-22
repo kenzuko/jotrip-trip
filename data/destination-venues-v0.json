@@ -1,0 +1,247 @@
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-09-22",
+  "entities": [
+    {
+      "id": "venue_bai_khem",
+      "name": "Bãi Khem",
+      "category": "ATTRACTION",
+      "zone_code": "south",
+      "latitude": 10.03333,
+      "longitude": 104.03333,
+      "address": "Bãi Khem, An Thới, Phú Quốc, An Giang, Việt Nam",
+      "phone": null,
+      "tags": [
+        "openpq-knowledge"
+      ],
+      "opening_hours": null,
+      "price_level": null,
+      "source_ref": "knowledge_013_bai-khem",
+      "source_type": "OPENPQ_KNOWLEDGE",
+      "verified_at": "2026-09-22",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "venue_bai_sao",
+      "name": "Bãi Sao",
+      "category": "ATTRACTION",
+      "zone_code": "south",
+      "latitude": 10.0541875,
+      "longitude": 104.0354375,
+      "address": "Bãi Sao, An Thới, Phú Quốc, An Giang, Việt Nam",
+      "phone": null,
+      "tags": [
+        "openpq-knowledge"
+      ],
+      "opening_hours": null,
+      "price_level": null,
+      "source_ref": "knowledge_014_bai-sao",
+      "source_type": "OPENPQ_KNOWLEDGE",
+      "verified_at": "2026-09-22",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "venue_bai_truong",
+      "name": "Bãi Trường",
+      "category": "ATTRACTION",
+      "zone_code": "long_beach",
+      "latitude": 10.1143458,
+      "longitude": 103.9809272,
+      "address": "Đường Trần Hưng Đạo, Phú Quốc, An Giang, Việt Nam",
+      "phone": null,
+      "tags": [
+        "openpq-knowledge"
+      ],
+      "opening_hours": null,
+      "price_level": null,
+      "source_ref": "knowledge_012_bai-truong",
+      "source_type": "OPENPQ_KNOWLEDGE",
+      "verified_at": "2026-09-22",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "venue_duong_dong_market",
+      "name": "Chợ Dương Đông",
+      "category": "ATTRACTION",
+      "zone_code": "duong_dong",
+      "latitude": 10.2206875,
+      "longitude": 103.9591875,
+      "address": "Chợ Dương Đông, đường Ngô Quyền, Dương Đông, Phú Quốc, An Giang, Việt Nam",
+      "phone": null,
+      "tags": [
+        "openpq-knowledge"
+      ],
+      "opening_hours": {
+        "state": "PUBLISHED_SCHEDULE",
+        "schedule_type": "DAILY",
+        "timezone": "Asia/Ho_Chi_Minh",
+        "windows": [
+          {
+            "start": "05:00",
+            "end": "19:00",
+            "label": "Giờ mở cửa"
+          }
+        ],
+        "source_id": "visitpq_cho_duong_dong_2026",
+        "source_type": "OFFICIAL_TOURISM",
+        "verified_at": "2026-09-21",
+        "valid_until": null,
+        "confidence": "HIGH",
+        "note": "Giờ niêm yết trên cổng du lịch điểm đến; không đồng nghĩa xác nhận từng sạp đang hoạt động."
+      },
+      "price_level": null,
+      "source_ref": "knowledge_003_cho-duong-dong",
+      "source_type": "OPENPQ_KNOWLEDGE",
+      "verified_at": "2026-09-22",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "venue_ho_quoc",
+      "name": "Chùa Hộ Quốc",
+      "category": "ATTRACTION",
+      "zone_code": "south",
+      "latitude": 10.1100625,
+      "longitude": 104.0289375,
+      "address": "426H+2HJ, Thiền viện Trúc Lâm Hộ Quốc, Dương Tơ, Phú Quốc, An Giang, Việt Nam",
+      "phone": null,
+      "tags": [
+        "openpq-knowledge"
+      ],
+      "opening_hours": null,
+      "price_level": null,
+      "source_ref": "knowledge_029_chua-ho-quoc",
+      "source_type": "OPENPQ_KNOWLEDGE",
+      "verified_at": "2026-09-22",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "venue_dinh_cau",
+      "name": "Dinh Cậu",
+      "category": "ATTRACTION",
+      "zone_code": "duong_dong",
+      "latitude": 10.2171875,
+      "longitude": 103.9564375,
+      "address": "Khu phố 2, Dương Đông, Phú Quốc, An Giang 92500, Việt Nam",
+      "phone": null,
+      "tags": [
+        "openpq-knowledge"
+      ],
+      "opening_hours": {
+        "state": "PUBLISHED_SCHEDULE",
+        "schedule_type": "DAILY",
+        "timezone": "Asia/Ho_Chi_Minh",
+        "windows": [
+          {
+            "start": "07:00",
+            "end": "21:00",
+            "label": "Giờ mở cửa niêm yết"
+          }
+        ],
+        "source_id": "visitpq_dinh_cau_2026",
+        "source_type": "OFFICIAL_TOURISM",
+        "verified_at": "2026-09-21",
+        "valid_until": null,
+        "confidence": "MEDIUM",
+        "note": "Mốc giờ theo official listing đã kiểm tra trong batch dữ liệu 21/09/2026; đây là lịch niêm yết, không phải xác nhận mở cửa thời gian thực."
+      },
+      "price_level": null,
+      "source_ref": "knowledge_001_dinh-cau",
+      "source_type": "OPENPQ_KNOWLEDGE",
+      "verified_at": "2026-09-22",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "venue_phu_quoc_prison",
+      "name": "Nhà tù Phú Quốc",
+      "category": "ATTRACTION",
+      "zone_code": "south",
+      "latitude": 10.043948,
+      "longitude": 104.018179,
+      "address": "350 Nguyễn Văn Cừ, An Thới, Phú Quốc, An Giang, Việt Nam",
+      "phone": null,
+      "tags": [
+        "openpq-knowledge"
+      ],
+      "opening_hours": null,
+      "price_level": null,
+      "source_ref": "knowledge_030_nha-tu-phu-quoc",
+      "source_type": "OPENPQ_KNOWLEDGE",
+      "verified_at": "2026-09-22",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "venue_rach_vem",
+      "name": "Rạch Vẹm",
+      "category": "ATTRACTION",
+      "zone_code": "north",
+      "latitude": 10.38602,
+      "longitude": 103.94166,
+      "address": "Rạch Vẹm, Gành Dầu, Phú Quốc, An Giang, Việt Nam",
+      "phone": null,
+      "tags": [
+        "openpq-knowledge"
+      ],
+      "opening_hours": null,
+      "price_level": null,
+      "source_ref": "knowledge_008_rach-vem",
+      "source_type": "OPENPQ_KNOWLEDGE",
+      "verified_at": "2026-09-22",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "venue_sunset_town",
+      "name": "Sunset Town",
+      "category": "ATTRACTION",
+      "zone_code": "south",
+      "latitude": 10.026903,
+      "longitude": 104.007917,
+      "address": "Sunset Town, An Thới, Phú Quốc, An Giang, Việt Nam",
+      "phone": null,
+      "tags": [
+        "openpq-knowledge"
+      ],
+      "opening_hours": {
+        "state": "PUBLISHED_SCHEDULE",
+        "schedule_type": "ALWAYS_OPEN",
+        "timezone": "Asia/Ho_Chi_Minh",
+        "windows": [
+          {
+            "start": "00:00",
+            "end": "23:59",
+            "label": "Khu phố mở"
+          }
+        ],
+        "source_id": "sunworld_sunset_town_always_open",
+        "source_type": "OPERATOR",
+        "verified_at": "2026-09-21",
+        "valid_until": null,
+        "confidence": "HIGH",
+        "note": "Sun World mô tả Sunset Town luôn mở cửa và miễn phí; các điểm vé, nhà hàng, show và dịch vụ bên trong có lịch riêng."
+      },
+      "price_level": null,
+      "source_ref": "knowledge_005_sunset-town",
+      "source_type": "OPENPQ_KNOWLEDGE",
+      "verified_at": "2026-09-22",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "venue_suoi_tranh",
+      "name": "Suối Tranh",
+      "category": "ATTRACTION",
+      "zone_code": "long_beach",
+      "latitude": 10.1763125,
+      "longitude": 104.0119375,
+      "address": "52G6+GQQ, Suối Mây, Phú Quốc, An Giang, Việt Nam",
+      "phone": null,
+      "tags": [
+        "openpq-knowledge"
+      ],
+      "opening_hours": null,
+      "price_level": null,
+      "source_ref": "knowledge_026_suoi-tranh",
+      "source_type": "OPENPQ_KNOWLEDGE",
+      "verified_at": "2026-09-22",
+      "status": "ACTIVE"
+    }
+  ]
+}

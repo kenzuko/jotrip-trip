@@ -1983,3 +1983,19 @@ a {
     grid-template-columns: 48px minmax(0,1fr);
   }
 }
+
+
+.message-avatar--mascot {
+  overflow: hidden;
+  border: 1px solid #d7e9e6;
+  background: #eef8f6;
+}
+
+.message-avatar--mascot img {
+  width: 125%;
+  height: 125%;
+  max-width: none;
+  object-fit: contain;
+  object-position: 50% 20%;
+  transform: translate(-10%, 2%);
+}

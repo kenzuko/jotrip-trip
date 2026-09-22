@@ -1,7 +1,7 @@
 import type { TripScenario } from "./tripScenario";
 
 export type ScenarioInsight = {
-  type: "cost_time_tradeoff" | "cheaper" | "faster" | "similar_total" | "fit";
+  type: "cost_time_tradeoff" | "cheaper" | "faster" | "similar_total" | "fit" | "stay_context";
   title: string;
   body: string;
   primaryScenarioId: string;
@@ -82,14 +82,28 @@ export function explainTopScenarios(
   if (Math.abs(fitDelta) >= 15) {
     const betterFit = fitDelta > 0 ? a : b;
     const other = betterFit.id === a.id ? b : a;
-    insights.push({
-      type: "fit",
-      title: "Độ hợp với lịch trình khác nhau rõ",
-      body: `${betterFit.hotelName} khớp vị trí hoạt động của chuyến này tốt hơn ${other.hotelName}. JoTrip vẫn giữ cả hai nếu chúng còn trade-off đáng cân nhắc.`,
-      primaryScenarioId: betterFit.id,
-      secondaryScenarioId: other.id,
-      data: { fitDelta: Math.abs(fitDelta) },
-    });
+    const contextReason = betterFit.stayContext?.reasons?.[0];
+    const otherCaution = other.stayContext?.cautions?.[0];
+
+    if (contextReason) {
+      insights.push({
+        type: "stay_context",
+        title: "Khác biệt không chỉ nằm ở giá phòng",
+        body: `${betterFit.hotelName} hợp cách ở của chuyến này hơn vì ${contextReason.charAt(0).toLowerCase() + contextReason.slice(1)}${otherCaution ? ` Trong khi ${other.hotelName}: ${otherCaution.charAt(0).toLowerCase() + otherCaution.slice(1)}` : ""}`,
+        primaryScenarioId: betterFit.id,
+        secondaryScenarioId: other.id,
+        data: { fitDelta: Math.abs(fitDelta) },
+      });
+    } else {
+      insights.push({
+        type: "fit",
+        title: "Độ hợp với lịch trình khác nhau rõ",
+        body: `${betterFit.hotelName} khớp vị trí hoạt động của chuyến này tốt hơn ${other.hotelName}. JoTrip vẫn giữ cả hai nếu chúng còn trade-off đáng cân nhắc.`,
+        primaryScenarioId: betterFit.id,
+        secondaryScenarioId: other.id,
+        data: { fitDelta: Math.abs(fitDelta) },
+      });
+    }
   }
 
   return insights.slice(0, 3);

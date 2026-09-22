@@ -19,7 +19,9 @@
       "route_precision": "site_centroid",
       "route_source_ref": "openpq:hotel_crowne_plaza_phu_quoc_starbay",
       "route_source_id": "osm_photon_geocode",
-      "route_verified_at": "2026-09-22"
+      "route_verified_at": "2026-09-22",
+      "route_routing_ok": true,
+      "route_quality_note": "CMS coordinate accepted for V0 OSRM routing."
     },
     {
       "id": "wyndham-grand-phu-quoc",
@@ -39,7 +41,9 @@
       "route_precision": "site_centroid",
       "route_source_ref": "openpq:hotel_wyndham_grand_phu_quoc",
       "route_source_id": "osm_photon_geocode",
-      "route_verified_at": "2026-09-22"
+      "route_verified_at": "2026-09-22",
+      "route_routing_ok": false,
+      "route_quality_note": "CMS geocoder matched a different/unclear place; hold for normalization."
     },
     {
       "id": "wyndham-garden-grandworld-phu-quoc",
@@ -59,7 +63,9 @@
       "route_precision": "site_centroid",
       "route_source_ref": "openpq:hotel_wyndham_garden_grandworld",
       "route_source_id": "osm_photon_geocode",
-      "route_verified_at": "2026-09-22"
+      "route_verified_at": "2026-09-22",
+      "route_routing_ok": true,
+      "route_quality_note": "CMS coordinate accepted for V0 OSRM routing."
     },
     {
       "id": "la-festa-phu-quoc",
@@ -79,7 +85,9 @@
       "route_precision": null,
       "route_source_ref": null,
       "route_source_id": null,
-      "route_verified_at": null
+      "route_verified_at": null,
+      "route_routing_ok": false,
+      "route_quality_note": "CMS has no route coordinate yet."
     },
     {
       "id": "new-world-phu-quoc-resort",
@@ -99,7 +107,9 @@
       "route_precision": "site_centroid",
       "route_source_ref": "openpq:hotel_new_world",
       "route_source_id": "osm_overpass_catalog",
-      "route_verified_at": "2026-09-22"
+      "route_verified_at": "2026-09-22",
+      "route_routing_ok": true,
+      "route_quality_note": "CMS coordinate accepted for V0 OSRM routing."
     },
     {
       "id": "premier-residences-phu-quoc-emerald-bay-managed-by-accor",
@@ -119,7 +129,9 @@
       "route_precision": "site_centroid",
       "route_source_ref": "openpq:hotel_premier_residences",
       "route_source_id": "osm_photon_geocode",
-      "route_verified_at": "2026-09-22"
+      "route_verified_at": "2026-09-22",
+      "route_routing_ok": true,
+      "route_quality_note": "CMS coordinate accepted for V0 OSRM routing."
     },
     {
       "id": "intercontinental-phu-quoc-long-beach-resort",
@@ -139,7 +151,9 @@
       "route_precision": "site_centroid",
       "route_source_ref": "openpq:hotel_intercontinental",
       "route_source_id": "osm_photon_geocode",
-      "route_verified_at": "2026-09-22"
+      "route_verified_at": "2026-09-22",
+      "route_routing_ok": true,
+      "route_quality_note": "CMS coordinate accepted for V0 OSRM routing."
     },
     {
       "id": "regent-phu-quoc",
@@ -159,7 +173,9 @@
       "route_precision": null,
       "route_source_ref": null,
       "route_source_id": null,
-      "route_verified_at": null
+      "route_verified_at": null,
+      "route_routing_ok": false,
+      "route_quality_note": "CMS has no route coordinate yet."
     },
     {
       "id": "the-residence-resort-villas-phu-quoc",
@@ -179,7 +195,9 @@
       "route_precision": null,
       "route_source_ref": null,
       "route_source_id": null,
-      "route_verified_at": null
+      "route_verified_at": null,
+      "route_routing_ok": false,
+      "route_quality_note": "CMS hotel identity match is not strong enough for numeric routing."
     },
     {
       "id": "klc-holidays-phu-quoc",
@@ -199,7 +217,9 @@
       "route_precision": null,
       "route_source_ref": null,
       "route_source_id": null,
-      "route_verified_at": null
+      "route_verified_at": null,
+      "route_routing_ok": false,
+      "route_quality_note": "CMS hotel identity match is not strong enough for numeric routing."
     },
     {
       "id": "movenpick-resort-waverly-phu-quoc",
@@ -218,7 +238,9 @@
       "route_precision": "site_centroid",
       "route_source_ref": "openpq:hotel_movenpick",
       "route_source_id": "osm_photon_geocode",
-      "route_verified_at": "2026-09-22"
+      "route_verified_at": "2026-09-22",
+      "route_routing_ok": false,
+      "route_quality_note": "CMS geocoder matched a different/unclear place; hold for normalization."
     },
     {
       "id": "ocean-bay-phu-quoc-resort-spa",
@@ -237,7 +259,9 @@
       "route_precision": null,
       "route_source_ref": null,
       "route_source_id": null,
-      "route_verified_at": null
+      "route_verified_at": null,
+      "route_routing_ok": false,
+      "route_quality_note": "CMS hotel identity match is not strong enough for numeric routing."
     },
     {
       "id": "sea-sense-resort-spa-phu-quoc",
@@ -256,7 +280,9 @@
       "route_precision": "area_anchor",
       "route_source_ref": "openpq:hotel_sea_sense_resort",
       "route_source_id": "osm_nominatim_geocode",
-      "route_verified_at": "2026-09-22"
+      "route_verified_at": "2026-09-22",
+      "route_routing_ok": false,
+      "route_quality_note": "CMS precision area_anchor is not exact enough for numeric routing."
     },
     {
       "id": "the-shells-phu-quoc",
@@ -275,7 +301,9 @@
       "route_precision": "site_centroid",
       "route_source_ref": "openpq:hotel_the_shells_resort_spa_phu_quoc",
       "route_source_id": "osm_photon_geocode",
-      "route_verified_at": "2026-09-22"
+      "route_verified_at": "2026-09-22",
+      "route_routing_ok": true,
+      "route_quality_note": "CMS coordinate accepted for V0 OSRM routing."
     },
     {
       "id": "dusit-princess-moonrise-beach-resort-phu-quoc",
@@ -290,7 +318,9 @@
       "route_precision": "area_anchor",
       "route_source_ref": "openpq:hotel_dusit_princess_moonrise_beach_resort_phu_quoc",
       "route_source_id": "osm_photon_geocode",
-      "route_verified_at": "2026-09-22"
+      "route_verified_at": "2026-09-22",
+      "route_routing_ok": false,
+      "route_quality_note": "CMS precision area_anchor is not exact enough for numeric routing."
     },
     {
       "id": "novotel-phu-quoc-resort",
@@ -305,7 +335,9 @@
       "route_precision": "site_centroid",
       "route_source_ref": "openpq:hotel_novotel",
       "route_source_id": "osm_photon_geocode",
-      "route_verified_at": "2026-09-22"
+      "route_verified_at": "2026-09-22",
+      "route_routing_ok": true,
+      "route_quality_note": "CMS coordinate accepted for V0 OSRM routing."
     }
   ]
 }

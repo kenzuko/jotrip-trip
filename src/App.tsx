@@ -262,8 +262,8 @@ export default function App() {
               <span>TRIP ENGINE · PHÚ QUỐC</span>
               <h1>Bạn cứ nói chuyến đi mình muốn.</h1>
               <p>
-                JoTrip sẽ tách nhu cầu, khu ở, thời gian di chuyển, vé và giá phòng.
-                Có thể gõ bằng Tiếng Việt, English, 한국어, Русский hoặc 中文.
+                Mình sẽ tính giúp khu ở, thời gian đi xe, vé và giá phòng - rồi cho bạn thấy
+                phương án nào hợp hơn. Có thể gõ bằng Tiếng Việt, English, 한국어, Русский hoặc 中文.
               </p>
             </div>
 
@@ -271,6 +271,12 @@ export default function App() {
               <textarea
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    void submit();
+                  }
+                }}
                 placeholder="Ví dụ: 3 ngày 2 đêm, 2 người, thích ăn ngon, cà phê và biển..."
                 rows={3}
                 aria-label="Mô tả chuyến đi"
@@ -372,8 +378,8 @@ export default function App() {
                   <strong>
                     {plan?.mode === "priced"
                       ? plan.hotelOfferCount
-                        ? `${plan.hotelOfferCount} offer`
-                        : "Chưa có offer"
+                        ? `${plan.hotelOfferCount} mức giá`
+                        : "Chưa có giá phù hợp"
                       : "Chờ ngày"}
                   </strong>
                   <small>Không dùng giá cũ để lấp chỗ trống</small>

@@ -65,7 +65,9 @@ function pickVoice(lang: string) {
     return value;
   };
 
-  return voices.sort((a, b) => score(b) - score(a))[0] || null;
+  const ranked = voices.sort((a, b) => score(b) - score(a));
+  const best = ranked[0];
+  return best && score(best) >= 65 ? best : null;
 }
 
 function speak(
@@ -97,7 +99,11 @@ function speak(
   utterance.volume = 0.94;
 
   const voice = pickVoice(lang);
-  if (voice) utterance.voice = voice;
+  if (!voice) {
+    onEnd?.();
+    return;
+  }
+  utterance.voice = voice;
 
   utterance.onstart = () => onStart?.();
   utterance.onend = () => onEnd?.();

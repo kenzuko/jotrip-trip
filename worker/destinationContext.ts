@@ -1,5 +1,4 @@
-import { loadDestinationKnowledge } from "./openPqSource";
-import { loadOpenPqVenues } from "./openPqVenueSource";
+import knowledge from "../data/destination-knowledge-v0.json";
 
 type Env = { DB?: D1Database };
 
@@ -54,7 +53,7 @@ function haversineKm(lat1:number, lon1:number, lat2:number, lon2:number) {
 }
 
 function zoneMatches(item:KnowledgeItem, zone?:string) {
-  if (!zone) return item.zones.includes("islandwide");
+  if (!zone) return item.zones.includes("islandwide") || item.zones.length === 0;
   return item.zones.includes(zone) || item.zones.includes("islandwide");
 }
 
@@ -106,55 +105,28 @@ function toVenue(row:VenueRow, req:DestinationContextRequest) {
 }
 
 async function loadVenues(env:Env, req:DestinationContextRequest) {
-  const canonical = await loadOpenPqVenues();
-  const canonicalRows: VenueRow[] = canonical.rows
-    .filter((row) => (row.status || "REVIEW") === "ACTIVE")
-    .filter((row) => !req.zoneCode || !row.zone_code || row.zone_code === req.zoneCode)
-    .map((row) => ({
-      id: row.id,
-      name: row.name,
-      category: row.category,
-      zone_code: row.zone_code || null,
-      latitude: row.latitude ?? null,
-      longitude: row.longitude ?? null,
-      address: row.address || null,
-      phone: row.phone || null,
-      tags_json: JSON.stringify(row.tags || []),
-      opening_hours_json: row.opening_hours == null ? null : JSON.stringify(row.opening_hours),
-      price_level: row.price_level || null,
-      verified_at: row.verified_at || null,
-      status: row.status || "REVIEW",
-    }));
-
-  if (!env.DB) return canonicalRows;
+  if (!env.DB) return [] as VenueRow[];
 
   try {
-  const result=await env.DB.prepare(
-    `SELECT id,name,category,zone_code,latitude,longitude,address,phone,tags_json,
-            opening_hours_json,price_level,verified_at,status
-       FROM destination_venues
-      WHERE status='ACTIVE'
-        AND category IN ('LOCAL_FOOD','RESTAURANT','CAFE','ATTRACTION')
-        AND (? IS NULL OR zone_code = ? OR zone_code IS NULL)
-      ORDER BY
-        CASE WHEN zone_code = ? THEN 0 ELSE 1 END,
-        COALESCE(verified_at,'') DESC,
-        name ASC
-      LIMIT 200`
-  ).bind(req.zoneCode||null,req.zoneCode||null,req.zoneCode||null).all<VenueRow>();
+    const result=await env.DB.prepare(
+      `SELECT id,name,category,zone_code,latitude,longitude,address,phone,tags_json,
+              opening_hours_json,price_level,verified_at,status
+         FROM destination_venues
+        WHERE status='ACTIVE'
+          AND category IN ('LOCAL_FOOD','RESTAURANT','CAFE','ATTRACTION')
+          AND (? IS NULL OR zone_code = ? OR zone_code IS NULL)
+        ORDER BY
+          CASE WHEN zone_code = ? THEN 0 ELSE 1 END,
+          COALESCE(verified_at,'') DESC,
+          name ASC
+        LIMIT 200`
+    ).bind(req.zoneCode||null,req.zoneCode||null,req.zoneCode||null).all<VenueRow>();
 
-  const d1Rows = result.results || [];
-  const byId = new Map<string, VenueRow>();
-  for (const row of d1Rows) byId.set(row.id, row);
-  // Open Phu Quoc CMS is canonical for editorial/operational venue state.
-  // It overrides same-id rows from the local D1 cache/import layer.
-  for (const row of canonicalRows) byId.set(row.id, row);
-  return Array.from(byId.values());
+    return result.results || [];
   } catch (error) {
-    // Migration 0008 may not have been applied yet. Canonical Open Phu Quoc
-    // venue data should still work without the local D1 acceleration layer.
+    // Engine test mode: missing venue table should never break trip planning.
     console.warn("destination_venues_unavailable", error);
-    return canonicalRows;
+    return [];
   }
 }
 
@@ -176,7 +148,6 @@ function groupVenue(rows:VenueRow[], req:DestinationContextRequest, category:str
 
 export async function buildDestinationContext(env:Env, req:DestinationContextRequest) {
   const limit=Math.max(1,Math.min(8,req.limitPerGroup||4));
-  const knowledge = await loadDestinationKnowledge();
   const allKnowledge=(knowledge.items||[]) as KnowledgeItem[];
   const ranked=rankKnowledge(allKnowledge,req);
   const venues=await loadVenues(env,req);
@@ -193,8 +164,8 @@ export async function buildDestinationContext(env:Env, req:DestinationContextReq
 
   return {
     ok:true,
-    knowledgeSource: knowledge.sourceState,
-    venueSource: venues.length ? "openpq_or_d1" : "none",
+    knowledgeSource:"bundled_snapshot",
+    venueSource: venues.length ? "d1" : "none",
     zoneCode:req.zoneCode||null,
     daypart:req.daypart||null,
     groups:{

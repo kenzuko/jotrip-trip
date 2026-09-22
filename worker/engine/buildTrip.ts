@@ -326,15 +326,21 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
 
   for (const offer of offers.results || []) {
     const hotelId = String(offer.hotel_id);
+    const hotelRef = `hotel:${hotelId}`;
     const routeRows = await env.DB.prepare(
-      `SELECT to_ref, distance_km, normal_minutes
+      `SELECT from_ref, to_ref, distance_km, normal_minutes
        FROM travel_matrix
-       WHERE from_ref = ?
-         AND to_ref IN ('activity:vinwonders', 'activity:safari', 'activity:hon-thom', 'airport:pq')`,
-    ).bind(`hotel:${hotelId}`).all();
+       WHERE
+         (from_ref = ? AND to_ref IN ('activity:vinwonders', 'activity:safari', 'activity:hon-thom', 'airport:pq'))
+         OR
+         (to_ref = ? AND from_ref IN ('activity:vinwonders', 'activity:safari', 'activity:hon-thom', 'airport:pq'))`,
+    ).bind(hotelRef, hotelRef).all();
 
     const routes = new Map(
-      (routeRows.results || []).map((row) => [String(row.to_ref), row]),
+      (routeRows.results || []).map((row) => [
+        `${String(row.from_ref)}->${String(row.to_ref)}`,
+        row,
+      ]),
     );
 
     const routeKeys = interests
@@ -350,23 +356,22 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
     let driveMinutes = 0;
     let missingRoutes = 0;
 
-    for (const key of routeKeys) {
-      const row = routes.get(key);
-      if (!row) {
-        missingRoutes += 1;
-        continue;
-      }
-      distanceKm += Number(row.distance_km || 0) * 2;
-      driveMinutes += Number(row.normal_minutes || 0) * 2;
-    }
+    const addRoundTrip = (key: string) => {
+      const outbound = routes.get(`${hotelRef}->${key}`);
+      const inbound = routes.get(`${key}->${hotelRef}`);
 
-    const airport = routes.get("airport:pq");
-    if (airport) {
-      distanceKm += Number(airport.distance_km || 0) * 2;
-      driveMinutes += Number(airport.normal_minutes || 0) * 2;
-    } else {
-      missingRoutes += 1;
-    }
+      if (!outbound || !inbound) {
+        missingRoutes += 1;
+        return;
+      }
+
+      distanceKm += Number(outbound.distance_km || 0) + Number(inbound.distance_km || 0);
+      driveMinutes += Number(outbound.normal_minutes || 0) + Number(inbound.normal_minutes || 0);
+    };
+
+    for (const key of routeKeys) addRoundTrip(key);
+
+    addRoundTrip("airport:pq");
 
     // Never turn missing route data into a fake 0-minute / 0-VND advantage.
     // Until all required legs are known, this hotel stays in planning only.

@@ -74,6 +74,18 @@ export type PlanningHotel = {
   cautions: string[];
   stayContext: StayContext;
   nearby: DestinationContext;
+  routeFacts?: Array<{
+    originId: string;
+    destinationId: string;
+    label: string;
+    distanceKm: number;
+    minutes: number;
+    staticMinutes: number | null;
+    trafficAware: boolean;
+    source: "google_maps";
+    attribution: "Google Maps";
+    checkedAt: string;
+  }>;
 };
 
 export type ScenarioInsight = {

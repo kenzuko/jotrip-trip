@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "wrangler deploy",
-    "cf-types": "wrangler types"
+    "cf-types": "wrangler types",
+    "db:migrations:list:remote": "wrangler d1 migrations list jotrip-trip-db --remote",
+    "db:migrate:remote": "wrangler d1 migrations apply jotrip-trip-db --remote"
   },
   "dependencies": {
     "react": "^19.0.0",

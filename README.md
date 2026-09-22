@@ -1,6 +1,10 @@
-# JoTrip Trip
+# JoTrip AI / JoTrip Trip
 
-Conversational trip decision engine for Phu Quoc.
+**Tri thức Phú Quốc biết trò chuyện.**
+
+> **Biến tri thức, dữ liệu sống và kinh nghiệm làm nghề ở Phú Quốc thành một người bạn ở đảo có thể trò chuyện, suy nghĩ cùng khách và hỗ trợ họ khi cần.**
+
+Implementation principle:
 
 > **AI understands the traveler. The engine calculates. Data decides. JoTrip operates.**
 

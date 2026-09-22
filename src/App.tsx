@@ -63,16 +63,9 @@ export default function App() {
       const json = (await res.json()) as TripParseResponse;
       setResult(json);
       if (voiceOn && json.ok) {
-        const p = json.parsed;
-        const spokenBits = [
-          p.days && p.nights ? `${p.days} ngày ${p.nights} đêm` : "",
-          p.adults ? `${p.adults} người lớn` : "",
-          p.children ? `${p.children} trẻ em` : "",
-          p.interests.length ? p.interests.join(" và ") : "",
-        ].filter(Boolean);
-        const spoken = spokenBits.length
-          ? `Mình hiểu rồi. ${spokenBits.join(", ")}.`
-          : "Mình hiểu rồi. Mình sẽ dựng phương án chuyến đi từ dữ liệu thật.";
+        const spoken =
+          json.assistantText ||
+          "Mình hiểu rồi. Mình sẽ dựng phương án chuyến đi từ dữ liệu thật.";
         setTimeout(() => speak(spoken), 50);
       }
     } finally {

@@ -1,6 +1,7 @@
 import { buildParseResponse } from "./scenario";
 import { estimateSevenSeatPrice } from "./rules/mobility";
 import { chatAnalyticsOverview, isInternalAuthorized } from "./internal";
+import { quotePublicActivity } from "./publicCatalog";
 
 type Env = {
   DB?: D1Database;
@@ -129,6 +130,18 @@ export default {
       }
 
       return json({ ...result, assistantText });
+    }
+
+    if (url.pathname === "/api/activity/quote" && request.method === "GET") {
+      const product = url.searchParams.get("product");
+      const audience = url.searchParams.get("audience");
+      const date = url.searchParams.get("date");
+
+      if (!product || !audience || !date) {
+        return json({ ok: false, error: "product_audience_date_required" }, 400);
+      }
+
+      return json(quotePublicActivity(product, audience, date));
     }
 
     if (url.pathname === "/api/mobility/estimate" && request.method === "POST") {

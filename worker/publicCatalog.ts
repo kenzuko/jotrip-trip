@@ -38,8 +38,13 @@ export function quotePublicActivity(
   const product = (catalog.products as Product[]).find((p) => p.id === productId);
   if (!product) return { ok: false, error: "product_not_found" };
 
+  const audienceAliases =
+    audience === "child" || audience === "elderly"
+      ? [audience, "child_or_elderly"]
+      : [audience];
+
   const candidates = (product.rates || [])
-    .filter((rate) => rate.audience === audience)
+    .filter((rate) => audienceAliases.includes(rate.audience))
     .filter(isUsable)
     .filter((rate) => inWindow(rate, date))
     .sort((a, b) => String(b.valid_from || "").localeCompare(String(a.valid_from || "")));

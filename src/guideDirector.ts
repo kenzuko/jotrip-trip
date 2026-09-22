@@ -9,7 +9,10 @@ export type GuideTarget =
   | "hotel:candidate"
   | "scenario:comparison"
   | "price:total"
-  | "warning";
+  | "warning"
+  | "discovery:eat"
+  | "discovery:cafe"
+  | "discovery:do";
 
 export type GuideCue = {
   state: "idle" | "thinking" | "speaking" | "compare" | "warning" | "confirm";
@@ -101,6 +104,24 @@ export function directGuide(
 
   const insightCue = cueForInsight(plan?.insights?.[0]);
   if (insightCue) return insightCue;
+
+  if (parsed.parsed.interests.includes("Cà phê")) {
+    return {
+      state: "speaking",
+      action: "point",
+      target: "discovery:cafe",
+      text: "Mình sẽ xem quán cà phê trong đúng khu bạn ở, không bắt bạn chạy xa chỉ vì một quán nổi tiếng.",
+    };
+  }
+
+  if (parsed.parsed.interests.includes("Ăn uống")) {
+    return {
+      state: "speaking",
+      action: "point",
+      target: "discovery:eat",
+      text: "Mình tách hai chuyện: ở khu này nên ăn món gì, và quán nào đang đủ dữ liệu để gợi ý.",
+    };
+  }
 
   if (plan?.mode === "planning") {
     const hotelCue = cueForPlanningHotel(plan.planningHotels?.[0]);

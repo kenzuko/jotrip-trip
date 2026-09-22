@@ -270,6 +270,12 @@ export default function App() {
   const [leadStatus, setLeadStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
   const guideCue = useMemo(() => directGuide(result, plan), [result, plan]);
+  const mascotSrc =
+    guideCue.action === "point" ||
+    guideCue.action === "compare" ||
+    guideCue.state === "warning"
+      ? "/assets/jotrip-guide-point.webp"
+      : "/assets/jotrip-guide-short.webp";
   const assistantText =
     advisor?.answerText ||
     result?.assistantText ||
@@ -455,7 +461,7 @@ export default function App() {
 
           <div className="assistant-stage">
             <div className={`mascot-shell mascot-${guideCue.state}`}>
-              <img src="/assets/jotrip-guide-short.webp" alt="JoTrip Guide" />
+              <img src={mascotSrc} alt="JoTrip Guide" />
             </div>
             <div className="assistant-bubble">
               <span>JoTrip Guide</span>

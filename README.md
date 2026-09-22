@@ -25,7 +25,7 @@ Implemented foundation:
 - D1 schemas for accounts, trips, chat history, intent analytics and price watches
 - private chat demand analytics endpoint
 - deterministic Trip Scenario / Pareto engine
-- optional Google Maps Routes decision layer for distance/time evidence in stay comparisons
+- provider-neutral route decision layer using JoTrip's own travel matrix for distance/time evidence
 - 7-seat car temporary rule: **15,000 VND/km**
 - date-aware public attraction price catalog
 - private hotel import staging and pricing firewall
@@ -36,17 +36,15 @@ Implemented foundation:
 
 ## Route decision layer
 
-JoTrip can optionally enrich hotel/stay comparisons with server-side Google Maps Routes API facts.
+JoTrip enriches hotel/stay comparisons with its own `travel_matrix`.
 
-- Google supplies distance and route duration.
-- JoTrip separately calculates its own mobility price and operating logic.
-- Planning uses stable baseline routing; live traffic is reserved for right-now decisions.
-- Google route content is not persisted as a permanent D1 route database.
-- Traveler-facing Google route facts must carry Google Maps attribution.
-- Runtime secret: `GOOGLE_MAPS_API_KEY`.
-- No secret is exposed to the browser.
+- Runtime does **not** depend on a paid route API.
+- Route distance/time is treated as evidence for a decision, not as marketing copy.
+- JoTrip separately calculates vehicle price and operating logic.
+- Missing route data never becomes a fake 0-minute / 0-VND advantage.
+- V0 can be seeded for important Phu Quoc routes, then refreshed from open routing data later.
 
-See `docs/GOOGLE_ROUTE_DECISION_LAYER.md`.
+See `docs/FREE_ROUTE_DECISION_LAYER.md`.
 
 ## Hotel pricing lock
 

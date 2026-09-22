@@ -49,6 +49,7 @@ export default function App() {
       p.adults ? `${p.adults} người lớn` : "",
       p.children ? `${p.children} trẻ em` : "",
       p.interests.length ? p.interests.join(" + ") : "",
+      p.stayPreferences.length ? p.stayPreferences.map(preferenceLabel).join(" + ") : "",
     ].filter(Boolean);
     return bits.join(" • ");
   }, [result]);
@@ -77,6 +78,7 @@ export default function App() {
             adults: json.parsed.adults,
             children: json.parsed.children,
             interests: json.parsed.interests,
+            stayPreferences: json.parsed.stayPreferences,
             budgetVnd: json.parsed.budgetVnd,
           }),
         });
@@ -112,6 +114,7 @@ export default function App() {
           adults: result.parsed.adults,
           children: result.parsed.children,
           interests: result.parsed.interests,
+          stayPreferences: result.parsed.stayPreferences,
           budgetVnd: result.parsed.budgetVnd,
         }),
       });
@@ -119,6 +122,40 @@ export default function App() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function preferenceLabel(value: string) {
+    const labels: Record<string, string> = {
+      food: "ăn uống",
+      cafe: "cà phê",
+      evening: "buổi tối",
+      walkable: "đi bộ",
+      quiet: "yên tĩnh",
+      local: "địa phương",
+      family: "gia đình",
+      airport: "gần sân bay",
+    };
+    return labels[value] || value;
+  }
+
+  function signalLabel(value: string) {
+    const labels: Record<string, string> = {
+      food: "Ăn uống",
+      cafe: "Cà phê",
+      evening: "Buổi tối",
+      walkable: "Đi bộ",
+      quiet: "Yên tĩnh",
+      local: "Local",
+      family: "Gia đình",
+      airport: "Sân bay",
+    };
+    return labels[value] || value;
+  }
+
+  function levelLabel(value: string) {
+    if (value === "strong") return "Tốt";
+    if (value === "moderate") return "Khá";
+    return "Hạn chế";
   }
 
   function money(value?: number) {
@@ -236,6 +273,21 @@ export default function App() {
                       <h3>{item.hotel.canonical_name}</h3>
                       {item.hotel.address && <p className="hotel-address">{item.hotel.address}</p>}
                     </div>
+                    <p>{item.stayContext.summary}</p>
+                    <div className="stay-signal-row">
+                      {item.stayContext.signals
+                        .filter((signal) => result.parsed.stayPreferences.includes(signal.key))
+                        .slice(0, 4)
+                        .map((signal) => (
+                          <span
+                            className={`stay-signal stay-signal--${signal.level}`}
+                            key={signal.key}
+                            title={signal.note}
+                          >
+                            {signalLabel(signal.key)}: {levelLabel(signal.level)}
+                          </span>
+                        ))}
+                    </div>
                     {item.reasons.map((reason) => <p key={reason}>{reason}</p>)}
                     {item.cautions.map((warning) => <p className="caution" key={warning}>{warning}</p>)}
                   </article>
@@ -331,6 +383,26 @@ export default function App() {
                     <span>Vé {money(scenario.activityCostVnd)}</span>
                     <span>Di chuyển ~{scenario.driveMinutes} phút</span>
                   </div>
+                  {scenario.stayContext && (
+                    <div className="stay-context-block">
+                      <strong>Sống quanh đây</strong>
+                      <span>{scenario.stayContext.summary}</span>
+                      <div className="stay-signal-row">
+                        {scenario.stayContext.signals
+                          .filter((signal) => result.parsed.stayPreferences.includes(signal.key))
+                          .slice(0, 4)
+                          .map((signal) => (
+                            <span
+                              className={`stay-signal stay-signal--${signal.level}`}
+                              key={signal.key}
+                              title={signal.note}
+                            >
+                              {signalLabel(signal.key)}: {levelLabel(signal.level)}
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  )}
                   {scenario.guestReasons.map((reason) => <p key={reason}>{reason}</p>)}
                   {scenario.cautions.map((warning) => <p className="caution" key={warning}>{warning}</p>)}
                 </article>

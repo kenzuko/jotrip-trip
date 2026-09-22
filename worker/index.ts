@@ -84,18 +84,51 @@ async function logConversationTurn(
 
 function assistantTextFor(result: ReturnType<typeof buildParseResponse>) {
   const p = result.parsed;
-  const bits = [
-    p.days && p.nights ? `${p.days} ngày ${p.nights} đêm` : "",
-    p.adults ? `${p.adults} người lớn` : "",
-    p.children ? `${p.children} trẻ em` : "",
-    p.interests.length ? p.interests.join(" và ") : "",
-  ].filter(Boolean);
+  const lang = p.language || "vi";
 
-  if (bits.length) {
-    return `Mình hiểu rồi: ${bits.join(", ")}. Mình sẽ dùng dữ liệu thật để dựng phương án.`;
+  const duration = p.days && p.nights
+    ? lang === "en" ? `${p.days} days, ${p.nights} nights`
+    : lang === "ko" ? `${p.nights}박 ${p.days}일`
+    : lang === "ru" ? `${p.days} дн., ${p.nights} ноч.`
+    : lang === "zh" ? `${p.days}天${p.nights}晚`
+    : `${p.days} ngày ${p.nights} đêm`
+    : "";
+
+  const party = p.adults
+    ? lang === "en" ? `${p.adults} adults`
+    : lang === "ko" ? `성인 ${p.adults}명`
+    : lang === "ru" ? `${p.adults} взрослых`
+    : lang === "zh" ? `${p.adults}位成人`
+    : `${p.adults} người lớn`
+    : "";
+
+  const bits = [duration, party, p.interests.slice(0, 2).join(" + ")].filter(Boolean);
+  const summary = bits.join(", ");
+
+  if (lang === "en") {
+    return summary
+      ? `Got it - ${summary}. I’m building a few practical options now.`
+      : "Got it. I’m building a few practical options now.";
+  }
+  if (lang === "ko") {
+    return summary
+      ? `알겠어요 - ${summary}. 지금 동선까지 같이 계산해볼게요.`
+      : "알겠어요. 지금 여행 동선부터 정리해볼게요.";
+  }
+  if (lang === "ru") {
+    return summary
+      ? `Понял - ${summary}. Сейчас соберу несколько практичных вариантов.`
+      : "Понял. Сейчас соберу несколько практичных вариантов.";
+  }
+  if (lang === "zh") {
+    return summary
+      ? `明白了 - ${summary}。我现在开始组合几个实用方案。`
+      : "明白了。我现在开始组合几个实用方案。";
   }
 
-  return "Mình hiểu rồi. Mình sẽ dùng dữ liệu thật để dựng phương án chuyến đi.";
+  return summary
+    ? `Mình hiểu rồi - ${summary}. Để mình ráp vài phương án thực dụng nha.`
+    : "Mình hiểu rồi. Để mình ráp vài phương án thực dụng nha.";
 }
 
 export default {

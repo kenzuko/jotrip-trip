@@ -2,9 +2,9 @@
   "schema_version": "1.0",
   "updated_at": "2026-09-22",
   "notes": [
-    "Canonical route points for the free-first OSM/OSRM matrix.",
-    "Null coordinates are intentional: do not route from an unresolved entrance/centroid.",
-    "Hotels should eventually receive exact entrance coordinates from CMS/Open Phu Quoc normalization."
+    "Snapshot from Open Phu Quoc CMS/location data for engine testing.",
+    "CMS remains the upstream source; this file is temporary until live sync is introduced.",
+    "routing_ok=false means JoTrip must not generate numeric road claims for that target."
   ],
   "points": [
     {
@@ -15,7 +15,9 @@
       "longitude": 103.9591875,
       "address": "Chợ Dương Đông, đường Ngô Quyền, Dương Đông, Phú Quốc, An Giang, Việt Nam",
       "source": "openpq_destination_snapshot",
-      "verified_at": "2026-09-22"
+      "verified_at": "2026-09-22",
+      "precision": "site_centroid",
+      "routing_ok": true
     },
     {
       "ref": "activity:sunset-town",
@@ -24,28 +26,37 @@
       "latitude": 10.026903,
       "longitude": 104.007917,
       "address": "Sunset Town, An Thới, Phú Quốc, An Giang, Việt Nam",
-      "source": "openpq_destination_snapshot",
-      "verified_at": "2026-09-22"
+      "source": "openpq:place_sunset_town",
+      "verified_at": "2026-09-22",
+      "precision": "area_anchor",
+      "source_id": "map_crosscheck_20260922",
+      "routing_ok": true
     },
     {
       "ref": "activity:vinwonders",
       "label": "VinWonders Phú Quốc",
       "kind": "activity",
-      "latitude": null,
-      "longitude": null,
-      "address": "VinWonders Phú Quốc, Bãi Dài, Gành Dầu, Phú Quốc",
-      "source": "needs_exact_entrance",
-      "verified_at": null
+      "latitude": 10.3406875,
+      "longitude": 103.8540625,
+      "address": "Khu Bãi Dài, Gành Dầu, Phú Quốc, An Giang 92512, Việt Nam",
+      "source": "openpq:place_vinwonders",
+      "verified_at": "2026-09-22",
+      "precision": "site_centroid",
+      "source_id": "google_maps_location_lookup",
+      "routing_ok": true
     },
     {
       "ref": "activity:safari",
       "label": "Vinpearl Safari Phú Quốc",
       "kind": "activity",
-      "latitude": null,
-      "longitude": null,
-      "address": "Vinpearl Safari Phú Quốc, Gành Dầu, Phú Quốc",
-      "source": "needs_exact_entrance",
-      "verified_at": null
+      "latitude": 10.3370625,
+      "longitude": 103.8914375,
+      "address": "Bãi Dài, Gành Dầu, Phú Quốc, An Giang 922200, Việt Nam",
+      "source": "openpq:place_vinpearl_safari",
+      "verified_at": "2026-09-22",
+      "precision": "site_centroid",
+      "source_id": "google_maps_location_lookup",
+      "routing_ok": true
     },
     {
       "ref": "activity:hon-thom",
@@ -55,7 +66,8 @@
       "longitude": null,
       "address": "Ga An Thới - Cáp treo Hòn Thơm, Sunset Town, An Thới, Phú Quốc",
       "source": "needs_exact_entrance",
-      "verified_at": null
+      "verified_at": null,
+      "routing_ok": false
     },
     {
       "ref": "airport:pq",
@@ -65,7 +77,8 @@
       "longitude": null,
       "address": "Sân bay quốc tế Phú Quốc, Phú Quốc, An Giang, Việt Nam",
       "source": "needs_exact_entrance",
-      "verified_at": null
+      "verified_at": null,
+      "routing_ok": false
     }
   ]
 }

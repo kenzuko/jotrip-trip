@@ -1,3 +1,5 @@
+import { loadOpenPqVenues } from "../openPqVenueSource";
+
 type Env = { DB?: D1Database };
 
 export type StayPreference =
@@ -123,7 +125,21 @@ const ZONE_BASELINES: Record<string, {
 };
 
 async function verifiedVenueCounts(env: Env, zoneCode: string) {
-  if (!env.DB) return null;
+  const canonical = await loadOpenPqVenues();
+  const counts = { food: 0, cafe: 0, attraction: 0 };
+
+  for (const row of canonical.rows) {
+    if ((row.status || "REVIEW") !== "ACTIVE") continue;
+    if (row.zone_code && row.zone_code !== zoneCode) continue;
+    if (!row.verified_at) continue;
+    if (row.category === "LOCAL_FOOD" || row.category === "RESTAURANT") counts.food += 1;
+    if (row.category === "CAFE") counts.cafe += 1;
+    if (row.category === "ATTRACTION") counts.attraction += 1;
+  }
+
+  if (!env.DB) {
+    return counts.food || counts.cafe || counts.attraction ? counts : null;
+  }
 
   try {
     const result = await env.DB.prepare(
@@ -136,15 +152,14 @@ async function verifiedVenueCounts(env: Env, zoneCode: string) {
        GROUP BY category`,
     ).bind(zoneCode).all<{category:string;count:number}>();
 
-    const counts = { food: 0, cafe: 0, attraction: 0 };
     for (const row of result.results || []) {
       if (row.category === "LOCAL_FOOD" || row.category === "RESTAURANT") counts.food += Number(row.count || 0);
       if (row.category === "CAFE") counts.cafe += Number(row.count || 0);
       if (row.category === "ATTRACTION") counts.attraction += Number(row.count || 0);
     }
-    return counts;
+    return counts.food || counts.cafe || counts.attraction ? counts : null;
   } catch {
-    return null;
+    return counts.food || counts.cafe || counts.attraction ? counts : null;
   }
 }
 

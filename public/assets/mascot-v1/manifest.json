@@ -1,0 +1,48 @@
+{
+  "version": "2026-09-22",
+  "status": "LOCKED_RUNTIME",
+  "source_archive": "JOTRIP_MASCOT_STATE_PACK_LOCKED_2026-09-22.zip",
+  "rule": "Reuse these exact runtime derivatives. Do not regenerate or substitute mascot artwork.",
+  "runtime": [
+    {
+      "state": "greeting",
+      "file": "01_greeting_wave.webp",
+      "sha256": "b2df18bef723b75a5de4007948305c9aa6376f30b2f14d439cdb8f747489751c"
+    },
+    {
+      "state": "listening",
+      "file": "02_listening.webp",
+      "sha256": "3e2ad1dc29510370e11d1a59b7a58d0f13b70ecae68d08185fac907fe607f925"
+    },
+    {
+      "state": "thinking",
+      "file": "03_thinking.webp",
+      "sha256": "5670c57c9fe5ada6d9b72d35dbd490dc3bd55c4d06ea32b9863fa15b74d0564a"
+    },
+    {
+      "state": "speaking",
+      "file": "04_speaking.webp",
+      "sha256": "4924f869d0aea94ff7b161fdecaf8a14292e0a84085a13ad8d689f1a857d3f9d"
+    },
+    {
+      "state": "guiding",
+      "file": "05_guiding_map.webp",
+      "sha256": "87359e29730d631342554c688025b046785aa2ce49ccd393d9aec19c0f1170b9"
+    },
+    {
+      "state": "compare",
+      "file": "06_compare_two_directions.webp",
+      "sha256": "d61960f627c69e24baff271b0a7b1d34ca901c960698c4df770ba1a205bf7a5e"
+    },
+    {
+      "state": "checking",
+      "file": "07_checking_phone_review.webp",
+      "sha256": "84057ea980f64b6409c0cb0ee20660e2963f3742560f3ab1061b72ec5062e0ca"
+    },
+    {
+      "state": "confirm",
+      "file": "08_confirm_thumbs_up.webp",
+      "sha256": "3d834264d7ebc10d3bddaa08cb7443f43193a048dbffbad731025933a209d9ef"
+    }
+  ]
+}

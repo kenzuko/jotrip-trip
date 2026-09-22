@@ -313,6 +313,21 @@ function HotelCard({
         </div>
       )}
 
+      {item.routeFacts?.length ? (
+        <div className="route-evidence">
+          <div className="route-evidence-head">
+            <strong>Đi lại từ đây</strong>
+            <span translate="no">Google Maps</span>
+          </div>
+          {item.routeFacts.slice(0, 3).map((fact) => (
+            <div className="route-evidence-row" key={fact.destinationId}>
+              <span>{fact.label}</span>
+              <b>~{fact.minutes} phút · {fact.distanceKm.toFixed(1)} km</b>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       <Discovery context={item.nearby} compact />
     </article>
   );

@@ -1999,3 +1999,67 @@ a {
   object-position: 50% 20%;
   transform: translate(-10%, 2%);
 }
+
+
+/* Locked mascot state pack - semantic image swaps, no legacy mascot crossfade. */
+.mascot-preload {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  inset: auto auto -10px -10px;
+}
+
+.mascot-preload img {
+  width: 1px;
+  height: 1px;
+}
+
+.mascot-frame--state {
+  opacity: 1;
+  transform: none;
+  padding: 0;
+  animation: mascotStateIn .22s ease-out both;
+}
+
+@keyframes mascotStateIn {
+  from {
+    opacity: .35;
+    transform: translateY(3px) scale(.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.mascot-state-listening .mascot-frame--state {
+  transform-origin: 46% 85%;
+}
+
+.mascot-state-thinking .mascot-frame--state,
+.mascot-state-checking .mascot-frame--state {
+  filter: drop-shadow(0 12px 18px rgba(18,61,59,.08));
+}
+
+.mascot-state-compare .mascot-frame--state,
+.mascot-state-guiding .mascot-frame--state {
+  object-position: center bottom;
+}
+
+.mascot-state-confirm .mascot-frame--state {
+  object-position: center bottom;
+}
+
+.message-avatar--mascot img {
+  object-fit: contain;
+  object-position: center 24%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascot-frame--state {
+    animation: none;
+  }
+}

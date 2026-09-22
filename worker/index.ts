@@ -5,6 +5,7 @@ import { quotePublicActivity } from "./publicCatalog";
 import { buildTripScenarios } from "./engine/buildTrip";
 import { importPrivateHotelRates } from "./privateHotelImport";
 import { generatePublicHotelOffer } from "./internalOffer";
+import { evaluatePriceWatches } from "./engine/watch";
 
 type Env = {
   DB?: D1Database;
@@ -165,6 +166,27 @@ export default {
         return json({
           ok: false,
           error: "trip_build_failed",
+          message: error instanceof Error ? error.message : String(error),
+        }, 500);
+      }
+    }
+
+    if (url.pathname === "/api/internal/watches/evaluate" && request.method === "POST") {
+      if (!isInternalAuthorized(request, env)) {
+        return json({ ok: false, error: "unauthorized" }, 401);
+      }
+
+      const body = await request
+        .json<{ watchId?: string }>()
+        .catch(() => ({}));
+
+      try {
+        return json(await evaluatePriceWatches(env, body));
+      } catch (error) {
+        console.error("watch_evaluation_failed", error);
+        return json({
+          ok: false,
+          error: "watch_evaluation_failed",
           message: error instanceof Error ? error.message : String(error),
         }, 500);
       }

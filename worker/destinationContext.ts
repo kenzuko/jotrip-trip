@@ -109,6 +109,7 @@ async function loadVenues(env:Env, req:DestinationContextRequest) {
   const canonical = await loadOpenPqVenues();
   const canonicalRows: VenueRow[] = canonical.rows
     .filter((row) => (row.status || "REVIEW") === "ACTIVE")
+    .filter((row) => !req.zoneCode || !row.zone_code || row.zone_code === req.zoneCode)
     .map((row) => ({
       id: row.id,
       name: row.name,

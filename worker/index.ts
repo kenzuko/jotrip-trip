@@ -10,6 +10,7 @@ import { importTravelMatrix } from "./travelMatrixImport";
 import { buildDestinationContext } from "./destinationContext";
 import { importDestinationVenues } from "./destinationImport";
 import { answerAdvisor } from "./advisor";
+import { saveBookingLead } from "./bookingLead";
 
 type Env = {
   DB?: D1Database;
@@ -232,6 +233,41 @@ export default {
       }
 
       return json({ ...result, assistantText });
+    }
+
+    if (url.pathname === "/api/booking/lead" && request.method === "POST") {
+      const body = await request
+        .json<{
+          sessionId?: string | null;
+          contact?: string;
+          contactChannel?: "phone" | "email" | "whatsapp" | "other";
+          language?: string;
+          note?: string;
+          tripContext?: unknown;
+          consent?: boolean;
+          website?: string;
+        }>()
+        .catch(() => ({}));
+
+      try {
+        return json(await saveBookingLead(env,{
+          sessionId:body.sessionId,
+          contact:String(body.contact||""),
+          contactChannel:body.contactChannel,
+          language:body.language,
+          note:body.note,
+          tripContext:body.tripContext,
+          consent:body.consent,
+          website:body.website,
+        }));
+      } catch (error) {
+        console.error("booking_lead_failed", error);
+        return json({
+          ok:false,
+          error:"booking_lead_failed",
+          message:error instanceof Error?error.message:String(error),
+        },500);
+      }
     }
 
     if (url.pathname === "/api/advisor/answer" && request.method === "POST") {

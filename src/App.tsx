@@ -9,11 +9,9 @@ import type {
 import { directGuide } from "./guideDirector";
 
 const examples = [
-  { label: "VI", text: "3 ngày 2 đêm, 2 người, chơi Vin, thích ăn ngon và cà phê" },
+  { label: "Gợi ý", text: "3 ngày 2 đêm, nhà mình có bé, muốn chơi Vin và Safari thì ở đâu hợp?" },
+  { label: "Gợi ý", text: "Ở Sunset Town thì buổi tối ăn gì, cafe ở đâu, còn gì để chơi?" },
   { label: "EN", text: "Where should we stay for Safari, coffee and quiet evenings?" },
-  { label: "한국어", text: "선셋타운 근처에서 저녁에 뭐 하고 어디서 먹어요?" },
-  { label: "RU", text: "Где лучше жить, если хотим Сафари и хорошие кафе?" },
-  { label: "中文", text: "住在日落小镇附近有什么好吃的和可以玩的？" },
 ];
 
 const languageNames: Record<string, string> = {
@@ -324,11 +322,13 @@ export default function App() {
     guideCue.action === "point" ||
     guideCue.action === "compare" ||
     guideCue.state === "warning";
+  const firstGreeting =
+    "Chào bạn. Mình là JoTrip. Bạn đang tính chuyến đi Phú Quốc thế nào?";
   const assistantText =
     replyText ||
     advisor?.answerText ||
     result?.assistantText ||
-    guideCue.text;
+    (result ? guideCue.text : firstGreeting);
 
   const summaryBits = useMemo(() => {
     if (!result) return [];
@@ -642,15 +642,16 @@ export default function App() {
       </header>
 
       <div className="page-shell">
-        <section className="conversation-hero">
+        <section className={hasResponse ? "conversation-hero conversation-hero--active" : "conversation-hero conversation-hero--fresh"}>
           <div className="hero-copy">
-            <span className="eyebrow">JOTRIP · PHÚ QUỐC</span>
-            <h1>Tri thức Phú Quốc biết trò chuyện.</h1>
-            <p>
-              Không phải một trang du lịch bắt bạn tự lọc hàng chục lựa chọn.
-              Bạn hỏi như nói với người ở đảo - JoTrip hiểu chuyến đi, giải thích hơn thua,
-              đưa lời khuyên trước rồi mới mở dữ liệu chi tiết. Khi thấy ổn mới chuyển sang booking.
-            </p>
+            <span className="eyebrow">TRI THỨC PHÚ QUỐC BIẾT TRÒ CHUYỆN</span>
+            <h1>{hasResponse ? "Mình đang theo chuyến này cùng bạn." : "Bạn cứ kể chuyến đi của mình."}</h1>
+            {!hasResponse && (
+              <p>
+                JoTrip hiểu cách đi, khu ở, xe, vé và những gì đang diễn ra trên đảo.
+                Mình nói trước điều đáng cân nhắc, rồi mới mở dữ liệu chi tiết khi bạn cần.
+              </p>
+            )}
           </div>
 
           <div className="assistant-stage">
@@ -679,8 +680,8 @@ export default function App() {
               </div>
             </div>
             <div className="assistant-bubble">
-              <span>JoTrip Guide</span>
-              <p>{assistantText || "Bạn cứ hỏi. Mình tính phần khó."}</p>
+              <span>JoTrip</span>
+              <p>{assistantText}</p>
             </div>
           </div>
 
@@ -688,7 +689,7 @@ export default function App() {
             <textarea
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Ví dụ: 3 ngày 2 đêm chơi Vin thì nên ở đâu? Tối muốn đi bộ và ăn ngon."
+              placeholder="Cứ nói tự nhiên, ví dụ: nhà mình 3 ngày 2 đêm, có bé, muốn chơi Vin nhưng tối vẫn thích ra ngoài ăn."
               rows={3}
               aria-label="Hỏi JoTrip"
             />
@@ -713,9 +714,14 @@ export default function App() {
             ))}
           </div>
 
+          <div className="prompt-note">
+            Bạn không cần điền form. Cứ nói như đang hỏi một người ở đảo.
+          </div>
+
           <div className="trust-line">
-            <span>Không đủ dữ liệu thì nói chưa đủ</span>
-            <span>Không tự bịa giá, quán hay tồn phòng</span>
+            <span>Chưa chắc thì nói chưa chắc</span>
+            <span>Không bịa giá, quán hay tồn phòng</span>
+            <span>Thấy ổn rồi mới chuyển sang booking</span>
           </div>
         </section>
 

@@ -1,0 +1,44 @@
+/* Chat AI 1.1 - Warm Island Premium intro, first iPhone visit only.
+   Identity lock: official logo asset and exact locked mascot WebPs.
+   No style or structural changes after the first user query. */
+.welcome-mobile-break,.warm-brand-whisper{display:none}
+@media(max-width:560px){
+ .app:not(.app--active){background:linear-gradient(180deg,#fffdf6 0%,#fcfbf2 64%,#f8faf2 100%);min-height:100dvh}
+ .app:not(.app--active) .topbar{height:76px;padding:7px 17px;background:rgba(255,253,247,.94);border-color:rgba(219,232,208,.68)}
+ .app:not(.app--active) .brand{min-width:0;flex:0 1 auto}
+ .app:not(.app--active) .brand img{display:block;width:min(36vw,148px);max-height:65px;object-fit:contain}
+ .app:not(.app--active) .quiet{min-height:36px;border-radius:999px;border:1px solid #d9e5cc;background:rgba(255,255,255,.95);box-shadow:0 4px 15px rgba(81,113,62,.07);color:#527238}
+ .app:not(.app--active) .page-shell{width:min(calc(100% - 34px),440px);padding:15px 0 calc(29px + env(safe-area-inset-bottom))}
+ .conversation-hero--fresh{isolation:isolate;position:relative;min-height:0;overflow:visible;gap:0;padding:0}
+ .conversation-hero--fresh .warm-island-scene{position:absolute;z-index:-1;pointer-events:none;left:-17px;width:calc(100% + 34px);top:112px;height:475px;background-image:linear-gradient(180deg,#fffdf6 0%,rgba(255,253,246,.68) 11%,transparent 37%,transparent 76%,#fffdf6 100%),url('/assets/warm-island-scene.svg');background-position:center,center 51%;background-size:cover;background-repeat:no-repeat;filter:saturate(1.03)}
+ .conversation-hero--fresh .hero-copy,.conversation-hero--fresh .assistant-stage,.conversation-hero--fresh .prompt,.conversation-hero--fresh .fresh-examples-title,.conversation-hero--fresh .example-chips,.conversation-hero--fresh .warm-brand-whisper{position:relative;z-index:1}
+ .conversation-hero--fresh .eyebrow{color:#658243;font-size:10px;letter-spacing:.16em}
+ .conversation-hero--fresh .hero-copy h1{max-width:380px;margin:12px 0 0;color:#203e34;font-size:clamp(31px,8.6vw,38px);line-height:1.11;letter-spacing:-.047em;text-shadow:0 1px 12px rgba(255,253,246,.96)}
+ .conversation-hero--fresh .welcome-destination{color:#77944c}
+ .conversation-hero--fresh .welcome-mobile-break{display:block}
+ .conversation-hero--fresh .hero-copy::after{content:'';display:block;width:120px;height:5px;margin:10px 0 0 82px;border-radius:50%;background:#fcbc12;transform:rotate(-2deg)}
+ .conversation-hero--fresh .assistant-stage{display:block;width:100%;height:clamp(283px,83vw,325px);margin:4px 0 0}
+ .conversation-hero--fresh .mascot-shell{position:absolute;left:-20px;bottom:-4px;width:65%;height:100%;overflow:visible;transform-origin:50% 92%;border:0;border-radius:0;background:none;box-shadow:none}
+ .conversation-hero--fresh .mascot-shell::after{bottom:8px;left:16%;right:10%;background:rgba(32,60,37,.14)}
+ .conversation-hero--fresh .mascot-frame--state{object-fit:contain;object-position:center bottom;filter:drop-shadow(0 12px 14px rgba(38,67,37,.16))}
+ .conversation-hero--fresh .mascot-state-greeting .mascot-frame--state{animation:warmWelcome 3.8s ease-in-out infinite}
+ .conversation-hero--fresh .assistant-bubble{position:absolute;right:0;bottom:50px;width:58%;min-height:0;padding:15px 13px 17px;border:1px solid #d6e2c1;border-radius:22px 22px 22px 8px;background:linear-gradient(135deg,rgba(255,255,255,.97),rgba(255,253,247,.96));box-shadow:0 16px 40px rgba(57,84,55,.17);backdrop-filter:blur(9px)}
+ .conversation-hero--fresh .assistant-bubble::before{content:'';position:absolute;left:-7px;bottom:21px;width:16px;height:16px;background:#fffef8;border-left:1px solid #d6e2c1;border-bottom:1px solid #d6e2c1;transform:rotate(45deg)}
+ .conversation-hero--fresh .assistant-bubble span{color:#77944c;font-size:12px;letter-spacing:.01em}
+ .conversation-hero--fresh .assistant-bubble p{color:#26473c;font-size:clamp(14px,3.9vw,16px);line-height:1.42;font-weight:700}
+ .conversation-hero--fresh .prompt{margin-top:-2px;padding:7px;gap:5px;min-height:78px;border:1px solid #bbd0a6;border-radius:24px;background:rgba(255,255,255,.97);box-shadow:0 15px 38px rgba(52,84,43,.16),0 0 0 3px rgba(255,255,255,.6)}
+ .conversation-hero--fresh .prompt:focus-within{border-color:#77944c;box-shadow:0 0 0 3px rgba(119,148,76,.18),0 15px 38px rgba(52,84,43,.16)}
+ .conversation-hero--fresh .prompt textarea{height:64px;min-height:64px;max-height:115px;padding:11px 9px;font-size:16px}
+ .conversation-hero--fresh .prompt button{height:46px;min-width:90px;padding:0 11px;background:linear-gradient(135deg,#809e51,#608136);box-shadow:0 7px 15px rgba(67,100,42,.22)}
+ .conversation-hero--fresh .fresh-examples-title{margin:23px 0 11px;text-align:center;color:#70815b;font-size:10px;letter-spacing:.07em;text-transform:uppercase}
+ .conversation-hero--fresh .example-chips{grid-template-columns:1fr;gap:8px}
+ .conversation-hero--fresh .example-chips button{min-height:51px;padding:9px 12px;border:1px solid #e2e9d8;border-radius:15px;background:rgba(255,255,255,.92);box-shadow:0 5px 15px rgba(58,86,49,.07)}
+ .conversation-hero--fresh .example-chips button::before{content:'♧';display:grid;place-items:center;width:29px;height:29px;flex:0 0 29px;border-radius:10px;color:#718d4b;background:#f0f4e6;font-size:20px}
+ .conversation-hero--fresh .example-chips button:nth-child(2)::before{content:'☀';color:#ca9425;background:#fff3df}
+ .conversation-hero--fresh .example-chips button:nth-child(3)::before{content:'◎';color:#548b8b;background:#e7f2f2}
+ .conversation-hero--fresh .example-chips button .mobile-example{color:#31503e;font-size:13px;font-weight:650}
+ .conversation-hero--fresh .warm-brand-whisper{display:block;margin:23px 0 0;text-align:center;color:#7b9279;font-size:9px;font-weight:730;letter-spacing:.17em}
+}
+@media(max-width:360px){.conversation-hero--fresh .warm-island-scene{top:108px;height:435px}.conversation-hero--fresh .assistant-stage{height:284px}.conversation-hero--fresh .assistant-bubble{bottom:45px;padding:12px}.conversation-hero--fresh .assistant-bubble p{font-size:14px}}
+@keyframes warmWelcome{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@media(prefers-reduced-motion:reduce){.conversation-hero--fresh .mascot-state-greeting .mascot-frame--state{animation:none}}

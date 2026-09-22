@@ -10,9 +10,9 @@ import { directGuide } from "./guideDirector";
 import { resolveMascotState, runtimeMascotPath } from "./mascotState";
 
 const examples = [
-  { label: "Gợi ý", text: "3 ngày 2 đêm, nhà mình có bé, muốn chơi Vin và Safari thì ở đâu hợp?" },
-  { label: "Gợi ý", text: "Ở Sunset Town thì buổi tối ăn gì, cafe ở đâu, còn gì để chơi?" },
-  { label: "EN", text: "Where should we stay for Safari, coffee and quiet evenings?" },
+  { label: "Gợi ý", text: "3 ngày 2 đêm, nhà mình có bé, muốn chơi Vin và Safari thì ở đâu hợp?", mobileText: "Có bé, đi Vin và Safari, ở đâu tiện?" },
+  { label: "Gợi ý", text: "Ở Sunset Town thì buổi tối ăn gì, cafe ở đâu, còn gì để chơi?", mobileText: "Tối ở Sunset Town ăn gì, chơi gì?" },
+  { label: "EN", text: "Where should we stay for Safari, coffee and quiet evenings?", mobileText: "Ask JoTrip in English" },
 ];
 
 const languageNames: Record<string, string> = {
@@ -829,6 +829,9 @@ export default function App() {
     }
   }
 
+  // Only the unanswered phone welcome needs a shorter hint; desktop copy stays unchanged.
+  const isPhoneWelcome = typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 560px)").matches;
   const hasResponse = Boolean(result);
   const canHandoff = Boolean(
     result &&
@@ -847,7 +850,14 @@ export default function App() {
       </div>
       <header className="topbar">
         <a className="brand" href="/" aria-label="JoTrip">
-          <img src="/assets/jotrip-logo.webp" alt="JoTrip" />
+          {hasResponse ? (
+            <img src="/assets/jotrip-logo.webp" alt="JoTrip" />
+          ) : (
+            <picture>
+              <source media="(max-width: 560px)" srcSet="/assets/approved-jo-trip-intro.png" />
+              <img src="/assets/jotrip-logo.webp" alt="JoTrip" />
+            </picture>
+          )}
         </a>
 
         <div className="top-actions">
@@ -875,9 +885,10 @@ export default function App() {
 
       <div className="page-shell">
         <section className={hasResponse ? "conversation-hero conversation-hero--active" : "conversation-hero conversation-hero--fresh"}>
+          {!hasResponse && <div className="warm-island-scene" aria-hidden="true" />}
           <div className="hero-copy">
             <span className="eyebrow">JOTRIP · PHÚ QUỐC</span>
-            <h1>{hasResponse ? "Cứ hỏi tiếp, mình đang theo chuyến này." : "Tri thức Phú Quốc biết trò chuyện."}</h1>
+            <h1>{hasResponse ? "Cứ hỏi tiếp, mình đang theo chuyến này." : <>Tri thức <span className="welcome-destination">Phú Quốc</span><br className="welcome-mobile-break" />{" "}biết trò chuyện.</>}</h1>
             {!hasResponse && (
               <p>
                 Cứ kể chuyến đi như bạn vẫn nói với một người ở đảo. JoTrip sẽ hiểu hoàn cảnh,
@@ -900,7 +911,7 @@ export default function App() {
                 key={mascotSrc}
                 className="mascot-frame mascot-frame--state"
                 src={mascotSrc}
-                alt="JoTrip Guide"
+                alt={hasResponse ? "JoTrip Guide" : "JoTrip đang vẫy tay chào bạn"}
               />
               <div className="voice-bars" aria-hidden="true">
                 <i></i><i></i><i></i><i></i>
@@ -923,7 +934,13 @@ export default function App() {
               onChange={(event) => setInput(event.target.value)}
               onFocus={() => setInputFocused(true)}
               onBlur={() => setInputFocused(false)}
-              placeholder={hasResponse ? "Hỏi tiếp JoTrip..." : "Cứ nói tự nhiên, ví dụ: nhà mình 3 ngày 2 đêm, có bé, muốn chơi Vin nhưng tối vẫn thích ra ngoài ăn."}
+              placeholder={
+                hasResponse
+                  ? "Hỏi tiếp JoTrip..."
+                  : isPhoneWelcome
+                    ? "Ví dụ: 3 ngày 2 đêm, có bé..."
+                    : "Cứ nói tự nhiên, ví dụ: nhà mình 3 ngày 2 đêm, có bé, muốn chơi Vin nhưng tối vẫn thích ra ngoài ăn."
+              }
               rows={3}
               aria-label="Hỏi JoTrip"
             />
@@ -932,10 +949,12 @@ export default function App() {
             </button>
           </form>
 
-          <div className="example-chips" aria-label="Ví dụ đa ngôn ngữ">
+          {!hasResponse && <p className="fresh-examples-title">Hoặc bắt đầu bằng một câu này</p>}
+          <div className="example-chips" aria-label="Câu hỏi gợi ý">
             {examples.map((example) => (
               <button
-                key={example.label}
+                key={example.text}
+                aria-label={example.text}
                 type="button"
                 onClick={() => {
                   setInput(example.text);
@@ -943,7 +962,8 @@ export default function App() {
                 }}
               >
                 <b>{example.label}</b>
-                <span>{example.text}</span>
+                <span className="full-example">{example.text}</span>
+                <span className="mobile-example" aria-hidden="true">{example.mobileText}</span>
               </button>
             ))}
           </div>
@@ -957,6 +977,7 @@ export default function App() {
             <span>Không bịa giá, quán hay tồn phòng</span>
             <span>Thấy ổn rồi mới chuyển sang booking</span>
           </div>
+          {!hasResponse && <div className="warm-brand-whisper" aria-hidden="true">PHÚ QUỐC · NHIỀU HƠN MỘT CHUYẾN ĐI</div>}
         </section>
 
         {result && (

@@ -66,7 +66,11 @@ export function resolveMascotState(input: {
   confirming?: boolean;
   guiding?: boolean;
 }): MascotState {
-  if (!input.hasResponse) return "greeting";
+  // Only the unanswered entry screen changes: the locked pose follows real activity.
+  if (!input.hasResponse) {
+    if (input.busy) return "thinking";
+    return input.inputFocused ? "listening" : "greeting";
+  }
   if (input.confirming) return "confirm";
   if (input.checking) return "checking";
   if (input.busy) return "thinking";

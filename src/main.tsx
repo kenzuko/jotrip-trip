@@ -2,6 +2,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./styles.css";
+import "./iphoneGreeting.css";
+import "./warmIslandIntro.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

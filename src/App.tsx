@@ -317,7 +317,7 @@ function HotelCard({
         <div className="route-evidence">
           <div className="route-evidence-head">
             <strong>Đi lại từ đây</strong>
-            <span translate="no">Google Maps</span>
+            <span>Dữ liệu tuyến đường</span>
           </div>
           {item.routeFacts.slice(0, 3).map((fact) => (
             <div className="route-evidence-row" key={fact.destinationId}>

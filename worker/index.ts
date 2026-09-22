@@ -6,6 +6,7 @@ import { buildTripScenarios } from "./engine/buildTrip";
 import { importPrivateHotelRates } from "./privateHotelImport";
 import { generatePublicHotelOffer } from "./internalOffer";
 import { evaluatePriceWatches } from "./engine/watch";
+import { importTravelMatrix } from "./travelMatrixImport";
 
 type Env = {
   DB?: D1Database;
@@ -166,6 +167,27 @@ export default {
         return json({
           ok: false,
           error: "trip_build_failed",
+          message: error instanceof Error ? error.message : String(error),
+        }, 500);
+      }
+    }
+
+    if (url.pathname === "/api/internal/travel-matrix/import" && request.method === "POST") {
+      if (!isInternalAuthorized(request, env)) {
+        return json({ ok: false, error: "unauthorized" }, 401);
+      }
+
+      const body = await request
+        .json<{ rows?: any[] }>()
+        .catch(() => ({}));
+
+      try {
+        return json(await importTravelMatrix(env, body.rows || []));
+      } catch (error) {
+        console.error("travel_matrix_import_failed", error);
+        return json({
+          ok: false,
+          error: "travel_matrix_import_failed",
           message: error instanceof Error ? error.message : String(error),
         }, 500);
       }

@@ -1438,3 +1438,172 @@ a {
   color: var(--ink);
   font-size: 11px;
 }
+
+
+/* Mobile-first decision canvas: two meaningful ways to stay, never a winner. */
+.decision-canvas {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid #dfeceb;
+  border-radius: 26px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.98), rgba(245,251,250,.96));
+  box-shadow: var(--shadow-soft);
+}
+
+.decision-canvas-head {
+  display: grid;
+  gap: 7px;
+}
+
+.decision-canvas-head h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(23px, 3vw, 32px);
+  line-height: 1.08;
+  letter-spacing: -.035em;
+}
+
+.decision-canvas-head p {
+  max-width: 680px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.decision-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.decision-card {
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid #dfecea;
+  border-radius: 20px;
+  background: rgba(255,255,255,.96);
+}
+
+.decision-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+}
+
+.decision-card-top > span {
+  display: inline-flex;
+  padding: 6px 9px;
+  border-radius: 999px;
+  color: #176c66;
+  background: #e1f5f2;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.decision-card-top small {
+  color: #8ba09d;
+  font-size: 9px;
+}
+
+.decision-card h3 {
+  margin: 11px 0 0;
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.2;
+  letter-spacing: -.02em;
+}
+
+.decision-card > p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.48;
+}
+
+.decision-route-list {
+  display: grid;
+  gap: 0;
+  margin-top: 12px;
+  border-top: 1px solid #edf2f1;
+}
+
+.decision-route-list > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid #edf2f1;
+}
+
+.decision-route-list span {
+  color: #617b78;
+  font-size: 11px;
+}
+
+.decision-route-list b {
+  flex: 0 0 auto;
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.decision-route-pending {
+  margin-top: 12px;
+  padding: 10px 11px;
+  border-radius: 12px;
+  color: #6e8481;
+  background: #f3f8f7;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+@media (max-width: 560px) {
+  .decision-canvas {
+    margin-left: -2px;
+    margin-right: -2px;
+    padding: 17px 0 17px 17px;
+    overflow: hidden;
+    border-radius: 22px;
+  }
+
+  .decision-canvas-head {
+    padding-right: 17px;
+  }
+
+  .decision-canvas-head h2 {
+    font-size: 25px;
+  }
+
+  .decision-cards {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-right: 17px;
+    padding-bottom: 5px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .decision-cards::-webkit-scrollbar {
+    display: none;
+  }
+
+  .decision-card {
+    flex: 0 0 min(82vw, 330px);
+    scroll-snap-align: start;
+    padding: 16px;
+    border-radius: 19px;
+  }
+
+  .decision-route-list > div {
+    align-items: flex-start;
+  }
+
+  .decision-route-list b {
+    text-align: right;
+  }
+}

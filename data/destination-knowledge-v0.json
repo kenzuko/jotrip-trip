@@ -1,0 +1,918 @@
+{
+  "schema_version": "1.0",
+  "source": "openphuquoc-knowledge",
+  "source_commit": "9a2a80861ae2139d41b99ad518a7c293bbb88fab",
+  "synced_at": "2026-09-22",
+  "items": [
+    {
+      "id": "knowledge_001_dinh-cau",
+      "title": "Dinh Cậu",
+      "type": "PLACE",
+      "canonicalEntityId": "place_dinh_cau",
+      "zones": [
+        "duong_dong"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Dinh Cậu không chỉ là chỗ ngắm chiều. Đây là một không gian tín ngưỡng ở ngay cửa sông Dương Đông, gắn với đời sống của cư dân biển trên đảo.",
+      "practical": "Nếu đang ở Dương Đông, dành khoảng 30-60 phút là vừa. Cuối chiều dễ ghép với một vòng bờ biển rồi đi chợ đêm.",
+      "expectation": "Đến đây để hiểu thêm một lớp đời sống của đảo sẽ thú vị hơn chỉ lên mỏm đá chụp vài tấm hình.",
+      "beforeYouGo": [
+        "Ăn mặc và cư xử phù hợp với nơi thờ tự.",
+        "Giờ niêm yết có thể thay đổi, nhất là ngày lễ hoặc lúc có hoạt động tín ngưỡng.",
+        "Không cản lối người địa phương đang cúng hoặc làm lễ."
+      ],
+      "map": {
+        "lat": 10.2171875,
+        "lon": 103.9564375,
+        "precision": "site_centroid"
+      },
+      "address": "Khu phố 2, Dương Đông, Phú Quốc, An Giang 92500, Việt Nam",
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_002_duong-dong",
+      "title": "Dương Đông",
+      "type": "PLACE",
+      "canonicalEntityId": "zone_central_west",
+      "zones": [
+        "duong_dong"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Dương Đông là nhịp đô thị lâu đời nhất và thực dụng nhất của đảo: chợ, sông, cảng cá, dịch vụ và đường đi các hướng đều gặp nhau ở đây.",
+      "practical": "Nếu ở Dương Đông, nhiều nhu cầu hằng ngày dễ xử lý hơn: ăn uống, chợ, ATM, nhà thuốc, đổi tiền và đi bờ Tây. Đừng dùng tên 'Dương Đông' như một điểm pin duy nhất vì khu này khá rộng.",
+      "expectation": "Dương Đông hôm nay là khu đô thị đang thay đổi nhanh, không còn chỉ là hình ảnh một thị trấn chài nhỏ.",
+      "beforeYouGo": [
+        "Phân biệt chợ Dương Đông ban ngày với chợ đêm.",
+        "Giờ cao điểm quanh trung tâm có thể chậm hơn quãng đường trên bản đồ.",
+        "Các khu phố cũ và bờ sông nên được kể cùng thay đổi đô thị hiện nay."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_003_cho-duong-dong",
+      "title": "Chợ Dương Đông",
+      "type": "PLACE",
+      "canonicalEntityId": "place_duong_dong_market",
+      "zones": [
+        "duong_dong"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Chợ Dương Đông là chợ ban ngày bên sông, khác hẳn chợ đêm. Muốn nhìn nhịp mua bán hải sản và đồ dùng của người địa phương, nên đi sớm.",
+      "practical": "Khoảng 45-90 phút là đủ để đi một vòng. Buổi sáng rõ chất chợ nhất; càng về chiều càng bớt nhịp hải sản.",
+      "expectation": "Đây là chợ đang phục vụ đời sống thật, nên sẽ đông, ẩm, có mùi hải sản và không phải góc nào cũng đẹp để chụp hình.",
+      "beforeYouGo": [
+        "Đừng nhầm Chợ Dương Đông với Chợ đêm Phú Quốc.",
+        "Đi giày dễ rửa nếu ghé khu hải sản.",
+        "Hỏi giá trước khi mua đồ khô hoặc hải sản mang về."
+      ],
+      "map": {
+        "lat": 10.2206875,
+        "lon": 103.9591875,
+        "precision": "site_centroid"
+      },
+      "address": "Chợ Dương Đông, đường Ngô Quyền, Dương Đông, Phú Quốc, An Giang, Việt Nam",
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_004_an-thoi",
+      "title": "An Thới",
+      "type": "PLACE",
+      "canonicalEntityId": "zone_south",
+      "zones": [
+        "south"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "An Thới là cửa ngõ biển của Nam đảo, gắn với cảng, nghề biển, quần đảo An Thới và giờ đây còn nằm cạnh một vùng du lịch phát triển rất nhanh.",
+      "practical": "Khi nói 'đi An Thới', cần tách khu dân cư/cảng với Sunset Town và các ga/tour biển. Chúng gần nhau nhưng không phải một điểm.",
+      "expectation": "An Thới không chỉ là nơi lên cano. Đây vẫn là khu dân cư có chợ, cảng và đời sống biển riêng.",
+      "beforeYouGo": [
+        "Xác nhận đúng cảng/bến khi đi biển.",
+        "Đừng dùng Sunset Town để đại diện cho toàn bộ An Thới.",
+        "Tính giao thông khu Nam đảo vào giờ show/tour."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_005_sunset-town",
+      "title": "Sunset Town",
+      "type": "PLACE",
+      "canonicalEntityId": "place_sunset_town",
+      "zones": [
+        "south"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Sunset Town là một khu phố mở ở Nam đảo, nơi hoàng hôn, Cầu Hôn, nhà hàng và các show nằm khá gần nhau. Điểm khó không phải tìm chỗ chơi mà là xếp giờ cho khỏi lỡ.",
+      "practical": "Hợp nhất từ cuối chiều sang tối. Nếu định xem show, nên dựng lịch ngược từ giờ bắt đầu rồi mới quyết định lúc tới.",
+      "expectation": "Không phải cứ tới Sunset Town là mọi cửa hàng và show đều đang hoạt động. Mỗi điểm bên trong có giờ riêng.",
+      "beforeYouGo": [
+        "Tới trước hoàng hôn nếu muốn đi bộ và chụp ảnh thong thả.",
+        "Kiểm tra giờ show của đúng ngày đi.",
+        "Nếu ở xa Nam đảo, chốt xe về trước khi show kết thúc."
+      ],
+      "map": {
+        "lat": 10.026903,
+        "lon": 104.007917,
+        "precision": "area_anchor"
+      },
+      "address": "Sunset Town, An Thới, Phú Quốc, An Giang, Việt Nam",
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_006_ham-ninh",
+      "title": "Hàm Ninh",
+      "type": "PLACE",
+      "canonicalEntityId": "place_ham_ninh",
+      "zones": [
+        "east"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Hàm Ninh nằm ở bờ Đông, dưới chân dãy núi Hàm Ninh và gắn lâu với nghề biển, hải sản và vùng nước nông trước làng.",
+      "practical": "Đi Hàm Ninh đáng nhất khi muốn nhìn nhịp làng chài và ăn hải sản, nhưng cảnh quan/cầu cảng đã thay đổi theo thời gian nên đừng đi chỉ để tìm lại đúng một tấm ảnh cũ.",
+      "expectation": "Cụm từ 'làng chài cổ nguyên sơ' dễ làm khách kỳ vọng sai. Hàm Ninh là một cộng đồng đang sống và thay đổi.",
+      "beforeYouGo": [
+        "Hỏi nguồn và giá hải sản trước khi gọi.",
+        "Không dùng cầu gỗ cũ trong ảnh làm mốc chắc chắn cho cảnh hiện tại.",
+        "Buổi sáng/chiều sớm thường dễ nhìn đời sống hơn giờ quá trưa."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_007_ganh-dau",
+      "title": "Gành Dầu",
+      "type": "PLACE",
+      "canonicalEntityId": "zone_north",
+      "zones": [
+        "north"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Gành Dầu là vùng dân cư và bờ biển ở cực Bắc/Tây Bắc đảo, nơi cảm giác biên viễn rõ hơn khu trung tâm và có hướng nhìn sang vùng biển giáp Campuchia.",
+      "practical": "Đi Gành Dầu nên ghép theo tuyến Bắc đảo, không chạy riêng từ Nam đảo chỉ để chụp một góc biển. Khu vực này cũng gần Safari/Grand World nhưng đời sống dân cư là một lớp khác.",
+      "expectation": "Gành Dầu không phải chỉ là resort và điểm ngắm biển; đây là khu dân cư có lịch sử, rừng và bờ biển riêng.",
+      "beforeYouGo": [
+        "Tính quãng đường về nếu ở Nam đảo.",
+        "Không đi vào đường rừng/biên giới chưa rõ access.",
+        "Phân biệt Mũi Gành Dầu với toàn khu Gành Dầu."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_008_rach-vem",
+      "title": "Rạch Vẹm",
+      "type": "PLACE",
+      "canonicalEntityId": "place_rach_vem",
+      "zones": [
+        "north"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Rạch Vẹm là vùng làng chài và nước nông ở phía Bắc. Sao biển là thứ khiến nơi này nổi tiếng, nhưng không phải ngày nào tới cũng có một bãi đầy sao biển.",
+      "practical": "Thường cần 2-4 giờ tính cả đường đi và thời gian ở khu làng/bãi. Trước khi đi nên nhìn thời tiết, triều và tình trạng đường.",
+      "expectation": "Đừng chọn Rạch Vẹm chỉ vì một tấm ảnh sao biển. Mùa, nước, gió và từng đoạn bãi thay đổi khá nhiều.",
+      "beforeYouGo": [
+        "Không nhấc sao biển khỏi nước để chụp hình.",
+        "Đừng hứa với trẻ nhỏ rằng chắc chắn sẽ thấy sao biển.",
+        "Nếu vừa mưa lớn, nên kiểm tra tình trạng đường trước khi chạy vào."
+      ],
+      "map": {
+        "lat": 10.38602,
+        "lon": 103.94166,
+        "precision": "area_anchor"
+      },
+      "address": "Rạch Vẹm, Gành Dầu, Phú Quốc, An Giang, Việt Nam",
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_009_cua-can",
+      "title": "Cửa Cạn",
+      "type": "PLACE",
+      "canonicalEntityId": "place_cua_can",
+      "zones": [
+        "north_central"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Cửa Cạn được định hình bởi con sông từ vùng núi/rừng chảy ra bờ Tây. Cái hay của khu này nằm ở chỗ sông, cửa biển, làng dân cư và bãi cát thay đổi theo mùa.",
+      "practical": "Nếu tới để nhìn sông/cửa biển, nên xem mưa và mùa vì hình thái doi cát và cửa sông không đứng yên.",
+      "expectation": "Cửa Cạn không phải một bãi biển đơn lẻ có một điểm check-in.",
+      "beforeYouGo": [
+        "Không tự chạy xe vào đường cát/đất khi chưa biết tình trạng.",
+        "Tôn trọng lối dân cư ven sông.",
+        "Đừng lấy ảnh cửa sông của mùa khác làm chuẩn cho ngày đi."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_010_cua-duong",
+      "title": "Cửa Dương",
+      "type": "PLACE",
+      "canonicalEntityId": null,
+      "zones": [
+        "north_central"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Cửa Dương là một vùng dân cư lớn ở phía Bắc-trung đảo, nối Dương Đông với Khu Tượng, Ông Lang và các hướng lên Bắc đảo. Đây là nơi local life và rìa rừng gặp nhau rõ hơn nhiều khu du lịch.",
+      "practical": "Với khách, Cửa Dương thường là khu đi xuyên qua hoặc lưu trú yên hơn trung tâm. Địa chỉ nên đi theo khu phố/đường cụ thể, không dùng pin trung tâm xã cũ.",
+      "expectation": "Cửa Dương rộng và không có một 'trung tâm du lịch' duy nhất để đại diện cho cả vùng.",
+      "beforeYouGo": [
+        "Dùng địa chỉ đầy đủ khi tìm đường.",
+        "Tuyến vào vườn tiêu/rừng có thể khác đường đô thị.",
+        "Không coi toàn Cửa Dương là Vườn quốc gia."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_011_duong-to",
+      "title": "Dương Tơ",
+      "type": "PLACE",
+      "canonicalEntityId": null,
+      "zones": [
+        "long_beach"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Dương Tơ nằm giữa trung tâm và Nam đảo, bao gồm nhiều khu dân cư, Suối Mây, Cửa Lấp và vùng gần sân bay. Đây là một trong những nơi thấy rõ nhất việc Phú Quốc đô thị hóa nhanh.",
+      "practical": "Khi tìm khách sạn/địa chỉ ở Dương Tơ, tên khu phố cụ thể quan trọng hơn chữ Dương Tơ chung. Khu vực này thuận nối sân bay, Bãi Trường và các hướng Nam đảo.",
+      "expectation": "Dương Tơ không phải một điểm tham quan; đây là một vùng chức năng/dân cư rộng.",
+      "beforeYouGo": [
+        "Xác nhận khu phố khi gọi xe.",
+        "Theo dõi thay đổi đường quanh dự án sân bay.",
+        "Không dùng dữ liệu hành chính cũ để suy access hiện tại."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_012_bai-truong",
+      "title": "Bãi Trường",
+      "type": "PLACE",
+      "canonicalEntityId": "place_bai_truong",
+      "zones": [
+        "long_beach"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Bãi Trường là một dải bờ Tây rất dài chứ không phải một bãi nhỏ có một cổng vào. Điểm mạnh nhất là dễ ghép nghỉ biển với hoàng hôn.",
+      "practical": "Dành 2-4 giờ nếu muốn tắm biển và ở lại tới chiều. Chọn đoạn bãi theo nơi đang ở thay vì chạy tìm một 'điểm chuẩn' duy nhất.",
+      "expectation": "Chất lượng cát, sóng và nước có thể khác giữa các đoạn và giữa các ngày. Một bức ảnh đẹp không đại diện cho toàn bộ Bãi Trường.",
+      "beforeYouGo": [
+        "Giữ 30-45 phút cuối ngày cho hoàng hôn.",
+        "Xem tình hình biển trước khi quyết định tắm.",
+        "Tiện ích phụ thuộc từng resort, beach club hoặc lối công cộng."
+      ],
+      "map": {
+        "lat": 10.1143458,
+        "lon": 103.9809272,
+        "precision": "area_anchor"
+      },
+      "address": "Đường Trần Hưng Đạo, Phú Quốc, An Giang, Việt Nam",
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_013_bai-khem",
+      "title": "Bãi Khem",
+      "type": "PLACE",
+      "canonicalEntityId": "place_bai_khem",
+      "zones": [
+        "south"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Bãi Khem là một vịnh cát sáng ở Nam đảo, hiện gắn mạnh với các khu nghỉ dưỡng cao cấp nhưng vẫn cần phân biệt bãi biển với tiện ích riêng của resort.",
+      "practical": "Hợp cho nửa ngày nếu ở Nam đảo. Lối vào, chỗ gửi xe và quyền dùng ghế, hồ bơi hay nhà vệ sinh phải xem theo từng điểm.",
+      "expectation": "Không nên gọi toàn bộ Bãi Khem là 'bãi private'. Bờ biển là một chuyện, quyền dùng tiện ích của resort là chuyện khác.",
+      "beforeYouGo": [
+        "Xác định đúng lối vào trước khi chạy tới.",
+        "Không mặc định tiện ích resort là tiện ích công cộng.",
+        "Xem biển và gió trong ngày nếu mục tiêu chính là tắm."
+      ],
+      "map": {
+        "lat": 10.03333,
+        "lon": 104.03333,
+        "precision": "area_anchor"
+      },
+      "address": "Bãi Khem, An Thới, Phú Quốc, An Giang, Việt Nam",
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_014_bai-sao",
+      "title": "Bãi Sao",
+      "type": "PLACE",
+      "canonicalEntityId": "place_bai_sao",
+      "zones": [
+        "south"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Bãi Sao là một bãi tắm quen thuộc ở Nam đảo, dễ đi hơn nhiều điểm đảo nhỏ. Đẹp hay không lại phụ thuộc khá rõ vào gió, sóng và tình trạng từng đoạn bãi trong ngày.",
+      "practical": "Sáng hoặc đầu chiều ngày biển êm thường dễ chịu. Có thể dành 2-4 giờ rồi ghép với Hộ Quốc, Bãi Khem hoặc Nhà tù nếu cùng tuyến.",
+      "expectation": "Bãi Sao không phải lúc nào cũng trắng phẳng và êm như ảnh quảng bá. Rong, rác, sóng và mật độ khách thay đổi theo mùa và thời tiết.",
+      "beforeYouGo": [
+        "Chọn đoạn bãi thực tế đẹp nhất trong ngày thay vì bám một điểm cố định.",
+        "Đừng nhầm Bãi Sao với khu xem sao biển ở Rạch Vẹm.",
+        "Kiểm tra giá ghế, đồ ăn hoặc dịch vụ trước khi dùng."
+      ],
+      "map": {
+        "lat": 10.0541875,
+        "lon": 104.0354375,
+        "precision": "area_anchor"
+      },
+      "address": "Bãi Sao, An Thới, Phú Quốc, An Giang, Việt Nam",
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_015_bai-ong-lang",
+      "title": "Bãi Ông Lang",
+      "type": "PLACE",
+      "canonicalEntityId": null,
+      "zones": [
+        "north_central"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Ông Lang là dải bờ Tây yên hơn Dương Đông, xen giữa cát và ghềnh đá. Điểm mạnh là nghỉ biển và hoàng hôn, không phải một chuỗi hoạt động dày.",
+      "practical": "Hợp cho nửa ngày hoặc buổi chiều. Access xuống biển khác nhau theo từng đoạn/resort, nên tìm đúng lối thay vì chỉ gõ 'Bãi Ông Lang'.",
+      "expectation": "Ông Lang không phải một dải cát liên tục hoàn hảo; có nhiều đoạn bãi và ghềnh đá.",
+      "beforeYouGo": [
+        "Tìm đúng lối xuống bãi.",
+        "Xem sóng bờ Tây theo ngày.",
+        "Ở lại chiều nếu mục tiêu là hoàng hôn."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_017_bai-dai",
+      "title": "Bãi Dài",
+      "type": "PLACE",
+      "canonicalEntityId": null,
+      "zones": [
+        "north"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Bãi Dài nằm ở phía Tây Bắc và đã thay đổi rất mạnh vì các tổ hợp nghỉ dưỡng - vui chơi phía Bắc. Khi nói về Bãi Dài hôm nay phải tách bãi biển tự nhiên với access qua từng dự án/khu nghỉ.",
+      "practical": "Đừng chạy tới một pin 'Bãi Dài' chung rồi kỳ vọng có lối công cộng rõ. Xác định điểm mình muốn tới - resort, Grand World/VinWonders hay đoạn bờ cụ thể.",
+      "expectation": "Hình ảnh Bãi Dài hoang vắng trong tư liệu cũ không còn đại diện cho toàn bộ bờ biển hiện tại.",
+      "beforeYouGo": [
+        "Xác nhận lối vào trước.",
+        "Không mặc định tiện ích resort là công cộng.",
+        "Nếu chỉ muốn tắm biển, cân nhắc đoạn bờ và access thực tế hơn danh tiếng cái tên."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_021_hon-thom",
+      "title": "Hòn Thơm",
+      "type": "PLACE",
+      "canonicalEntityId": "activity_hon_thom",
+      "zones": [
+        "south"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Hòn Thơm là đảo có cư dân và bờ biển riêng trong quần đảo An Thới, nhưng với khách hiện nay trải nghiệm thường đi qua cáp treo và tổ hợp vui chơi. Hai lớp này không nên bị kể như một.",
+      "practical": "Nếu đi theo cáp treo, dựng ngày quanh khung giờ cáp. Nếu quan tâm đời sống đảo/cư dân, cần nghiên cứu/đi tuyến khác chứ không suy từ khu công viên.",
+      "expectation": "‘Đi Hòn Thơm’ trong quảng cáo thường có nghĩa đi Sun World/Aquatopia, không phải khám phá toàn hòn đảo.",
+      "beforeYouGo": [
+        "Chốt giờ cáp về.",
+        "Phân biệt khu vui chơi với khu dân cư.",
+        "Không dùng lịch cáp để suy mọi hoạt động trên đảo."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_026_suoi-tranh",
+      "title": "Suối Tranh",
+      "type": "PLACE",
+      "canonicalEntityId": "place_suoi_tranh",
+      "zones": [
+        "long_beach"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Suối Tranh là chỗ đi bộ nhẹ trong cây xanh, nhưng cái tên 'suối' chỉ thật sự đáng đi khi đang có nước. Mùa khô có thể khác rất xa ảnh chụp mùa mưa.",
+      "practical": "Dành 1-3 giờ. Sau mưa, cảnh có thể đẹp hơn nhưng đá cũng trơn và nước có thể lên nhanh.",
+      "expectation": "Đừng đi chỉ vì thấy ảnh thác nước mạnh trên mạng. Trước hết phải xem mùa và lượng mưa gần đây.",
+      "beforeYouGo": [
+        "Mang giày bám tốt.",
+        "Không xuống khu nước chảy mạnh sau mưa lớn.",
+        "Giữ rác lại và tránh tách nhóm ở đoạn ít người."
+      ],
+      "map": {
+        "lat": 10.1763125,
+        "lon": 104.0119375,
+        "precision": "site_centroid"
+      },
+      "address": "52G6+GQQ, Suối Mây, Phú Quốc, An Giang, Việt Nam",
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_029_chua-ho-quoc",
+      "title": "Chùa Hộ Quốc",
+      "type": "PLACE",
+      "canonicalEntityId": "place_ho_quoc",
+      "zones": [
+        "south"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Chùa Hộ Quốc vừa là nơi tâm linh vừa có góc nhìn rộng ra biển phía Đông Nam. Không gian đẹp, nhưng nên đi với thái độ của người tới chùa trước khi coi đây là điểm check-in.",
+      "practical": "Khoảng 1-2 giờ là đủ. Sáng hoặc chiều dịu dễ đi hơn giữa trưa, và có thể ghép cùng Bãi Sao, Bãi Khem hoặc Nhà tù.",
+      "expectation": "View biển là phần hấp dẫn, nhưng đây vẫn là không gian tu tập và thờ tự.",
+      "beforeYouGo": [
+        "Ăn mặc lịch sự.",
+        "Giữ giọng nói nhỏ ở khu thờ tự.",
+        "Không đứng chắn lối hành lễ để chụp hình."
+      ],
+      "map": {
+        "lat": 10.1100625,
+        "lon": 104.0289375,
+        "precision": "site_centroid"
+      },
+      "address": "426H+2HJ, Thiền viện Trúc Lâm Hộ Quốc, Dương Tơ, Phú Quốc, An Giang, Việt Nam",
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_030_nha-tu-phu-quoc",
+      "title": "Nhà tù Phú Quốc",
+      "type": "PLACE",
+      "canonicalEntityId": "place_phu_quoc_prison",
+      "zones": [
+        "south"
+      ],
+      "intents": [
+        "do",
+        "place"
+      ],
+      "summary": "Nhà tù Phú Quốc là một di tích lịch sử nặng ký, không phải điểm tham quan để đi cho đủ danh sách. Muốn hiểu nơi này, nên dành thời gian đọc bối cảnh và hiện vật.",
+      "practical": "Khoảng 1-2 giờ phù hợp với đa số khách. Có thể ghép tuyến Nam đảo nhưng đừng ép lịch quá sát nếu trong đoàn có người muốn đọc kỹ.",
+      "expectation": "Một số tái hiện có thể gây nặng nề cho trẻ nhỏ hoặc người nhạy cảm với nội dung chiến tranh.",
+      "beforeYouGo": [
+        "Giữ thái độ tôn trọng tại khu di tích.",
+        "Nếu đi cùng trẻ nhỏ, cân nhắc trước các khu tái hiện bạo lực.",
+        "Đừng chỉ chụp ảnh mô hình rồi bỏ qua phần tư liệu."
+      ],
+      "map": {
+        "lat": 10.043948,
+        "lon": 104.018179,
+        "precision": "site_centroid"
+      },
+      "address": "350 Nguyễn Văn Cừ, An Thới, Phú Quốc, An Giang, Việt Nam",
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_056_bun-quay-phu-quoc",
+      "title": "Bún quậy Phú Quốc",
+      "type": "FOOD",
+      "canonicalEntityId": "food_bun-quay",
+      "zones": [
+        "islandwide",
+        "duong_dong"
+      ],
+      "intents": [
+        "eat",
+        "food"
+      ],
+      "summary": "Bún quậy vui ở chỗ người ăn tham gia vào tô bún: tự pha chén chấm, nếm rồi quậy tới khi vừa miệng. Tô thường có chả tôm, chả cá và có thể thêm mực tùy quán.",
+      "practical": "Ăn lúc còn nóng. Nếu lần đầu thử, đừng pha chén chấm quá mặn hoặc quá cay ngay từ đầu - nêm dần dễ ngon hơn.",
+      "expectation": "Không có một tô 'chuẩn tuyệt đối' cho mọi quán. Tỷ lệ chả, hải sản và cách pha nước chấm thay đổi.",
+      "beforeYouGo": [
+        "Dị ứng cá, tôm hoặc nhuyễn thể phải hỏi kỹ trước khi gọi.",
+        "Khu chế biến có thể dùng chung dụng cụ cho nhiều loại hải sản.",
+        "Đừng mặc định món không gluten chỉ vì bún làm từ gạo."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_057_goi-ca-trich",
+      "title": "Gỏi cá trích",
+      "type": "FOOD",
+      "canonicalEntityId": "food_goi-ca-trich",
+      "zones": [
+        "islandwide"
+      ],
+      "intents": [
+        "eat",
+        "food"
+      ],
+      "summary": "Gỏi cá trích là cách ăn cá tươi cùng dừa, rau, bánh tráng và nước chấm. Cái ngon không chỉ nằm ở cá mà ở cả độ tươi, rau và chén chấm.",
+      "practical": "Cuốn vừa tay và ăn ngay. Nếu không quen cá sống hoặc tái, hỏi rõ cách sơ chế của quán trước khi gọi.",
+      "expectation": "Đây không phải một đĩa salad cá đơn giản. Trải nghiệm đúng nhịp thường là tự cuốn và chấm.",
+      "beforeYouGo": [
+        "Cá là dị ứng chính; đậu phộng cũng thường xuất hiện trong nước chấm hoặc topping.",
+        "Người mang thai, trẻ nhỏ hoặc người cần hạn chế đồ sống nên hỏi kỹ mức xử lý nhiệt.",
+        "Nước chấm mỗi quán có thể khác."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_058_ghe-ham-ninh",
+      "title": "Ghẹ Hàm Ninh",
+      "type": "FOOD",
+      "canonicalEntityId": null,
+      "zones": [
+        "east"
+      ],
+      "intents": [
+        "eat",
+        "food"
+      ],
+      "summary": "Ghẹ gắn với Hàm Ninh từ lâu trong câu chuyện ẩm thực của làng chài, nhưng khi ăn hôm nay nên quan tâm con ghẹ đang bán đến từ đâu, còn sống/tươi không và giá tính thế nào hơn là chỉ dựa vào tên gọi.",
+      "practical": "Hấp đơn giản thường dễ biết độ tươi nhất. Hỏi giá theo kg, kích cỡ và cách tính công chế biến trước khi gọi.",
+      "expectation": "Tên 'ghẹ Hàm Ninh' trên menu không tự động chứng minh con ghẹ được đánh bắt ngay tại Hàm Ninh trong ngày.",
+      "beforeYouGo": [
+        "Hỏi giá và trọng lượng trước khi chế biến.",
+        "Nếu muốn nếm vị ghẹ, chọn cách hấp/luộc ít sốt.",
+        "Người dị ứng giáp xác phải tránh món này và lưu ý dùng chung dụng cụ."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_059_nhum-bien",
+      "title": "Nhum biển",
+      "type": "FOOD",
+      "canonicalEntityId": "food_nhum",
+      "zones": [
+        "islandwide"
+      ],
+      "intents": [
+        "eat",
+        "food"
+      ],
+      "summary": "Nhum có vị béo, mềm và mặn ngọt của biển. Cách dễ ăn nhất là nướng vừa tới, thêm mỡ hành nhưng đừng nêm quá tay.",
+      "practical": "Hỏi kích cỡ và giá trước khi gọi. Nhum nướng quá lâu sẽ khô, mất phần béo mềm đáng ăn nhất.",
+      "expectation": "Không phải con nào cũng đầy thịt/trứng như nhau, nên kích cỡ và mùa ảnh hưởng trải nghiệm khá nhiều.",
+      "beforeYouGo": [
+        "Nhum là hải sản, cần tránh nếu có dị ứng phù hợp.",
+        "Mỡ hành thường có thể kèm đậu phộng.",
+        "Hỏi quán nếu cần phần không đậu phộng hoặc tách dụng cụ."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_060_coi-bien-mai",
+      "title": "Còi biên mai",
+      "type": "FOOD",
+      "canonicalEntityId": "food_coi-bien-mai",
+      "zones": [
+        "islandwide"
+      ],
+      "intents": [
+        "eat",
+        "food"
+      ],
+      "summary": "Còi biên mai là phần cơ chắc, giòn của sò biên mai. Nướng hoặc xào nhanh thường giữ được độ ngọt và giòn tốt hơn món quá nhiều sốt.",
+      "practical": "Nếu muốn nếm rõ vị, chọn nướng muối ớt hoặc kiểu ít sốt. Hỏi quán tính giá theo phần hay theo trọng lượng.",
+      "expectation": "Nướng quá lâu là phần còi dễ chuyển từ giòn sang cứng.",
+      "beforeYouGo": [
+        "Biên mai là nhuyễn thể.",
+        "Kiểu nướng chao có thể chứa đậu nành; sa tế hoặc sốt pha sẵn thay đổi theo quán.",
+        "Nếu dị ứng nặng, hỏi cả việc dùng chung vỉ nướng."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_061_ca-song",
+      "title": "Cá sòng",
+      "type": "FOOD",
+      "canonicalEntityId": null,
+      "zones": [
+        "islandwide"
+      ],
+      "intents": [
+        "eat",
+        "food"
+      ],
+      "summary": "Cá sòng là kiểu cá biển địa phương hợp cách nướng đơn giản vì thịt chắc và vị cá rõ. Nhưng 'cá sòng Phú Quốc' nên được hiểu là món thường gặp ở đảo, không phải một loài chỉ có ở Phú Quốc.",
+      "practical": "Nếu gặp cá tươi, nướng than hoặc nướng muối ớt là cách dễ nếm vị nhất. Hỏi cá theo con hay theo kg và cá đang dùng là cá tươi hay cấp đông.",
+      "expectation": "Tên món địa phương không bảo đảm nguồn cá đánh bắt ngay vùng Phú Quốc trong ngày.",
+      "beforeYouGo": [
+        "Cá là dị ứng chính.",
+        "Hỏi giá/trọng lượng trước khi chế biến.",
+        "Nếu muốn vị cá rõ, chọn cách nướng ít sốt."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_062_oc-giac-melo",
+      "title": "Ốc giác / Melo",
+      "type": "FOOD",
+      "canonicalEntityId": null,
+      "zones": [
+        "islandwide"
+      ],
+      "intents": [
+        "eat",
+        "food"
+      ],
+      "summary": "Ốc giác, còn gọi là Melo melo/ốc hoàng đế ở một số nơi, vừa là hải sản vừa gắn với câu chuyện ngọc Melo cực hiếm. Hai chuyện này nên tách rõ để không biến món ăn thành huyền thoại về viên ngọc.",
+      "practical": "Khi ăn, hỏi trọng lượng và cách chế biến vì con lớn. Khi nói về ngọc Melo, chỉ coi là hiện tượng tự nhiên rất hiếm, không hứa rằng ốc mua ở chợ có thể có ngọc.",
+      "expectation": "Ngọc Melo không phải ngọc trai nuôi cấy thông thường và việc tìm thấy là cực hiếm.",
+      "beforeYouGo": [
+        "Ốc giác là nhuyễn thể, lưu ý dị ứng.",
+        "Hỏi giá theo kg/con.",
+        "Không mua 'ngọc Melo' giá trị cao nếu không có giám định chuyên môn."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_063_banh-tet-mat-cat",
+      "title": "Bánh tét mật cật",
+      "type": "FOOD",
+      "canonicalEntityId": null,
+      "zones": [
+        "islandwide"
+      ],
+      "intents": [
+        "eat",
+        "food"
+      ],
+      "summary": "Bánh tét mật cật khác chiếc bánh tét quen thuộc trước hết ở lớp lá gói. Lá mật cật dai, thơm nhẹ và tạo cho món bánh một dấu nhận diện rất Phú Quốc.",
+      "practical": "Ăn như bánh tét mặn bình thường, cắt khoanh. Nếu mua làm quà, hỏi ngày gói và cách bảo quản thay vì chỉ nhìn màu lá.",
+      "expectation": "Không phải cứ gói lá xanh là bánh tét mật cật; phần đặc trưng nằm ở đúng loại lá và cách làm.",
+      "beforeYouGo": [
+        "Nhân truyền thống có nếp, đậu xanh và thịt mỡ - không phù hợp ăn chay.",
+        "Người dị ứng/thực hiện chế độ ăn đặc biệt nên hỏi thành phần thực tế.",
+        "Hỏi hạn dùng khi mang đi xa."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_064_ruou-sim",
+      "title": "Rượu sim",
+      "type": "FOOD",
+      "canonicalEntityId": null,
+      "zones": [
+        "islandwide"
+      ],
+      "intents": [
+        "eat",
+        "food"
+      ],
+      "summary": "Rượu sim là một sản phẩm quà tặng gắn với Phú Quốc, làm từ trái sim chín qua quá trình ủ/lên men. Điều cần nói rõ với khách là đây là đồ uống có cồn, không phải 'thuốc bổ' dù nhiều bài cũ quảng bá công dụng sức khỏe.",
+      "practical": "Nếm lượng nhỏ trước khi mua vì mỗi nhà làm có độ ngọt/chát/nồng khác nhau. Xem nồng độ cồn và quy định hành lý nếu mang lên máy bay.",
+      "expectation": "Không nên lặp lại các claim chữa bệnh từ nội dung du lịch/producer cũ nếu không có bằng chứng y khoa.",
+      "beforeYouGo": [
+        "Không dùng khi lái xe.",
+        "Kiểm tra ABV trên chai.",
+        "Đóng gói kỹ khi bay.",
+        "Phụ nữ mang thai/người cần tránh cồn không nên dùng."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_065_mat-sim-siro-sim-mut-sim",
+      "title": "Mật sim / siro sim / mứt sim",
+      "type": "FOOD",
+      "canonicalEntityId": null,
+      "zones": [
+        "islandwide"
+      ],
+      "intents": [
+        "eat",
+        "food"
+      ],
+      "summary": "Từ sim, các cơ sở trên đảo làm thêm mật/siro, mứt và sản phẩm không cần uống như rượu. Đây là lựa chọn dễ mang về hơn cho người không uống cồn, nhưng thành phần đường và cách sản xuất khác nhau theo nhà làm.",
+      "practical": "Đọc nhãn thành phần, lượng đường và hướng dẫn bảo quản. 'Mật sim' ở một số cơ sở có thể là dịch sim lên men nhẹ, nên nếu cần tuyệt đối không cồn phải hỏi rõ.",
+      "expectation": "Tên 'mật sim' không tự động đồng nghĩa siro 0% cồn.",
+      "beforeYouGo": [
+        "Hỏi nồng độ nếu cần tránh cồn.",
+        "Xem hạn dùng sau mở nắp.",
+        "Không coi claim sức khỏe trên bao bì/quảng cáo là bằng chứng y khoa."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_066_nuoc-mam-phu-quoc",
+      "title": "Nước mắm Phú Quốc",
+      "type": "FOOD",
+      "canonicalEntityId": "place_fish_sauce_house",
+      "zones": [
+        "islandwide",
+        "duong_dong"
+      ],
+      "intents": [
+        "eat",
+        "food"
+      ],
+      "summary": "Nước mắm Phú Quốc là câu chuyện của cá cơm, muối và thời gian ủ trong thùng gỗ. Muốn hiểu món gia vị này, nên nhìn cả nghề làm ra nó chứ không chỉ đọc con số độ đạm trên chai.",
+      "practical": "Khi mua, đọc rõ tên sản phẩm, độ đạm, nơi sản xuất và cách ghi chỉ dẫn nguồn gốc. Đừng chọn chỉ vì chai có chữ 'Phú Quốc' thật lớn.",
+      "expectation": "Độ đạm cao không tự động có nghĩa hợp khẩu vị hơn. Mùi, độ mặn và mục đích dùng trong bếp cũng quan trọng.",
+      "beforeYouGo": [
+        "Phân biệt sản phẩm thực sự gắn với chỉ dẫn địa lý với cách dùng tên Phú Quốc trong marketing.",
+        "Nếu mua mang máy bay, kiểm tra quy định đóng gói hành lý của hãng.",
+        "Nếm lượng nhỏ nếu chưa quen mùi nước mắm cốt."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_067_nha-thung-nuoc-mam",
+      "title": "Nhà thùng nước mắm",
+      "type": "FOOD",
+      "canonicalEntityId": "place_fish_sauce_house",
+      "zones": [
+        "duong_dong",
+        "north_central"
+      ],
+      "intents": [
+        "eat",
+        "food"
+      ],
+      "summary": "Nhà thùng là nơi nhìn thấy nghề nước mắm có hình dáng thật: những thùng gỗ lớn, cá cơm, muối và thời gian ủ kéo dài. Đây đáng là một điểm nghề, không nên biến thành chỗ mua quà rồi đi.",
+      "practical": "Khoảng 45-60 phút là vừa nếu có người giải thích tốt. Hỏi về loại cá, muối, thời gian ủ và cách rút nước mắm sẽ hiểu nghề nhanh hơn.",
+      "expectation": "Không phải nơi nào treo biển nhà thùng cũng cho thấy đầy đủ hoạt động sản xuất trong ngày.",
+      "beforeYouGo": [
+        "Ưu tiên cơ sở còn làm nghề thật.",
+        "Sàn có thể ẩm hoặc có mùi mạnh, nên đi giày dễ di chuyển.",
+        "Không chạm thiết bị hoặc mở thùng nếu chưa được phép."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_068_tieu-phu-quoc",
+      "title": "Tiêu Phú Quốc",
+      "type": "FOOD",
+      "canonicalEntityId": "place_pepper_garden",
+      "zones": [
+        "long_beach",
+        "north_central"
+      ],
+      "intents": [
+        "eat",
+        "food"
+      ],
+      "summary": "Vườn tiêu cho thấy một lớp Phú Quốc khác biển: đất đỏ, hàng trụ tiêu, mùa thu hoạch, phơi và phân loại hạt. Đi chậm và hỏi người trồng sẽ đáng hơn chỉ dừng để chụp hình.",
+      "practical": "Khoảng 30-60 phút là đủ. Nếu đúng mùa, hỏi cách nhận biết tiêu đen, tiêu đỏ và tiêu sọ ngay tại vườn.",
+      "expectation": "Không phải vườn nào mở cho khách cũng còn cùng mức hoạt động canh tác; có nơi thiên về bán sản phẩm hơn.",
+      "beforeYouGo": [
+        "Ưu tiên vườn còn canh tác thật.",
+        "Hỏi mùa thu hoạch trước nếu mục tiêu là xem trái tiêu.",
+        "Không mặc định mọi sản phẩm đóng gói đều trồng ngay tại vườn đang ghé."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_070_cho-duong-dong-an-gi",
+      "title": "Chợ Dương Đông ăn gì",
+      "type": "FOOD",
+      "canonicalEntityId": null,
+      "zones": [
+        "duong_dong"
+      ],
+      "intents": [
+        "eat",
+        "food"
+      ],
+      "summary": "Chợ Dương Đông đáng đi buổi sáng không chỉ để mua hải sản mà để ăn theo nhịp chợ. Bún, hủ tiếu, bánh canh và các món nóng buổi sáng cho cảm giác địa phương hơn việc chỉ ghé mua quà.",
+      "practical": "Đi sớm, chọn quầy đông người địa phương và hỏi giá trước. Hải sản mua về cần hỏi rõ nơi chế biến nếu không tự nấu.",
+      "expectation": "Chợ Dương Đông và chợ đêm là hai trải nghiệm khác nhau - một bên là chợ dân sinh ban ngày, một bên thiên về khách buổi tối.",
+      "beforeYouGo": [
+        "Mang tiền mặt nhỏ.",
+        "Cẩn thận nền ướt ở khu hải sản.",
+        "Hỏi thành phần nếu dị ứng hải sản/đậu phộng."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_071_an-sang-o-phu-quoc",
+      "title": "Ăn sáng ở Phú Quốc",
+      "type": "FOOD",
+      "canonicalEntityId": null,
+      "zones": [
+        "islandwide",
+        "duong_dong"
+      ],
+      "intents": [
+        "eat",
+        "food"
+      ],
+      "summary": "Ăn sáng ở Phú Quốc không cần săn một 'top 10'. Cách hợp lý hơn là chọn nhóm món theo khu đang ở: bún/hủ tiếu/bánh canh ở trung tâm, chợ sáng nếu muốn nhìn local life, hoặc ăn tại khách sạn nếu ngày tour bắt đầu sớm.",
+      "practical": "Nếu có tour/cáp/sân bay sớm, ưu tiên món phục vụ nhanh và gần đường đi. Muốn ăn kiểu địa phương, Dương Đông có nhiều lựa chọn tập trung nhất.",
+      "expectation": "Tên quán và giờ mở có thể đổi nhanh; knowledge nên giữ món/khu, còn venue cụ thể để Near Me/live directory xử lý.",
+      "beforeYouGo": [
+        "Kiểm tra giờ quán trong ngày.",
+        "Dị ứng hải sản hỏi topping/nước dùng.",
+        "Đừng chạy xa chỉ vì một quán viral nếu sáng có lịch cố định."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    },
+    {
+      "id": "knowledge_073_am-thuc-an-thoi",
+      "title": "Ẩm thực An Thới",
+      "type": "FOOD",
+      "canonicalEntityId": null,
+      "zones": [
+        "south"
+      ],
+      "intents": [
+        "eat",
+        "food"
+      ],
+      "summary": "Ẩm thực An Thới phản ánh vai trò cảng và cộng đồng biển ở Nam đảo. Nếu chỉ ăn trong các khu du lịch mới, khách dễ bỏ qua chợ và quán phục vụ cư dân quanh cảng.",
+      "practical": "Muốn local hơn, xem khu chợ/đường dân cư An Thới; muốn tiện với lịch show/cáp, ăn ở Sunset Town/Hòn Thơm. Hai kiểu trải nghiệm nên được tách rõ.",
+      "expectation": "'Ẩm thực Nam đảo' không đồng nghĩa mọi món là đặc sản riêng An Thới; nhiều món hải sản và món Việt xuất hiện toàn đảo.",
+      "beforeYouGo": [
+        "Hải sản hỏi giá theo kg/con.",
+        "Nếu có show tối, tính thời gian ăn trước.",
+        "Venue cụ thể phải kiểm tra giờ hiện hành."
+      ],
+      "map": null,
+      "address": null,
+      "updatedAt": "2026-09-22"
+    }
+  ]
+}

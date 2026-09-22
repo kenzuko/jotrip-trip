@@ -26,7 +26,20 @@ async function insertNotification(
   body: string,
   data: Record<string, unknown>,
 ) {
-  if (!env.DB) return;
+  if (!env.DB) return false;
+
+  const existing = await env.DB.prepare(
+    `SELECT id
+     FROM watch_notifications
+     WHERE watch_id = ?
+       AND notification_type = ?
+       AND datetime(created_at) >= datetime('now', '-6 hours')
+     ORDER BY created_at DESC
+     LIMIT 1`,
+  ).bind(watchId, type).first();
+
+  if (existing) return false;
+
   await env.DB.prepare(
     `INSERT INTO watch_notifications
       (id, watch_id, notification_type, severity, title, body, data_json)
@@ -40,6 +53,8 @@ async function insertNotification(
     body,
     JSON.stringify(data),
   ).run();
+
+  return true;
 }
 
 export async function evaluatePriceWatches(
@@ -100,7 +115,7 @@ export async function evaluatePriceWatches(
       const deltaPct = delta / referencePrice;
 
       if (deltaPct >= changePct) {
-        await insertNotification(
+        if (await insertNotification(
           env,
           watch.id,
           "PRICE_UP",
@@ -108,10 +123,11 @@ export async function evaluatePriceWatches(
           "Giá phòng đã tăng",
           `Giá cho ngày bạn theo dõi tăng khoảng ${Math.round(deltaPct * 100)}% so với lúc lưu chuyến.`,
           { hotelId, referencePrice, currentPrice, delta, deltaPct, checkin, checkout },
-        );
-        notifications++;
+        )) {
+          notifications++;
+        }
       } else if (deltaPct <= -changePct) {
-        await insertNotification(
+        if (await insertNotification(
           env,
           watch.id,
           "PRICE_DOWN",
@@ -119,8 +135,9 @@ export async function evaluatePriceWatches(
           "Có mức giá tốt hơn",
           `Giá cho ngày bạn theo dõi giảm khoảng ${Math.round(Math.abs(deltaPct) * 100)}%.`,
           { hotelId, referencePrice, currentPrice, delta, deltaPct, checkin, checkout },
-        );
-        notifications++;
+        )) {
+          notifications++;
+        }
       }
     }
 
@@ -160,7 +177,7 @@ export async function evaluatePriceWatches(
        FROM market_snapshots
        WHERE subject_ref = ?
          AND price_vnd IS NOT NULL
-         AND observed_at >= datetime('now', '-30 days')`,
+         AND datetime(observed_at) >= datetime('now', '-30 days')`,
     ).bind(`hotel:${hotelId}`).first<Record<string, unknown>>();
 
     const sampleCount = Number(snapshots?.sample_count || 0);
@@ -169,7 +186,7 @@ export async function evaluatePriceWatches(
     if (sampleCount >= 5 && currentPrice > 0 && avgPrice > 0) {
       const premium = currentPrice / avgPrice - 1;
       if (premium >= Number(thresholds.peakPremiumPct || 0.15)) {
-        await insertNotification(
+        if (await insertNotification(
           env,
           watch.id,
           "PEAK_PRICE_SIGNAL",
@@ -177,8 +194,9 @@ export async function evaluatePriceWatches(
           "Ngày này đang ở vùng giá cao",
           "Mức giá hiện tại cao hơn đáng kể so với quan sát gần đây. JoTrip sẽ tiếp tục theo dõi trước khi gọi đây là cao điểm thực sự.",
           { hotelId, currentPrice, avgPrice, sampleCount, premium, checkin, checkout },
-        );
-        notifications++;
+        )) {
+          notifications++;
+        }
       }
     }
   }

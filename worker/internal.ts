@@ -14,7 +14,7 @@ export async function chatAnalyticsOverview(env: InternalEnv) {
     return { ok: false, error: "db_not_bound" };
   }
 
-  const [sessions, messages, recent, durations, party, budget] =
+  const [sessions, messages, recent, durations, party, budget, interests] =
     await env.DB.batch([
       env.DB.prepare("SELECT COUNT(*) AS count FROM chat_sessions"),
       env.DB.prepare("SELECT COUNT(*) AS count FROM chat_messages WHERE role = 'user'"),
@@ -50,6 +50,14 @@ export async function chatAnalyticsOverview(env: InternalEnv) {
          FROM trip_intent_events
          WHERE budget_vnd IS NOT NULL`,
       ),
+      env.DB.prepare(
+        `SELECT value AS interest, COUNT(*) AS count
+         FROM trip_intent_events, json_each(trip_intent_events.interests_json)
+         WHERE interests_json IS NOT NULL
+         GROUP BY value
+         ORDER BY count DESC, interest ASC
+         LIMIT 30`,
+      ),
     ]);
 
   return {
@@ -59,6 +67,7 @@ export async function chatAnalyticsOverview(env: InternalEnv) {
     durationDemand: durations.results || [],
     partyDemand: party.results || [],
     budget: budget.results?.[0] || null,
+    interestDemand: interests.results || [],
     recent: recent.results || [],
   };
 }

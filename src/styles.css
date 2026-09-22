@@ -212,3 +212,45 @@ h1 { font-size: clamp(38px, 6vw, 68px); line-height: .98; letter-spacing: -0.055
   color: rgba(255,255,255,.78);
   line-height: 1.6;
 }
+
+
+.guide-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: 205px;
+  transform: translateX(-50%);
+  width: min(280px, 80vw);
+  background: #fff;
+  border: 1px solid #e4e7dd;
+  border-radius: 18px 18px 18px 6px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #4f5a46;
+  box-shadow: 0 16px 40px rgba(51,67,35,.10);
+  text-align: left;
+}
+.guide-compare .guide-fallback {
+  transform-origin: center bottom;
+  animation: guideCompare 1.5s ease-in-out infinite alternate;
+}
+.guide-warning .guide-bubble {
+  background: #fff8eb;
+  border-color: #f0d7a8;
+  color: #795122;
+}
+.guide-confirm .guide-bubble {
+  background: #f2f7e9;
+  border-color: #d7e5bf;
+}
+@keyframes guideCompare {
+  from { transform: translateX(-4px) rotate(-1deg); }
+  to { transform: translateX(4px) rotate(1deg); }
+}
+@media (max-width: 760px) {
+  .guide-bubble {
+    bottom: 118px;
+    width: 250px;
+    font-size: 12px;
+  }
+}

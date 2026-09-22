@@ -233,6 +233,18 @@ export default function App() {
             </div>
           )}
 
+          {plan?.insights && plan.insights.length > 0 && (
+            <div className="insight-list">
+              {plan.insights.map((insight) => (
+                <article className="insight-card" key={insight.title}>
+                  <span className="label">JoTrip nhận thấy</span>
+                  <h3>{insight.title}</h3>
+                  <p>{insight.body}</p>
+                </article>
+              ))}
+            </div>
+          )}
+
           {plan?.scenarios && plan.scenarios.length > 0 && (
             <div className="scenario-list">
               {plan.scenarios.map((scenario) => (

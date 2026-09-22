@@ -33,7 +33,6 @@ export type StayContext = {
   confidence: number;
   reasons: string[];
   cautions: string[];
-  stayContext: StayContext;
 };
 
 export type TripScenario = {
@@ -69,6 +68,7 @@ export type PlanningHotel = {
   spatialFit: "direct" | "balanced" | "neutral";
   reasons: string[];
   cautions: string[];
+  stayContext: StayContext;
 };
 
 export type ScenarioInsight = {

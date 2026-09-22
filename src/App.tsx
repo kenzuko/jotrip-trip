@@ -829,6 +829,9 @@ export default function App() {
     }
   }
 
+  // Only the unanswered phone welcome needs a shorter hint; desktop copy stays unchanged.
+  const isPhoneWelcome = typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 560px)").matches;
   const hasResponse = Boolean(result);
   const canHandoff = Boolean(
     result &&
@@ -923,7 +926,13 @@ export default function App() {
               onChange={(event) => setInput(event.target.value)}
               onFocus={() => setInputFocused(true)}
               onBlur={() => setInputFocused(false)}
-              placeholder={hasResponse ? "Hỏi tiếp JoTrip..." : "Cứ nói tự nhiên, ví dụ: nhà mình 3 ngày 2 đêm, có bé, muốn chơi Vin nhưng tối vẫn thích ra ngoài ăn."}
+              placeholder={
+                hasResponse
+                  ? "Hỏi tiếp JoTrip..."
+                  : isPhoneWelcome
+                    ? "Ví dụ: 3 ngày 2 đêm, có bé..."
+                    : "Cứ nói tự nhiên, ví dụ: nhà mình 3 ngày 2 đêm, có bé, muốn chơi Vin nhưng tối vẫn thích ra ngoài ăn."
+              }
               rows={3}
               aria-label="Hỏi JoTrip"
             />

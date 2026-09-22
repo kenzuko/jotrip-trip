@@ -288,6 +288,17 @@ export default function App() {
                           </span>
                         ))}
                     </div>
+                    <div className="hotel-nearby-preview">
+                      {item.nearby.groups.eat.knowledge[0] && (
+                        <span><b>Ăn:</b> {item.nearby.groups.eat.knowledge[0].title}</span>
+                      )}
+                      {item.nearby.groups.cafe.venues[0] && (
+                        <span><b>Cà phê:</b> {item.nearby.groups.cafe.venues[0].name}</span>
+                      )}
+                      {(item.nearby.groups.do.venues[0] || item.nearby.groups.do.knowledge[0]) && (
+                        <span><b>Chơi:</b> {item.nearby.groups.do.venues[0]?.name || item.nearby.groups.do.knowledge[0]?.title}</span>
+                      )}
+                    </div>
                     {item.reasons.map((reason) => <p key={reason}>{reason}</p>)}
                     {item.cautions.map((warning) => <p className="caution" key={warning}>{warning}</p>)}
                   </article>

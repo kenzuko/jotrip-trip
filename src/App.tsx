@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 import type { TripParseResponse } from "./types";
 
 const examples = [
@@ -17,7 +17,19 @@ function speak(text: string) {
   window.speechSynthesis.speak(utterance);
 }
 
+function getSessionId() {
+  const key = "jotrip_trip_session_id";
+  const existing = localStorage.getItem(key);
+  if (existing) return existing;
+  const created = crypto.randomUUID();
+  localStorage.setItem(key, created);
+  return created;
+}
+
 export default function App() {
+  const sessionIdRef = useRef<string>();
+  if (!sessionIdRef.current) sessionIdRef.current = getSessionId();
+
   const [input, setInput] = useState("");
   const [result, setResult] = useState<TripParseResponse | null>(null);
   const [busy, setBusy] = useState(false);
@@ -43,7 +55,10 @@ export default function App() {
       const res = await fetch("/api/trip/parse", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text: value }),
+        body: JSON.stringify({
+          text: value,
+          sessionId: sessionIdRef.current,
+        }),
       });
       const json = (await res.json()) as TripParseResponse;
       setResult(json);

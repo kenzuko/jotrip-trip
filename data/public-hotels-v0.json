@@ -13,7 +13,13 @@
         "safari",
         "grand-world"
       ],
-      "public_status": "content_only"
+      "public_status": "content_only",
+      "latitude": 10.3170258,
+      "longitude": 103.8578219,
+      "route_precision": "site_centroid",
+      "route_source_ref": "openpq:hotel_crowne_plaza_phu_quoc_starbay",
+      "route_source_id": "osm_photon_geocode",
+      "route_verified_at": "2026-09-22"
     },
     {
       "id": "wyndham-grand-phu-quoc",
@@ -27,7 +33,13 @@
         "safari",
         "grand-world"
       ],
-      "public_status": "content_only"
+      "public_status": "content_only",
+      "latitude": 10.3232415,
+      "longitude": 103.8562954,
+      "route_precision": "site_centroid",
+      "route_source_ref": "openpq:hotel_wyndham_grand_phu_quoc",
+      "route_source_id": "osm_photon_geocode",
+      "route_verified_at": "2026-09-22"
     },
     {
       "id": "wyndham-garden-grandworld-phu-quoc",
@@ -41,7 +53,13 @@
         "safari",
         "grand-world"
       ],
-      "public_status": "content_only"
+      "public_status": "content_only",
+      "latitude": 10.3232415,
+      "longitude": 103.8562954,
+      "route_precision": "site_centroid",
+      "route_source_ref": "openpq:hotel_wyndham_garden_grandworld",
+      "route_source_id": "osm_photon_geocode",
+      "route_verified_at": "2026-09-22"
     },
     {
       "id": "la-festa-phu-quoc",
@@ -55,7 +73,13 @@
         "hon-thom",
         "south-island"
       ],
-      "public_status": "content_only"
+      "public_status": "content_only",
+      "latitude": null,
+      "longitude": null,
+      "route_precision": null,
+      "route_source_ref": null,
+      "route_source_id": null,
+      "route_verified_at": null
     },
     {
       "id": "new-world-phu-quoc-resort",
@@ -69,7 +93,13 @@
         "hon-thom",
         "south-island"
       ],
-      "public_status": "content_only"
+      "public_status": "content_only",
+      "latitude": 10.0389761,
+      "longitude": 104.0273246,
+      "route_precision": "site_centroid",
+      "route_source_ref": "openpq:hotel_new_world",
+      "route_source_id": "osm_overpass_catalog",
+      "route_verified_at": "2026-09-22"
     },
     {
       "id": "premier-residences-phu-quoc-emerald-bay-managed-by-accor",
@@ -83,7 +113,13 @@
         "hon-thom",
         "south-island"
       ],
-      "public_status": "content_only"
+      "public_status": "content_only",
+      "latitude": 10.0349466,
+      "longitude": 104.0288404,
+      "route_precision": "site_centroid",
+      "route_source_ref": "openpq:hotel_premier_residences",
+      "route_source_id": "osm_photon_geocode",
+      "route_verified_at": "2026-09-22"
     },
     {
       "id": "intercontinental-phu-quoc-long-beach-resort",
@@ -97,7 +133,13 @@
         "balanced",
         "sunset"
       ],
-      "public_status": "content_only"
+      "public_status": "content_only",
+      "latitude": 10.1126352,
+      "longitude": 103.983524,
+      "route_precision": "site_centroid",
+      "route_source_ref": "openpq:hotel_intercontinental",
+      "route_source_id": "osm_photon_geocode",
+      "route_verified_at": "2026-09-22"
     },
     {
       "id": "regent-phu-quoc",
@@ -111,7 +153,13 @@
         "balanced",
         "sunset"
       ],
-      "public_status": "content_only"
+      "public_status": "content_only",
+      "latitude": null,
+      "longitude": null,
+      "route_precision": null,
+      "route_source_ref": null,
+      "route_source_id": null,
+      "route_verified_at": null
     },
     {
       "id": "the-residence-resort-villas-phu-quoc",
@@ -125,7 +173,13 @@
         "balanced",
         "sunset"
       ],
-      "public_status": "content_only"
+      "public_status": "content_only",
+      "latitude": null,
+      "longitude": null,
+      "route_precision": null,
+      "route_source_ref": null,
+      "route_source_id": null,
+      "route_verified_at": null
     },
     {
       "id": "klc-holidays-phu-quoc",
@@ -139,7 +193,13 @@
         "night-market",
         "explorer-friendly"
       ],
-      "public_status": "content_only"
+      "public_status": "content_only",
+      "latitude": null,
+      "longitude": null,
+      "route_precision": null,
+      "route_source_ref": null,
+      "route_source_id": null,
+      "route_verified_at": null
     },
     {
       "id": "movenpick-resort-waverly-phu-quoc",
@@ -152,7 +212,13 @@
         "quiet",
         "resort-first"
       ],
-      "public_status": "content_only"
+      "public_status": "content_only",
+      "latitude": 10.2676616,
+      "longitude": 103.9370953,
+      "route_precision": "site_centroid",
+      "route_source_ref": "openpq:hotel_movenpick",
+      "route_source_id": "osm_photon_geocode",
+      "route_verified_at": "2026-09-22"
     },
     {
       "id": "ocean-bay-phu-quoc-resort-spa",
@@ -165,7 +231,13 @@
         "quiet",
         "resort-first"
       ],
-      "public_status": "content_only"
+      "public_status": "content_only",
+      "latitude": null,
+      "longitude": null,
+      "route_precision": null,
+      "route_source_ref": null,
+      "route_source_id": null,
+      "route_verified_at": null
     },
     {
       "id": "sea-sense-resort-spa-phu-quoc",
@@ -178,7 +250,13 @@
         "quiet",
         "resort-first"
       ],
-      "public_status": "content_only"
+      "public_status": "content_only",
+      "latitude": 10.262797,
+      "longitude": 103.9392304,
+      "route_precision": "area_anchor",
+      "route_source_ref": "openpq:hotel_sea_sense_resort",
+      "route_source_id": "osm_nominatim_geocode",
+      "route_verified_at": "2026-09-22"
     },
     {
       "id": "the-shells-phu-quoc",
@@ -191,7 +269,13 @@
         "quiet",
         "resort-first"
       ],
-      "public_status": "content_only"
+      "public_status": "content_only",
+      "latitude": 10.2446464,
+      "longitude": 103.9493905,
+      "route_precision": "site_centroid",
+      "route_source_ref": "openpq:hotel_the_shells_resort_spa_phu_quoc",
+      "route_source_id": "osm_photon_geocode",
+      "route_verified_at": "2026-09-22"
     },
     {
       "id": "dusit-princess-moonrise-beach-resort-phu-quoc",
@@ -200,7 +284,13 @@
       "address": null,
       "area_code": "unknown",
       "fit_tags": [],
-      "public_status": "content_only"
+      "public_status": "content_only",
+      "latitude": 10.1727084,
+      "longitude": 103.9921557,
+      "route_precision": "area_anchor",
+      "route_source_ref": "openpq:hotel_dusit_princess_moonrise_beach_resort_phu_quoc",
+      "route_source_id": "osm_photon_geocode",
+      "route_verified_at": "2026-09-22"
     },
     {
       "id": "novotel-phu-quoc-resort",
@@ -209,7 +299,13 @@
       "address": null,
       "area_code": "unknown",
       "fit_tags": [],
-      "public_status": "content_only"
+      "public_status": "content_only",
+      "latitude": 10.1287774,
+      "longitude": 103.9804778,
+      "route_precision": "site_centroid",
+      "route_source_ref": "openpq:hotel_novotel",
+      "route_source_id": "osm_photon_geocode",
+      "route_verified_at": "2026-09-22"
     }
   ]
 }

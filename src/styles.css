@@ -1938,3 +1938,48 @@ a {
       0 12px 26px rgba(18,61,59,.07);
   }
 }
+
+
+.decision-tradeoffs {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.decision-tradeoffs > div {
+  display: grid;
+  grid-template-columns: 54px minmax(0,1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 9px 10px;
+  border-radius: 12px;
+  background: #f6faf9;
+}
+
+.decision-tradeoffs span {
+  color: #76908c;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.decision-tradeoffs b {
+  color: #345d59;
+  font-size: 11px;
+  line-height: 1.42;
+}
+
+.decision-card--active .decision-tradeoffs > div:first-child {
+  background: #e7f7f4;
+}
+
+.decision-card--active .decision-tradeoffs > div:last-child {
+  background: #fff8ec;
+}
+
+@media (max-width: 560px) {
+  .decision-tradeoffs > div {
+    grid-template-columns: 48px minmax(0,1fr);
+  }
+}

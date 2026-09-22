@@ -61,19 +61,23 @@ Canonical archive name:
 
 The archive is retained outside the runtime repo until its binary assets are intentionally copied into `public/assets/mascot-v1/`.
 
-## Runtime target paths
+## Runtime assets
 
-When binaries are installed, use exactly:
+The canonical master remains the locked PNG archive.
+
+The runtime repository contains mechanically transcoded WebP derivatives under:
 
 ```
-public/assets/mascot-v1/01_greeting_wave.png
-public/assets/mascot-v1/02_listening.png
-public/assets/mascot-v1/03_thinking.png
-public/assets/mascot-v1/04_speaking.png
-public/assets/mascot-v1/05_guiding_map.png
-public/assets/mascot-v1/06_compare_two_directions.png
-public/assets/mascot-v1/07_checking_phone_review.png
-public/assets/mascot-v1/08_confirm_thumbs_up.png
+public/assets/mascot-v1/01_greeting_wave.webp
+public/assets/mascot-v1/02_listening.webp
+public/assets/mascot-v1/03_thinking.webp
+public/assets/mascot-v1/04_speaking.webp
+public/assets/mascot-v1/05_guiding_map.webp
+public/assets/mascot-v1/06_compare_two_directions.webp
+public/assets/mascot-v1/07_checking_phone_review.webp
+public/assets/mascot-v1/08_confirm_thumbs_up.webp
 ```
 
-No legacy mascot image should be renamed into one of these paths.
+These WebP files are derivatives of the approved locked states, not regenerated artwork.
+
+The superseded legacy mascot files `jotrip-guide-short.webp` and `jotrip-guide-point.webp` must not be used or reintroduced.

@@ -117,7 +117,13 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
     ["VinWonders","Safari","Hòn Thơm","Sunset Town","Chợ đêm"].includes(x),
   );
 
-  const planningHotels = planningEnriched
+  const contextIntents = [
+    interests.includes("Ăn uống") || stayPreferences.includes("food") ? "eat" : null,
+    interests.includes("Cà phê") || stayPreferences.includes("cafe") ? "cafe" : null,
+    interests.some((x) => ["VinWonders","Safari","Hòn Thơm","Sunset Town","Biển","Chợ đêm"].includes(x)) ? "do" : null,
+  ].filter(Boolean) as string[];
+
+  const planningTop = planningEnriched
     .sort((a, b) => {
       const spatialWeight = (value: typeof a.spatialFit) =>
         value === "direct" ? 100 : value === "balanced" ? 50 : 0;
@@ -133,16 +139,24 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
       return a.hotel.canonical_name.localeCompare(b.hotel.canonical_name);
     })
     .slice(0, 4);
-  const contextIntents = [
-    interests.includes("Ăn uống") || stayPreferences.includes("food") ? "eat" : null,
-    interests.includes("Cà phê") || stayPreferences.includes("cafe") ? "cafe" : null,
-    interests.some((x) => ["VinWonders","Safari","Hòn Thơm","Sunset Town","Biển","Chợ đêm"].includes(x)) ? "do" : null,
-  ].filter(Boolean) as string[];
-  const destinationContext = await buildDestinationContext(env, {
-    zoneCode: planningHotels[0]?.hotel.area_code,
-    intents: contextIntents,
-    limitPerGroup: 4,
-  });
+
+  const planningHotels = await Promise.all(
+    planningTop.map(async (item) => ({
+      ...item,
+      nearby: await buildDestinationContext(env, {
+        zoneCode: item.hotel.area_code,
+        intents: contextIntents,
+        limitPerGroup: 2,
+      }),
+    })),
+  );
+
+  const destinationContext =
+    planningHotels[0]?.nearby ||
+    (await buildDestinationContext(env, {
+      intents: contextIntents,
+      limitPerGroup: 4,
+    }));
 
   if (!env.DB || !request.checkin || !request.checkout || !nights) {
     return {

@@ -533,9 +533,9 @@ export default function App() {
   }, [plan]);
 
   const activeDecision =
-    compareDirections.find((item) => item.hotel.area_code === activeDecisionArea) ||
-    compareDirections[0] ||
-    null;
+    activeDecisionArea
+      ? compareDirections.find((item) => item.hotel.area_code === activeDecisionArea) || null
+      : null;
 
   const activeDecisionText =
     activeDecision && result

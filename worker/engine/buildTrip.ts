@@ -5,6 +5,7 @@ import { matchPlanningHotels } from "../publicHotels";
 import { explainTopScenarios } from "./explain";
 import { buildDestinationContext } from "../destinationContext";
 import { buildStayContext, type StayPreference } from "./stayContext";
+import { buildAdvice } from "../advice";
 
 type Env = {
   DB?: D1Database;
@@ -17,6 +18,9 @@ type BuildTripRequest = {
   children?: number;
   interests?: string[];
   stayPreferences?: StayPreference[];
+  language?: "vi" | "en" | "ko" | "ru" | "zh";
+  days?: number;
+  nights?: number;
   budgetVnd?: number;
 };
 
@@ -174,6 +178,17 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
       planningHotels,
       stayPreferences,
       destinationContext,
+      advice: buildAdvice({
+        language: request.language || "vi",
+        days: request.days,
+        nights: request.nights,
+        adults,
+        children,
+        interests,
+        stayPreferences,
+        topArea: planningHotels[0]?.hotel.area_code,
+        mode:"trip_plan",
+      }),
       scenarios: [],
       nextNeeded: [
         !request.checkin || !request.checkout ? "travel_dates" : null,
@@ -327,6 +342,17 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
     hotelOfferCount: offers.results?.length || 0,
     scenarioReadyCount: scenarios.length,
     scenarioDataIncompleteCount: Math.max(0, (offers.results?.length || 0) - candidates.length),
+    advice: buildAdvice({
+      language: request.language || "vi",
+      days: request.days,
+      nights: request.nights,
+      adults,
+      children,
+      interests,
+      stayPreferences,
+      topArea: planningHotels[0]?.hotel.area_code,
+      mode:"trip_plan",
+    }),
     scenarios,
   };
 }

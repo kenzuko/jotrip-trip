@@ -187,3 +187,28 @@ h1 { font-size: clamp(38px, 6vw, 68px); line-height: .98; letter-spacing: -0.055
 .planning-card {
   align-content: start;
 }
+
+
+.insight-list {
+  display: grid;
+  gap: 10px;
+}
+.insight-card {
+  background: #24311f;
+  color: #fff;
+  border-radius: 22px;
+  padding: 20px 22px;
+}
+.insight-card .label {
+  color: #c9daa8;
+}
+.insight-card h3 {
+  margin: 7px 0 8px;
+  font-size: 20px;
+  letter-spacing: -.02em;
+}
+.insight-card p {
+  margin: 0;
+  color: rgba(255,255,255,.78);
+  line-height: 1.6;
+}

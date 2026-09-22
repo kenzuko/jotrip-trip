@@ -72,7 +72,7 @@ export type PlanningHotel = {
 };
 
 export type ScenarioInsight = {
-  type: "cost_time_tradeoff" | "cheaper" | "faster" | "similar_total" | "fit";
+  type: "cost_time_tradeoff" | "cheaper" | "faster" | "similar_total" | "fit" | "stay_context";
   title: string;
   body: string;
   primaryScenarioId: string;

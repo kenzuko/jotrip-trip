@@ -1,4 +1,4 @@
-import knowledge from "../data/destination-knowledge-v0.json";
+import { loadDestinationKnowledge } from "./openPqSource";
 
 type Env = { DB?: D1Database };
 
@@ -140,6 +140,7 @@ function groupVenue(rows:VenueRow[], req:DestinationContextRequest, category:str
 
 export async function buildDestinationContext(env:Env, req:DestinationContextRequest) {
   const limit=Math.max(1,Math.min(8,req.limitPerGroup||4));
+  const knowledge = await loadDestinationKnowledge();
   const allKnowledge=(knowledge.items||[]) as KnowledgeItem[];
   const ranked=rankKnowledge(allKnowledge,req);
   const venues=await loadVenues(env,req);
@@ -156,6 +157,7 @@ export async function buildDestinationContext(env:Env, req:DestinationContextReq
 
   return {
     ok:true,
+    knowledgeSource: knowledge.sourceState,
     zoneCode:req.zoneCode||null,
     daypart:req.daypart||null,
     groups:{

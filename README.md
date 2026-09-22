@@ -4,31 +4,43 @@ Conversational trip decision engine for Phu Quoc.
 
 > **AI understands the traveler. The engine calculates. Data decides. JoTrip operates.**
 
-## V0
+## Foundation status - 22/09/2026
 
-- Conversational homepage foundation
+Base Cloudflare Worker deployment is green.
+
+Implemented foundation:
+
+- conversational homepage shell
 - Vietnamese browser speech output
-- Deterministic trip intent parser
-- Trip Scenario Engine foundation
+- deterministic trip intent parser
+- anonymous chat session ID
+- D1 schemas for accounts, trips, chat history, intent analytics and price watches
+- private chat demand analytics endpoint
+- deterministic Trip Scenario / Pareto engine
 - 7-seat car temporary rule: **15,000 VND/km**
-- Cloudflare Worker + Static Assets deployment
-- D1 core schema for accounts, trips, watchlists, public activities and private hotel commercial data
-- Public knowledge boundary: `cms.openphuquoc.com`
+- date-aware public attraction price catalog
+- private hotel import staging and pricing firewall
+- hotel ALL MARKET + one-clear-discount temporary safety rule
+- public/private data boundary
+- Open Phu Quoc CMS adapter contract
+- JoTrip Guide mascot behavior lock
 
 ## Hotel pricing lock
 
-Hotel commercial data is private. V0 automatically accepts only clearly normalized **ALL MARKET** blocks for internal calculation, optionally applying one clearly applicable discount to derive an internal floor. That private floor never becomes a public price automatically.
+Hotel commercial data is private. V0 automatically accepts only clearly normalized **ALL MARKET** blocks for internal calculation, optionally applying one clearly applicable discount to derive an internal floor.
 
-## Deployment
+That private floor never becomes a public price automatically.
 
-Cloudflare Git build may keep:
+## Cloudflare
+
+Current Git deployment can keep:
 
 - Build command: `None`
 - Deploy command: `npx wrangler deploy`
 
-`wrangler deploy` runs `npm run build` through the custom build setting in `wrangler.jsonc` and deploys `./dist` as Worker static assets.
+Next infrastructure step is binding D1 `jotripa-trip-db` as `DB` and applying migrations. The D1 UUID and runtime secrets are intentionally not committed.
 
-Do not bind D1 or `trip.jotrip.vn` until the base Worker deploy succeeds.
+Workers AI is **not required for V0**. It will be an optional fallback parser later.
 
 ## Never commit
 

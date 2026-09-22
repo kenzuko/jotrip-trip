@@ -83,6 +83,52 @@ async function logConversationTurn(
   ]);
 }
 
+function localizedInterest(value: string, lang: string) {
+  const labels: Record<string, Record<string, string>> = {
+    en: {
+      "Biển": "beach",
+      "Chợ đêm": "night market",
+      "Cà phê": "coffee",
+      "Ăn uống": "food",
+      "Hòn Thơm": "Hon Thom",
+      "Sunset Town": "Sunset Town",
+      "VinWonders": "VinWonders",
+      "Safari": "Safari",
+    },
+    ko: {
+      "Biển": "해변",
+      "Chợ đêm": "야시장",
+      "Cà phê": "카페",
+      "Ăn uống": "맛집",
+      "Hòn Thơm": "혼똠",
+      "Sunset Town": "선셋 타운",
+      "VinWonders": "빈원더스",
+      "Safari": "사파리",
+    },
+    ru: {
+      "Biển": "пляж",
+      "Chợ đêm": "ночной рынок",
+      "Cà phê": "кафе",
+      "Ăn uống": "еда",
+      "Hòn Thơm": "Хон Тхом",
+      "Sunset Town": "Sunset Town",
+      "VinWonders": "VinWonders",
+      "Safari": "сафари",
+    },
+    zh: {
+      "Biển": "海滩",
+      "Chợ đêm": "夜市",
+      "Cà phê": "咖啡",
+      "Ăn uống": "美食",
+      "Hòn Thơm": "香岛",
+      "Sunset Town": "日落小镇",
+      "VinWonders": "VinWonders",
+      "Safari": "Safari",
+    },
+  };
+  return labels[lang]?.[value] || value;
+}
+
 function assistantTextFor(result: ReturnType<typeof buildParseResponse>) {
   const p = result.parsed;
   const lang = p.language || "vi";
@@ -103,7 +149,11 @@ function assistantTextFor(result: ReturnType<typeof buildParseResponse>) {
     : `${p.adults} người lớn`
     : "";
 
-  const bits = [duration, party, p.interests.slice(0, 2).join(" + ")].filter(Boolean);
+  const interestText = p.interests
+    .slice(0, 2)
+    .map((value) => localizedInterest(value, lang))
+    .join(" + ");
+  const bits = [duration, party, interestText].filter(Boolean);
   const summary = bits.join(", ");
 
   if (lang === "en") {

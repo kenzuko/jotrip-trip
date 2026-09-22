@@ -17,6 +17,25 @@ export type TripParseResponse = {
   assistantText?: string;
 };
 
+export type StayContextSignal = {
+  key: string;
+  level: "strong" | "moderate" | "limited";
+  evidence: "zone_baseline" | "venue_enriched";
+  note: string;
+};
+
+export type StayContext = {
+  zoneCode: string;
+  summary: string;
+  signals: StayContextSignal[];
+  verifiedVenueCounts: { food: number; cafe: number; attraction: number } | null;
+  fitScore: number;
+  confidence: number;
+  reasons: string[];
+  cautions: string[];
+  stayContext: StayContext;
+};
+
 export type TripScenario = {
   id: string;
   hotelRef: string;
@@ -27,6 +46,7 @@ export type TripScenario = {
   driveMinutes: number;
   stayFit: number;
   confidence: number;
+  stayContext?: StayContext;
   guestReasons: string[];
   cautions: string[];
   metrics: {
@@ -107,6 +127,7 @@ export type TripBuildResponse = {
   nextNeeded?: string[];
   hotelOfferCount?: number;
   planningHotels?: PlanningHotel[];
+  stayPreferences?: string[];
   destinationContext?: DestinationContext;
   insights?: ScenarioInsight[];
   scenarios?: TripScenario[];

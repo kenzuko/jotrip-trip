@@ -127,22 +127,61 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
     interests.some((x) => ["VinWonders","Safari","Hòn Thơm","Sunset Town","Biển","Chợ đêm"].includes(x)) ? "do" : null,
   ].filter(Boolean) as string[];
 
-  const planningTop = planningEnriched
-    .sort((a, b) => {
-      const spatialWeight = (value: typeof a.spatialFit) =>
-        value === "direct" ? 100 : value === "balanced" ? 50 : 0;
+  const caresAboutEvening = stayPreferences.some((value) =>
+    ["evening", "walkable", "food", "cafe"].includes(value),
+  );
+  const hasNorthInterest = interests.some((x) => ["VinWonders", "Safari"].includes(x));
+  const hasSouthInterest = interests.some((x) => ["Hòn Thơm", "Sunset Town"].includes(x));
 
-      if (hasGeoAnchor) {
-        const spatialDelta = spatialWeight(b.spatialFit) - spatialWeight(a.spatialFit);
-        if (spatialDelta !== 0) return spatialDelta;
-      }
+  const rankedPlanning = planningEnriched.sort((a, b) => {
+    const spatialWeight = (value: typeof a.spatialFit) =>
+      value === "direct" ? 100 : value === "balanced" ? 50 : 0;
 
-      const contextDelta = b.stayContext.fitScore - a.stayContext.fitScore;
-      if (contextDelta !== 0) return contextDelta;
+    if (hasGeoAnchor) {
+      const spatialDelta = spatialWeight(b.spatialFit) - spatialWeight(a.spatialFit);
+      if (spatialDelta !== 0) return spatialDelta;
+    }
 
-      return a.hotel.canonical_name.localeCompare(b.hotel.canonical_name);
-    })
-    .slice(0, 4);
+    const contextDelta = b.stayContext.fitScore - a.stayContext.fitScore;
+    if (contextDelta !== 0) return contextDelta;
+
+    return a.hotel.canonical_name.localeCompare(b.hotel.canonical_name);
+  });
+
+  // Do not show four hotels that all prove the same point.
+  // When a second stay direction changes the guest's real trade-off, keep one candidate from it.
+  const planningTop: typeof rankedPlanning = [];
+  const pushUnique = (item: (typeof rankedPlanning)[number] | undefined) => {
+    if (item && !planningTop.some((x) => x.hotel.id === item.hotel.id) && planningTop.length < 4) {
+      planningTop.push(item);
+    }
+  };
+  const pickArea = (area: string) =>
+    rankedPlanning.find((item) => item.hotel.area_code === area);
+
+  pushUnique(rankedPlanning[0]);
+
+  if (hasNorthInterest && hasSouthInterest) {
+    pushUnique(pickArea("north"));
+    pushUnique(pickArea("south"));
+    pushUnique(pickArea("long_beach"));
+  } else if (hasNorthInterest) {
+    pushUnique(pickArea("north"));
+    if (caresAboutEvening) pushUnique(pickArea("duong_dong"));
+    pushUnique(pickArea("long_beach"));
+  } else if (hasSouthInterest) {
+    pushUnique(pickArea("south"));
+    if (caresAboutEvening) pushUnique(pickArea("duong_dong"));
+    pushUnique(pickArea("long_beach"));
+  } else {
+    if (caresAboutEvening || interests.includes("Chợ đêm")) {
+      pushUnique(pickArea("duong_dong"));
+    }
+    pushUnique(pickArea("long_beach"));
+    pushUnique(pickArea("north_central"));
+  }
+
+  for (const item of rankedPlanning) pushUnique(item);
 
   const routeTargets: Array<{ id: string; label: string }> = [];
   const addRouteTarget = (id: string, label: string) => {
@@ -164,9 +203,6 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
     addRouteTarget("activity:sunset-town", "Sunset Town");
   }
 
-  const caresAboutEvening = stayPreferences.some((value) =>
-    ["evening", "walkable", "food", "cafe"].includes(value),
-  );
   if (caresAboutEvening || interests.includes("Chợ đêm")) {
     addRouteTarget("center:duong-dong", "Trung tâm Dương Đông");
   }

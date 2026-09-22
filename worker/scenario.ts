@@ -1,5 +1,14 @@
 export type TripLanguage = "vi" | "en" | "ko" | "ru" | "zh";
 
+export type AdvisorMode =
+  | "trip_plan"
+  | "food"
+  | "cafe"
+  | "things_to_do"
+  | "where_to_stay"
+  | "compare"
+  | "contact";
+
 type ParsedTrip = {
   days?: number;
   nights?: number;
@@ -9,6 +18,9 @@ type ParsedTrip = {
   interests: string[];
   stayPreferences: string[];
   language: TripLanguage;
+  mode: AdvisorMode;
+  mentionedZone?: string;
+  mentionedPlace?: string;
   raw: string;
 };
 
@@ -33,6 +45,37 @@ const stayPreferenceRules: Array<[RegExp, string]> = [
   [/gia\s*đình|gia\s*dinh|family|kids?|children|trẻ\s*em|tre\s*em|bé|be|семь|ребен|дет|아이|아기|가족|家庭|儿童|兒童|孩子/i, "family"],
   [/gần\s*sân\s*bay|gan\s*san\s*bay|bay\s*sớm|bay\s*som|airport|early\s*flight|аэропорт|ранн\w*\s+рейс|공항|이른\s*비행|机场|機場|早班机|早班機/i, "airport"],
 ];
+
+
+const zoneRules: Array<[RegExp, string, string]> = [
+  [/vinwonders|safari|grand\s*world|bãi\s*dài|bai\s*dai|gành\s*dầu|ganh\s*dau|빈원더스|사파리|그랜드\s*월드|сафари|винвандерс|珍珠乐园|珍珠樂園|野生动物园|野生動物園/i, "north", "Bắc đảo"],
+  [/sunset\s*town|hòn\s*thơm|hon\s*thom|an\s*thới|an\s*thoi|bãi\s*khem|bai\s*khem|bãi\s*sao|bai\s*sao|선셋\s*타운|혼똠|안토이|хон\s*тхом|日落小镇|日落小鎮|香岛|香島/i, "south", "Nam đảo"],
+  [/dương\s*đông|duong\s*dong|chợ\s*đêm|night\s*market|즈엉동|야시장|зуонг\s*донг|ночн\w*\s+рын|阳东|陽東|夜市/i, "duong_dong", "Dương Đông"],
+  [/bãi\s*trường|bai\s*truong|long\s*beach|dương\s*tơ|duong\s*to|롱비치|лонг\s*бич|长滩|長灘/i, "long_beach", "Bãi Trường"],
+  [/ông\s*lang|ong\s*lang|cửa\s*dương|cua\s*duong|옹랑|онг\s*ланг|翁朗/i, "north_central", "Ông Lang"],
+  [/hàm\s*ninh|ham\s*ninh|함닌|хам\s*нинь|咸宁|咸寧/i, "east", "Hàm Ninh"],
+];
+
+function detectMentionedZone(text:string) {
+  for (const [pattern,zone,place] of zoneRules) {
+    if (pattern.test(text)) return {zone,place};
+  }
+  return {};
+}
+
+function detectAdvisorMode(text:string, interests:string[], stayPreferences:string[]): AdvisorMode {
+  if (/liên\s*hệ|lien\s*he|đặt\s*phòng|dat\s*phong|booking|book\s*(?:it|this|room)|reserve|예약|брони|预订|預訂/i.test(text)) return "contact";
+  if (/so\s*sánh|so\s*sanh|hơn\s*thua|hon\s*thua|compare|vs\.?|versus|비교|сравн|对比|比較/i.test(text)) return "compare";
+  if (/ở\s*đâu|o\s*dau|khu\s*nào|khu\s*nao|where\s*(?:should|to)\s*stay|which\s*area|숙소|어디.*묵|где\s*(?:жить|останов)|住哪里|住哪裡|哪个区域|哪個區域/i.test(text)) return "where_to_stay";
+  if (interests.includes("Cà phê") && /ở\s*đâu|o\s*dau|where|추천|где|哪里|哪裡|咖啡/i.test(text)) return "cafe";
+  if (interests.includes("Ăn uống") && /ăn\s*gì|an\s*gi|ở\s*đâu|o\s*dau|where|what\s*to\s*eat|추천|что\s*есть|где\s*поесть|吃什么|吃甚麼|哪里吃|哪裡吃/i.test(text)) return "food";
+  if (/chơi\s*gì|choi\s*gi|có\s*gì|co\s*gi|what\s*to\s*do|things?\s*to\s*do|뭐.*할|что\s*делать|有什么|有什麼/i.test(text)) return "things_to_do";
+  if ((!/\d+\s*(?:ngày|ngay|days?|박|일|дн|ноч|天|晚)/i.test(text)) && (interests.length || stayPreferences.length)) {
+    if (interests.includes("Cà phê")) return "cafe";
+    if (interests.includes("Ăn uống")) return "food";
+  }
+  return "trip_plan";
+}
 
 function detectLanguage(text: string): TripLanguage {
   if (/[가-힣]/.test(text)) return "ko";
@@ -124,6 +167,9 @@ export function parseTripText(raw: string): ParsedTrip {
 
   if (children && !stayPreferences.includes("family")) stayPreferences.push("family");
 
+  const mentioned=detectMentionedZone(text);
+  const mode=detectAdvisorMode(text,interests,stayPreferences);
+
   return {
     ...stay,
     adults,
@@ -132,6 +178,9 @@ export function parseTripText(raw: string): ParsedTrip {
     interests,
     stayPreferences,
     language,
+    mode,
+    mentionedZone:mentioned.zone,
+    mentionedPlace:mentioned.place,
     raw:text,
   };
 }
@@ -142,9 +191,11 @@ export function buildParseResponse(raw: string) {
   const nextNeeded: string[] = [];
 
   if (!parsed.adults && !parsed.children) assumptions.push(noPeopleText[parsed.language]);
-  if (!parsed.days || parsed.nights === undefined) nextNeeded.push("duration");
-  if (!parsed.interests.length && !parsed.stayPreferences.length) nextNeeded.push("interests");
-  nextNeeded.push("travel_dates");
+  if (parsed.mode === "trip_plan") {
+    if (!parsed.days || parsed.nights === undefined) nextNeeded.push("duration");
+    if (!parsed.interests.length && !parsed.stayPreferences.length) nextNeeded.push("interests");
+    nextNeeded.push("travel_dates");
+  }
 
   return { ok: Boolean(parsed.raw), parsed, assumptions, nextNeeded };
 }

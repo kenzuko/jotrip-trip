@@ -354,7 +354,6 @@ export default function App() {
       });
 
       const json = (await res.json()) as TripParseResponse;
-      setResult(json);
 
       const isFreshTrip = Boolean(json.parsed.days || json.parsed.nights);
       const inheritedInterests =
@@ -376,7 +375,32 @@ export default function App() {
         previousPlan?.planningHotels?.[0]?.hotel.area_code ||
         previousAdvisor?.hotels?.[0]?.hotel.area_code ||
         previousAdvisor?.context?.zoneCode ||
+        previousResult?.parsed.mentionedZone ||
         undefined;
+
+      const contextualResult: TripParseResponse =
+        previousResult && !isFreshTrip
+          ? {
+              ...json,
+              parsed: {
+                ...previousResult.parsed,
+                ...json.parsed,
+                days: json.parsed.days ?? previousResult.parsed.days,
+                nights: json.parsed.nights ?? previousResult.parsed.nights,
+                adults: json.parsed.adults ?? previousResult.parsed.adults,
+                children: json.parsed.children ?? previousResult.parsed.children,
+                budgetVnd: json.parsed.budgetVnd ?? previousResult.parsed.budgetVnd,
+                interests: inheritedInterests,
+                stayPreferences: inheritedPreferences,
+                mentionedZone: inheritedZone,
+                raw: json.parsed.raw,
+                language: json.parsed.language,
+                mode: json.parsed.mode,
+              },
+            }
+          : json;
+
+      setResult(contextualResult);
 
       let spoken = json.assistantText || "";
 

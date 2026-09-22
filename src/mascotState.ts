@@ -48,6 +48,10 @@ export function canonicalMascotPath(state: MascotState) {
 }
 
 export function runtimeMascotPath(state: MascotState) {
+  // Preserve the approved illustration. The 100×125 px WebP is too small
+  // for the greeting hero on high-density iPhones, so use the exact
+  // canonical 1122×1402 PNG until a verified high-res derivative ships.
+  if (state === "greeting") return canonicalMascotPath("greeting");
   return `/assets/mascot-v1/${MASCOT_RUNTIME_FILES[state]}`;
 }
 

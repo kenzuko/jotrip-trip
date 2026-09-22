@@ -44,5 +44,14 @@
       "file": "08_confirm_thumbs_up.webp",
       "sha256": "3d834264d7ebc10d3bddaa08cb7443f43193a048dbffbad731025933a209d9ef"
     }
-  ]
+  ],
+  "canonical_greeting": {
+    "file": "01_greeting_wave.png",
+    "sha256": "96f376e65d4602a092a2954ebab7ce62bb8f9191c0afbf69b4e31465c450eb40",
+    "dimensions": [
+      1122,
+      1402
+    ],
+    "note": "Unmodified original from approved mascot pack; replaces undersized 100x125 runtime derivative for greeting only."
+  }
 }

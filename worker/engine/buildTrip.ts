@@ -1,6 +1,7 @@
 import { quotePublicActivity } from "../publicCatalog";
 import { estimateSevenSeatPrice } from "../rules/mobility";
 import { selectMeaningfulScenarios, type TripScenarioInput } from "./tripScenario";
+import { matchPlanningHotels } from "../publicHotels";
 
 type Env = {
   DB?: D1Database;
@@ -99,6 +100,7 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
   const referenceDate = request.checkin || todayInVietnam();
   const nights = nightsBetween(request.checkin, request.checkout);
   const activities = activityCost(interests, adults, children, referenceDate);
+  const planningHotels = matchPlanningHotels(interests, 4);
 
   if (!env.DB || !request.checkin || !request.checkout || !nights) {
     return {
@@ -113,6 +115,7 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
       activityCostVnd: activities.total,
       activityLines: activities.lines,
       warnings: activities.warnings,
+      planningHotels,
       scenarios: [],
       nextNeeded: [
         !request.checkin || !request.checkout ? "travel_dates" : null,
@@ -228,6 +231,7 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
   return {
     ok: true,
     mode: "priced",
+    planningHotels,
     referenceDate,
     checkin: request.checkin,
     checkout: request.checkout,

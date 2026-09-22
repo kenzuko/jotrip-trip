@@ -80,11 +80,8 @@ export type PlanningHotel = {
     label: string;
     distanceKm: number;
     minutes: number;
-    staticMinutes: number | null;
-    trafficAware: boolean;
-    source: "google_maps";
-    attribution: "Google Maps";
-    checkedAt: string;
+    source: string;
+    checkedAt: string | null;
   }>;
 };
 

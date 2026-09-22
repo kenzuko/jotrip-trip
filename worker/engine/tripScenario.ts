@@ -1,4 +1,5 @@
 import { paretoFrontier } from "./pareto";
+import type { StayContext } from "./stayContext";
 
 export type TripScenario = {
   id: string;
@@ -11,6 +12,7 @@ export type TripScenario = {
   driveMinutes: number;
   stayFit: number;
   confidence: number;
+  stayContext?: StayContext;
   guestReasons: string[];
   cautions: string[];
   commercialScore?: number; // private tie-break only; never shown to guest

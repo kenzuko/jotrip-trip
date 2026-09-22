@@ -6,7 +6,7 @@ The base Worker can deploy before D1, AI, or the custom domain are connected.
 
 Database name expected by this project:
 
-`jotripa-trip-db`
+`jotrip-trip-db`
 
 After the database exists, bind it as:
 

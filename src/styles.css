@@ -1389,3 +1389,52 @@ a {
     text-align: left;
   }
 }
+
+
+.route-evidence {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid #e1ecea;
+  border-radius: 14px;
+  background: #fbfdfd;
+}
+
+.route-evidence-head,
+.route-evidence-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.route-evidence-head strong {
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.route-evidence-head span {
+  color: #5e5e5e;
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.route-evidence-row {
+  padding-top: 7px;
+  border-top: 1px solid #e9f0ef;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.route-evidence-row span {
+  min-width: 0;
+}
+
+.route-evidence-row b {
+  flex: 0 0 auto;
+  color: var(--ink);
+  font-size: 11px;
+}

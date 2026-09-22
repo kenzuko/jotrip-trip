@@ -50,6 +50,15 @@ export type PlanningHotel = {
   cautions: string[];
 };
 
+export type ScenarioInsight = {
+  type: "cost_time_tradeoff" | "cheaper" | "faster" | "similar_total" | "fit";
+  title: string;
+  body: string;
+  primaryScenarioId: string;
+  secondaryScenarioId?: string;
+  data: Record<string, number | string>;
+};
+
 export type TripBuildResponse = {
   ok: boolean;
   mode?: "planning" | "priced";
@@ -60,5 +69,6 @@ export type TripBuildResponse = {
   nextNeeded?: string[];
   hotelOfferCount?: number;
   planningHotels?: PlanningHotel[];
+  insights?: ScenarioInsight[];
   scenarios?: TripScenario[];
 };

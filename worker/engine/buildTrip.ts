@@ -4,6 +4,7 @@ import { selectMeaningfulScenarios, type TripScenarioInput } from "./tripScenari
 import { matchPlanningHotels } from "../publicHotels";
 import { explainTopScenarios } from "./explain";
 import { buildDestinationContext } from "../destinationContext";
+import { buildStayContext, type StayPreference } from "./stayContext";
 
 type Env = {
   DB?: D1Database;
@@ -15,6 +16,7 @@ type BuildTripRequest = {
   adults?: number;
   children?: number;
   interests?: string[];
+  stayPreferences?: StayPreference[];
   budgetVnd?: number;
 };
 
@@ -99,13 +101,41 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
   const adults = Math.max(1, Math.floor(request.adults || 2));
   const children = Math.max(0, Math.floor(request.children || 0));
   const interests = request.interests || [];
+  const stayPreferences = request.stayPreferences || [];
   const referenceDate = request.checkin || todayInVietnam();
   const nights = nightsBetween(request.checkin, request.checkout);
   const activities = activityCost(interests, adults, children, referenceDate);
-  const planningHotels = matchPlanningHotels(interests, 4);
+  const planningBase = matchPlanningHotels(interests, 12);
+  const planningEnriched = await Promise.all(
+    planningBase.map(async (item) => ({
+      ...item,
+      stayContext: await buildStayContext(env, item.hotel.area_code, stayPreferences),
+    })),
+  );
+
+  const hasGeoAnchor = interests.some((x) =>
+    ["VinWonders","Safari","Hòn Thơm","Sunset Town","Chợ đêm"].includes(x),
+  );
+
+  const planningHotels = planningEnriched
+    .sort((a, b) => {
+      const spatialWeight = (value: typeof a.spatialFit) =>
+        value === "direct" ? 100 : value === "balanced" ? 50 : 0;
+
+      if (hasGeoAnchor) {
+        const spatialDelta = spatialWeight(b.spatialFit) - spatialWeight(a.spatialFit);
+        if (spatialDelta !== 0) return spatialDelta;
+      }
+
+      const contextDelta = b.stayContext.fitScore - a.stayContext.fitScore;
+      if (contextDelta !== 0) return contextDelta;
+
+      return a.hotel.canonical_name.localeCompare(b.hotel.canonical_name);
+    })
+    .slice(0, 4);
   const contextIntents = [
-    interests.includes("Ăn uống") ? "eat" : null,
-    interests.includes("Cà phê") ? "cafe" : null,
+    interests.includes("Ăn uống") || stayPreferences.includes("food") ? "eat" : null,
+    interests.includes("Cà phê") || stayPreferences.includes("cafe") ? "cafe" : null,
     interests.some((x) => ["VinWonders","Safari","Hòn Thơm","Sunset Town","Biển","Chợ đêm"].includes(x)) ? "do" : null,
   ].filter(Boolean) as string[];
   const destinationContext = await buildDestinationContext(env, {
@@ -128,6 +158,7 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
       activityLines: activities.lines,
       warnings: activities.warnings,
       planningHotels,
+      stayPreferences,
       destinationContext,
       scenarios: [],
       nextNeeded: [
@@ -215,13 +246,24 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
       fitTags = JSON.parse(String(offer.fit_tags_json || "[]"));
     } catch {}
 
-    let stayFit = 60;
-    if (interests.includes("VinWonders") && fitTags.includes("north")) stayFit += 20;
-    if (interests.includes("Safari") && fitTags.includes("north")) stayFit += 15;
-    if (interests.includes("Hòn Thơm") && fitTags.includes("south")) stayFit += 20;
-    stayFit = Math.min(100, stayFit);
+    let activityFit = 60;
+    if (interests.includes("VinWonders") && fitTags.includes("north")) activityFit += 20;
+    if (interests.includes("Safari") && fitTags.includes("north")) activityFit += 15;
+    if (interests.includes("Hòn Thơm") && fitTags.includes("south")) activityFit += 20;
+    activityFit = Math.min(100, activityFit);
 
-    const confidence = Math.max(50, 100 - missingRoutes * 15);
+    const stayContext = await buildStayContext(
+      env,
+      String(offer.area_code || "long_beach"),
+      stayPreferences,
+    );
+
+    const preferenceWeight = stayPreferences.length ? (hasGeoAnchor ? 0.35 : 0.6) : 0.2;
+    const stayFit = Math.round(
+      activityFit * (1 - preferenceWeight) + stayContext.fitScore * preferenceWeight,
+    );
+
+    const confidence = Math.round(100 * 0.7 + stayContext.confidence * 0.3);
 
     candidates.push({
       id: String(offer.offer_id),
@@ -233,10 +275,13 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
       driveMinutes,
       stayFit,
       confidence,
+      stayContext,
       guestReasons: [
         distanceKm > 0 ? `Ước tính khoảng ${Math.round(distanceKm)} km di chuyển cho các chặng đã biết.` : "",
+        ...stayContext.reasons,
       ].filter(Boolean),
       cautions: [
+        ...stayContext.cautions,
         String(offer.availability_state) === "on_request" ? "Phòng cần JoTrip xác nhận lại." : "",
       ].filter(Boolean),
     });
@@ -254,6 +299,7 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
     ok: true,
     mode: "priced",
     planningHotels,
+    stayPreferences,
     destinationContext,
     insights,
     referenceDate,

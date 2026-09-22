@@ -10,9 +10,9 @@ import { directGuide } from "./guideDirector";
 import { resolveMascotState, runtimeMascotPath } from "./mascotState";
 
 const examples = [
-  { label: "Gợi ý", text: "3 ngày 2 đêm, nhà mình có bé, muốn chơi Vin và Safari thì ở đâu hợp?" },
-  { label: "Gợi ý", text: "Ở Sunset Town thì buổi tối ăn gì, cafe ở đâu, còn gì để chơi?" },
-  { label: "EN", text: "Where should we stay for Safari, coffee and quiet evenings?" },
+  { label: "Gợi ý", text: "3 ngày 2 đêm, nhà mình có bé, muốn chơi Vin và Safari thì ở đâu hợp?", mobileText: "Có bé, đi Vin và Safari, ở đâu tiện?" },
+  { label: "Gợi ý", text: "Ở Sunset Town thì buổi tối ăn gì, cafe ở đâu, còn gì để chơi?", mobileText: "Tối ở Sunset Town ăn gì, chơi gì?" },
+  { label: "EN", text: "Where should we stay for Safari, coffee and quiet evenings?", mobileText: "Ask JoTrip in English" },
 ];
 
 const languageNames: Record<string, string> = {
@@ -900,7 +900,7 @@ export default function App() {
                 key={mascotSrc}
                 className="mascot-frame mascot-frame--state"
                 src={mascotSrc}
-                alt="JoTrip Guide"
+                alt={hasResponse ? "JoTrip Guide" : "JoTrip đang vẫy tay chào bạn"}
               />
               <div className="voice-bars" aria-hidden="true">
                 <i></i><i></i><i></i><i></i>
@@ -932,10 +932,12 @@ export default function App() {
             </button>
           </form>
 
-          <div className="example-chips" aria-label="Ví dụ đa ngôn ngữ">
+          {!hasResponse && <p className="fresh-examples-title">Hoặc bắt đầu bằng một câu này</p>}
+          <div className="example-chips" aria-label="Câu hỏi gợi ý">
             {examples.map((example) => (
               <button
-                key={example.label}
+                key={example.text}
+                aria-label={example.text}
                 type="button"
                 onClick={() => {
                   setInput(example.text);
@@ -943,7 +945,8 @@ export default function App() {
                 }}
               >
                 <b>{example.label}</b>
-                <span>{example.text}</span>
+                <span className="full-example">{example.text}</span>
+                <span className="mobile-example" aria-hidden="true">{example.mobileText}</span>
               </button>
             ))}
           </div>

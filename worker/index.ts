@@ -2,6 +2,7 @@ import { buildParseResponse } from "./scenario";
 import { estimateSevenSeatPrice } from "./rules/mobility";
 import { chatAnalyticsOverview, isInternalAuthorized } from "./internal";
 import { quotePublicActivity } from "./publicCatalog";
+import { bootstrapSchema } from "./bootstrap";
 
 type Env = {
   DB?: D1Database;
@@ -114,6 +115,19 @@ export default {
         chatLoggingReady: Boolean(env.DB) && schemaReady,
         time: new Date().toISOString(),
       });
+    }
+
+    if (url.pathname === "/api/bootstrap-once" && request.method === "GET") {
+      try {
+        return json(await bootstrapSchema(env));
+      } catch (error) {
+        console.error("bootstrap_failed", error);
+        return json({
+          ok: false,
+          error: "bootstrap_failed",
+          message: error instanceof Error ? error.message : String(error)
+        }, 500);
+      }
     }
 
     if (url.pathname === "/api/trip/parse" && request.method === "POST") {

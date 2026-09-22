@@ -15,6 +15,8 @@ const interestRules: Array<[RegExp, string]> = [
   [/sunset\s*town|thị\s*trấn\s*hoàng\s*hôn/i, "Sunset Town"],
   [/biển|beach/i, "Biển"],
   [/chợ\s*đêm|cho\s*dem/i, "Chợ đêm"],
+  [/cà\s*phê|ca\s*phe|cafe|coffee/i, "Cà phê"],
+  [/ăn\s*gì|an\s*gi|ăn\s*ngon|an\s*ngon|ẩm\s*thực|am\s*thuc|quán\s*ăn|quan\s*an|nhà\s*hàng|nha\s*hang|hải\s*sản|hai\s*san/i, "Ăn uống"],
 ];
 
 export function parseTripText(raw: string): ParsedTrip {

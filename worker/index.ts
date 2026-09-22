@@ -182,6 +182,7 @@ export default {
           adults?: number;
           children?: number;
           interests?: string[];
+          stayPreferences?: Array<"food" | "cafe" | "evening" | "walkable" | "quiet" | "local" | "family" | "airport">;
           budgetVnd?: number;
         }>()
         .catch(() => ({}));

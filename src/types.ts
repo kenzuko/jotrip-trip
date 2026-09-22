@@ -6,6 +6,7 @@ export type ParsedTrip = {
   budgetVnd?: number;
   interests: string[];
   stayPreferences: string[];
+  language: "vi" | "en" | "ko" | "ru" | "zh";
   raw: string;
 };
 

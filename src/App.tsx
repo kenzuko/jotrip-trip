@@ -179,11 +179,33 @@ function planningReply(result: TripParseResponse, plan: TripBuildResponse) {
   };
   const label = areaNames[area]?.[lang] || area;
 
-  if (lang === "en") return "I’d look at " + label + " first for this trip. Before you choose dates, I’m comparing the area, travel time and what life around the hotel is like.";
-  if (lang === "ko") return "이 일정은 우선 " + label + " 쪽부터 볼게요. 날짜를 정하기 전에는 객실 가격보다 위치, 이동 시간, 숙소 주변 생활을 먼저 비교합니다.";
-  if (lang === "ru") return "Для этой поездки я бы сначала посмотрел район " + label + ". До выбора дат сравниваю расположение, дорогу и то, насколько удобно жить вокруг отеля.";
-  if (lang === "zh") return "这趟行程我会先看" + label + "。在你选日期之前，我先比较区域、交通时间和酒店周边是否方便。";
-  return "Với chuyến này, mình sẽ nhìn " + label + " trước. Chưa có ngày thì mình chưa vội dùng giá phòng, mà so khu ở, thời gian đi xe và sống quanh khách sạn có tiện không.";
+  if (lang === "en") return "I’d look at " + label + " first for this trip. I’ll compare what you gain there with the extra travel or evening convenience before we get into room prices.";
+  if (lang === "ko") return "이 일정은 우선 " + label + " 쪽부터 볼게요. 객실 가격보다 먼저, 그 지역에서 편해지는 점과 이동·저녁 활동에서 생기는 차이를 같이 볼게요.";
+  if (lang === "ru") return "Для этой поездки я бы сначала посмотрел " + label + ". Сначала сравню, что этот район упрощает и чем за это приходится платить во времени или вечерней мобильности.";
+  if (lang === "zh") return "这趟行程我会先看" + label + "。我先比较住这里能省下什么，以及交通和晚上活动会多出什么，再看房价。";
+
+  const p = result.parsed;
+  const hasNorth = p.interests.includes("VinWonders") || p.interests.includes("Safari");
+  const hasSouth = p.interests.includes("Hòn Thơm") || p.interests.includes("Sunset Town");
+  const likesEvening =
+    p.stayPreferences.includes("evening") ||
+    p.stayPreferences.includes("walkable") ||
+    p.stayPreferences.includes("food") ||
+    p.stayPreferences.includes("cafe");
+
+  if (area === "north" && hasNorth && likesEvening) {
+    return "Nếu VinWonders với Safari là hai điểm chính thì mình hơi nghiêng về phía Bắc hơn, đi ban ngày sẽ nhẹ cho cả nhà. Nhưng nếu tối nhà mình hay ra ngoài ăn uống, cafe hay đi dạo thì Dương Đông dễ hơn; ở phía Bắc mà tối chạy xuống trung tâm thì tiền xe với thời gian cũng nên tính vào. Mình đặt hai hướng cạnh nhau cho bạn dễ chọn nha.";
+  }
+
+  if (area === "north" && hasNorth) {
+    return "Nếu VinWonders với Safari là phần chính của chuyến đi thì mình hơi nghiêng về phía Bắc hơn. Đi lại ban ngày nhẹ hơn khá nhiều. Mình vẫn sẽ để ý phần buổi tối với tiền xe trước khi nói nhà mình nên chọn khu nào.";
+  }
+
+  if (area === "south" && hasSouth && likesEvening) {
+    return "Nếu Hòn Thơm với Sunset Town là phần chính thì mình hơi nghiêng về phía Nam hơn. Ban ngày đỡ chạy xe, buổi tối cũng có nhiều thứ để làm quanh khu này. Mình sẽ đặt thêm một lựa chọn khác cạnh bên để nhà mình nhìn rõ được - mất gì trước khi chọn.";
+  }
+
+  return "Với chuyến này mình hơi nghiêng về " + label + " trước. Mình muốn nhìn cả cách đi, buổi tối quanh chỗ ở và tiền xe chứ chưa chọn theo giá phòng ngay. Tuỳ nhà mình thích kiểu nào hơn, mình đặt các hướng cạnh nhau cho dễ nhìn nha.";
 }
 
 function Discovery({

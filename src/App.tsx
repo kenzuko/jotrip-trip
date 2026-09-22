@@ -244,6 +244,66 @@ export default function App() {
             </div>
           )}
 
+          {plan?.destinationContext && (
+            <section className="discover-panel">
+              <div className="section-heading">
+                <span className="label">Quanh khu này</span>
+                <h3>Ăn gì, uống cà phê ở đâu, có gì để chơi?</h3>
+              </div>
+
+              <div className="discover-grid">
+                <article className="discover-column">
+                  <div className="discover-title">Ăn gì</div>
+                  {plan.destinationContext.groups.eat.venues.map((venue) => (
+                    <div className="discover-item venue" key={venue.id}>
+                      <strong>{venue.name}</strong>
+                      {venue.address && <span>{venue.address}</span>}
+                      {venue.distanceKm != null && <small>~{venue.distanceKm.toFixed(1)} km</small>}
+                    </div>
+                  ))}
+                  {plan.destinationContext.groups.eat.knowledge.slice(0,4).map((item) => (
+                    <div className="discover-item" key={item.id}>
+                      <strong>{item.title}</strong>
+                      {item.summary && <span>{item.summary}</span>}
+                    </div>
+                  ))}
+                </article>
+
+                <article className="discover-column">
+                  <div className="discover-title">Cà phê</div>
+                  {plan.destinationContext.groups.cafe.venues.length > 0 ? (
+                    plan.destinationContext.groups.cafe.venues.map((venue) => (
+                      <div className="discover-item venue" key={venue.id}>
+                        <strong>{venue.name}</strong>
+                        {venue.address && <span>{venue.address}</span>}
+                        {venue.distanceKm != null && <small>~{venue.distanceKm.toFixed(1)} km</small>}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="discover-empty">Chưa có quán cà phê đã kiểm tra đủ dữ liệu trong khu này.</p>
+                  )}
+                </article>
+
+                <article className="discover-column">
+                  <div className="discover-title">Có gì để chơi</div>
+                  {plan.destinationContext.groups.do.venues.map((venue) => (
+                    <div className="discover-item venue" key={venue.id}>
+                      <strong>{venue.name}</strong>
+                      {venue.address && <span>{venue.address}</span>}
+                      {venue.distanceKm != null && <small>~{venue.distanceKm.toFixed(1)} km</small>}
+                    </div>
+                  ))}
+                  {plan.destinationContext.groups.do.knowledge.slice(0,4).map((item) => (
+                    <div className="discover-item" key={item.id}>
+                      <strong>{item.title}</strong>
+                      {item.summary && <span>{item.summary}</span>}
+                    </div>
+                  ))}
+                </article>
+              </div>
+            </section>
+          )}
+
           {plan?.insights && plan.insights.length > 0 && (
             <div className="insight-list">
               {plan.insights.map((insight) => (

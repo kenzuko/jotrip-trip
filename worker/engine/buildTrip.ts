@@ -6,11 +6,9 @@ import { explainTopScenarios } from "./explain";
 import { buildDestinationContext } from "../destinationContext";
 import { buildStayContext, type StayPreference } from "./stayContext";
 import { buildAdvice } from "../advice";
-import { computeGoogleRouteMatrix, type GoogleRoutePoint } from "../googleRoutes";
 
 type Env = {
   DB?: D1Database;
-  GOOGLE_MAPS_API_KEY?: string;
 };
 
 type BuildTripRequest = {
@@ -146,93 +144,85 @@ export async function buildTripScenarios(env: Env, request: BuildTripRequest) {
     })
     .slice(0, 4);
 
-  const routeTargets: GoogleRoutePoint[] = [];
-  const addRouteTarget = (target: GoogleRoutePoint) => {
-    if (!routeTargets.some((item) => item.id === target.id) && routeTargets.length < 4) {
-      routeTargets.push(target);
+  const routeTargets: Array<{ id: string; label: string }> = [];
+  const addRouteTarget = (id: string, label: string) => {
+    if (!routeTargets.some((item) => item.id === id) && routeTargets.length < 4) {
+      routeTargets.push({ id, label });
     }
   };
 
   if (interests.includes("VinWonders")) {
-    addRouteTarget({
-      id: "activity:vinwonders",
-      label: "VinWonders Phú Quốc",
-      address: "VinWonders Phu Quoc, Bãi Dài, Gành Dầu, Phú Quốc, Việt Nam",
-    });
+    addRouteTarget("activity:vinwonders", "VinWonders Phú Quốc");
   }
   if (interests.includes("Safari")) {
-    addRouteTarget({
-      id: "activity:safari",
-      label: "Vinpearl Safari Phú Quốc",
-      address: "Vinpearl Safari Phu Quoc, Gành Dầu, Phú Quốc, Việt Nam",
-    });
+    addRouteTarget("activity:safari", "Vinpearl Safari Phú Quốc");
   }
   if (interests.includes("Hòn Thơm")) {
-    addRouteTarget({
-      id: "activity:hon-thom",
-      label: "Ga cáp treo Hòn Thơm",
-      address: "Ga An Thới - Cáp treo Hòn Thơm, Sunset Town, An Thới, Phú Quốc, Việt Nam",
-    });
+    addRouteTarget("activity:hon-thom", "Ga cáp treo Hòn Thơm");
   }
   if (interests.includes("Sunset Town")) {
-    addRouteTarget({
-      id: "activity:sunset-town",
-      label: "Sunset Town",
-      address: "Sunset Town, An Thới, Phú Quốc, Việt Nam",
-    });
+    addRouteTarget("activity:sunset-town", "Sunset Town");
   }
 
   const caresAboutEvening = stayPreferences.some((value) =>
     ["evening", "walkable", "food", "cafe"].includes(value),
   );
   if (caresAboutEvening || interests.includes("Chợ đêm")) {
-    addRouteTarget({
-      id: "center:duong-dong",
-      label: "Trung tâm Dương Đông",
-      address: "Chợ đêm Phú Quốc, Dương Đông, Phú Quốc, Việt Nam",
-    });
+    addRouteTarget("center:duong-dong", "Trung tâm Dương Đông");
   }
 
   if (stayPreferences.includes("airport")) {
-    addRouteTarget({
-      id: "airport:pq",
-      label: "Sân bay Phú Quốc",
-      address: "Phu Quoc International Airport, Phú Quốc, Việt Nam",
-    });
+    addRouteTarget("airport:pq", "Sân bay Phú Quốc");
   }
 
-  const routeOrigins: GoogleRoutePoint[] = planningTop
-    .filter((item) => Boolean(item.hotel.address))
-    .map((item) => ({
-      id: item.hotel.id,
-      label: item.hotel.canonical_name,
-      address: item.hotel.address,
-    }));
-
-  const routeMatrix =
-    routeOrigins.length && routeTargets.length
-      ? await computeGoogleRouteMatrix(env, routeOrigins, routeTargets, {
-          // Planning uses a stable baseline. Live traffic belongs to "right now" decisions,
-          // not a future hotel comparison.
-          trafficAware: false,
-        })
-      : { ok: false as const, facts: [] };
-
   const planningHotels = await Promise.all(
-    planningTop.map(async (item) => ({
-      ...item,
-      nearby: await buildDestinationContext(env, {
-        zoneCode: item.hotel.area_code,
-        intents: contextIntents,
-        limitPerGroup: 2,
-      }),
-      routeFacts: routeMatrix.facts
-        .filter((fact) => fact.originId === item.hotel.id)
-        .map((fact) => ({
-          ...fact,
-          label: routeTargets.find((target) => target.id === fact.destinationId)?.label || fact.destinationId,
-        })),
-    })),
+    planningTop.map(async (item) => {
+      let routeFacts: Array<{
+        originId: string;
+        destinationId: string;
+        label: string;
+        distanceKm: number;
+        minutes: number;
+        source: string;
+        checkedAt: string | null;
+      }> = [];
+
+      if (env.DB && routeTargets.length) {
+        const placeholders = routeTargets.map(() => "?").join(",");
+        const rows = await env.DB.prepare(
+          `SELECT to_ref, distance_km, normal_minutes, source, checked_at
+           FROM travel_matrix
+           WHERE from_ref = ?
+             AND to_ref IN (${placeholders})
+             AND normal_minutes IS NOT NULL`,
+        ).bind(
+          `hotel:${item.hotel.id}`,
+          ...routeTargets.map((target) => target.id),
+        ).all();
+
+        routeFacts = (rows.results || []).map((row) => ({
+          originId: item.hotel.id,
+          destinationId: String(row.to_ref),
+          label:
+            routeTargets.find((target) => target.id === String(row.to_ref))?.label ||
+            String(row.to_ref),
+          distanceKm: Number(row.distance_km || 0),
+          minutes: Math.max(1, Math.round(Number(row.normal_minutes || 0))),
+          source: String(row.source || "route_matrix"),
+          checkedAt: row.checked_at ? String(row.checked_at) : null,
+        }));
+      }
+
+      return {
+        ...item,
+        nearby: await buildDestinationContext(env, {
+          zoneCode: item.hotel.area_code,
+          intents: contextIntents,
+          limitPerGroup: 2,
+        }),
+        routeFacts,
+      };
+    }),
   );
 
   const destinationContext =

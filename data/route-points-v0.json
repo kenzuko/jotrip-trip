@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-09-22",
+  "notes": [
+    "Canonical route points for the free-first OSM/OSRM matrix.",
+    "Null coordinates are intentional: do not route from an unresolved entrance/centroid.",
+    "Hotels should eventually receive exact entrance coordinates from CMS/Open Phu Quoc normalization."
+  ],
+  "points": [
+    {
+      "ref": "center:duong-dong",
+      "label": "Dương Đông - Chợ Dương Đông",
+      "kind": "center",
+      "latitude": 10.2206875,
+      "longitude": 103.9591875,
+      "address": "Chợ Dương Đông, đường Ngô Quyền, Dương Đông, Phú Quốc, An Giang, Việt Nam",
+      "source": "openpq_destination_snapshot",
+      "verified_at": "2026-09-22"
+    },
+    {
+      "ref": "activity:sunset-town",
+      "label": "Sunset Town",
+      "kind": "activity",
+      "latitude": 10.026903,
+      "longitude": 104.007917,
+      "address": "Sunset Town, An Thới, Phú Quốc, An Giang, Việt Nam",
+      "source": "openpq_destination_snapshot",
+      "verified_at": "2026-09-22"
+    },
+    {
+      "ref": "activity:vinwonders",
+      "label": "VinWonders Phú Quốc",
+      "kind": "activity",
+      "latitude": null,
+      "longitude": null,
+      "address": "VinWonders Phú Quốc, Bãi Dài, Gành Dầu, Phú Quốc",
+      "source": "needs_exact_entrance",
+      "verified_at": null
+    },
+    {
+      "ref": "activity:safari",
+      "label": "Vinpearl Safari Phú Quốc",
+      "kind": "activity",
+      "latitude": null,
+      "longitude": null,
+      "address": "Vinpearl Safari Phú Quốc, Gành Dầu, Phú Quốc",
+      "source": "needs_exact_entrance",
+      "verified_at": null
+    },
+    {
+      "ref": "activity:hon-thom",
+      "label": "Ga cáp treo Hòn Thơm - ga An Thới",
+      "kind": "activity",
+      "latitude": null,
+      "longitude": null,
+      "address": "Ga An Thới - Cáp treo Hòn Thơm, Sunset Town, An Thới, Phú Quốc",
+      "source": "needs_exact_entrance",
+      "verified_at": null
+    },
+    {
+      "ref": "airport:pq",
+      "label": "Sân bay quốc tế Phú Quốc",
+      "kind": "airport",
+      "latitude": null,
+      "longitude": null,
+      "address": "Sân bay quốc tế Phú Quốc, Phú Quốc, An Giang, Việt Nam",
+      "source": "needs_exact_entrance",
+      "verified_at": null
+    }
+  ]
+}

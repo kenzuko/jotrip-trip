@@ -85,6 +85,11 @@ function venueDistance(row:VenueRow, req:DestinationContextRequest) {
 function toVenue(row:VenueRow, req:DestinationContextRequest) {
   let tags:string[]=[];
   try { tags=JSON.parse(row.tags_json||"[]"); } catch {}
+  const verifiedMs = Date.parse(row.verified_at || "");
+  const ageDays = Number.isFinite(verifiedMs)
+    ? Math.max(0, Math.floor((Date.now() - verifiedMs) / 86_400_000))
+    : null;
+
   return {
     id:row.id,
     name:row.name,
@@ -95,6 +100,7 @@ function toVenue(row:VenueRow, req:DestinationContextRequest) {
     priceLevel:row.price_level,
     tags,
     verifiedAt:row.verified_at,
+    freshness: ageDays == null ? "unknown" : ageDays <= 90 ? "current" : "stale",
     distanceKm:venueDistance(row,req),
   };
 }
@@ -102,7 +108,7 @@ function toVenue(row:VenueRow, req:DestinationContextRequest) {
 async function loadVenues(env:Env, req:DestinationContextRequest) {
   const canonical = await loadOpenPqVenues();
   const canonicalRows: VenueRow[] = canonical.rows
-    .filter((row) => row.status !== "CLOSED")
+    .filter((row) => (row.status || "REVIEW") === "ACTIVE")
     .map((row) => ({
       id: row.id,
       name: row.name,

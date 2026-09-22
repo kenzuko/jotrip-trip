@@ -174,9 +174,10 @@ a {
   height: 100%;
   min-height: 320px;
   display: block;
-  object-fit: cover;
-  object-position: center;
-  transform: scale(1.025);
+  object-fit: contain;
+  object-position: center bottom;
+  padding: 10px 10px 0;
+  transform: none;
 }
 
 .guide-copy {
@@ -853,7 +854,8 @@ a {
   }
 
   .guide-photo img {
-    object-position: 62% center;
+    object-position: center bottom;
+    padding: 6px 4px 0;
   }
 
   .guide-photo::after {

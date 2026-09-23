@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 1070" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Cảnh bờ biển Phú Quốc mang phong cách tạp chí du lịch">
+<defs>
+ <linearGradient id="paperSky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff8e9"/><stop offset=".39" stop-color="#ffe8cf"/><stop offset=".75" stop-color="#eed8c2"/><stop offset="1" stop-color="#f2e5d3"/></linearGradient>
+ <linearGradient id="coast" x1="0" y1="0" x2=".1" y2="1"><stop stop-color="#aad2c3"/><stop offset=".47" stop-color="#69acaa"/><stop offset="1" stop-color="#478b8f"/></linearGradient>
+ <linearGradient id="headland" x1="0" y1="0" x2=".2" y2="1"><stop stop-color="#a2a77a"/><stop offset="1" stop-color="#5e7c66"/></linearGradient>
+ <radialGradient id="light"><stop stop-color="#ffedc6" stop-opacity=".83"/><stop offset="1" stop-color="#ffedc6" stop-opacity="0"/></radialGradient>
+ <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".22" numOctaves="1" seed="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+</defs>
+<rect width="960" height="1070" fill="url(#paperSky)"/>
+<ellipse cx="740" cy="420" rx="360" ry="340" fill="url(#light)"/>
+<circle cx="752" cy="543" r="87" fill="#ffe0ac" opacity=".57"/>
+<circle cx="752" cy="543" r="69" fill="none" stroke="#d99f73" stroke-width="2" opacity=".34"/>
+<path d="M0 646c178-101 278-113 387-53 84-68 171-90 256-33 101-57 217-36 317 13v218H0z" fill="#b8b8a0" opacity=".54"/>
+<path d="M0 691c170-80 259-71 385-23 113-73 222-72 322-2 88-24 168-32 253-10v414H0z" fill="url(#headland)" opacity=".84"/>
+<path d="M0 737c167-23 329-8 497-24 180-17 316-11 463 3v354H0z" fill="url(#coast)"/>
+<g fill="none" stroke="#d7eee0" opacity=".85"><path d="M0 759c136-7 309 29 473-4s287 9 487 2" stroke-width="8"/><path d="M0 818c152-22 309 20 475-1 160-26 338 7 485-5" stroke-width="5"/><path d="M0 872c162-12 294 15 450-4s330 11 510-3" stroke-width="3"/></g>
+<path d="M960 745c-64-36-146-16-187 29-69 22-109 68-127 120-82 38-143 105-172 176h486z" fill="#5d856f"/>
+<path d="M0 795c115-69 193-55 264-7 95 34 155 95 194 164L0 1070z" fill="#80936c" opacity=".92"/>
+<path d="M0 966c165-75 297-49 419 0 207-58 345-42 541-25v129H0z" fill="#e6d6b9"/>
+<path d="M0 1007c178-58 295-28 437 10 185-58 340-32 523-16" fill="none" stroke="#fef4d9" stroke-width="18" opacity=".57"/>
+<g opacity=".7" fill="#e7c6ab"><path d="M552 657l19-48 21 48z"/><rect x="557" y="655" width="31" height="25"/><path d="M612 656l27-70 33 70z"/><rect x="620" y="658" width="44" height="34"/><path d="M704 671l27-77 33 77z"/><rect x="712" y="670" width="46" height="47"/></g>
+<g opacity=".75" fill="#d49d7e"><rect x="565" y="658" width="13" height="22"/><rect x="633" y="661" width="18" height="30"/><rect x="726" y="676" width="16" height="35"/></g>
+<g fill="none" stroke="#6c8e7d" stroke-width="3" stroke-linecap="round" opacity=".64"><path d="M622 489 960 402"/><path d="M655 481v130"/><path d="M846 429v129"/></g>
+<path d="M739 464l26-6 5 15-27 6z" fill="#be8b76" opacity=".7"/>
+<g fill="#63826b" opacity=".56"><path d="M0 0c126 18 214 51 248 137-94-36-180-82-248-99z"/><path d="M0 0c114 71 159 127 175 216C111 130 52 91 0 57z"/><path d="M960 0c-169 8-234 59-277 133 123-42 208-79 277-106z"/><path d="M960 0c-112 43-143 98-151 196 74-83 119-121 151-156z"/></g>
+<rect width="960" height="1070" fill="#a27153" opacity=".026" filter="url(#grain)"/>
+</svg>

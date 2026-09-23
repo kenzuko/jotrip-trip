@@ -8,6 +8,7 @@ import type {
 } from "./types";
 import { directGuide } from "./guideDirector";
 import { resolveMascotState, runtimeMascotPath } from "./mascotState";
+import { resolveIntroScene } from "./introScenes";
 
 const examples = [
   { label: "Gợi ý", text: "3 ngày 2 đêm, nhà mình có bé, muốn chơi Vin và Safari thì ở đâu hợp?", mobileText: "Có bé, đi Vin và Safari, ở đâu tiện?" },
@@ -473,6 +474,8 @@ export default function App() {
   const sessionIdRef = useRef<string | null>(null);
   if (!sessionIdRef.current) sessionIdRef.current = getSessionId();
 
+  // One background per new visit; stable throughout this conversation.
+  const [introScene] = useState(resolveIntroScene);
   const [input, setInput] = useState("");
   const [result, setResult] = useState<TripParseResponse | null>(null);
   const [plan, setPlan] = useState<TripBuildResponse | null>(null);
@@ -842,7 +845,7 @@ export default function App() {
   );
 
   return (
-    <main className={hasResponse ? "app app--active" : "app"}>
+    <main className={hasResponse ? "app app--active" : "app"} data-intro-scene={hasResponse ? undefined : introScene}>
       <div className="mascot-preload" aria-hidden="true">
         {(["greeting","listening","thinking","speaking"] as const).map((state) => (
           <img src={runtimeMascotPath(state)} alt="" key={state} />
@@ -885,7 +888,7 @@ export default function App() {
 
       <div className="page-shell">
         <section className={hasResponse ? "conversation-hero conversation-hero--active" : "conversation-hero conversation-hero--fresh"}>
-          {!hasResponse && <div className="warm-island-scene" aria-hidden="true" />}
+          {!hasResponse && <div className={`warm-island-scene intro-scene--${introScene}`} aria-hidden="true" />}
           <div className="hero-copy">
             <span className="eyebrow">JOTRIP · PHÚ QUỐC</span>
             <h1>{hasResponse ? "Cứ hỏi tiếp, mình đang theo chuyến này." : <>Tri thức <span className="welcome-destination">Phú Quốc</span><br className="welcome-mobile-break" />{" "}biết trò chuyện.</>}</h1>

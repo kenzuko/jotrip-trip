@@ -1,0 +1,24 @@
+/* Scene switch changes only scenery; copy, approved logo, 8 locked mascot poses,
+   suggestion buttons, input, and post-question/Trip Engine UI remain unchanged. */
+@media (max-width: 560px) {
+  .app:not(.app--active)[data-intro-scene="future"] {
+    background: linear-gradient(180deg, #f8fbfc 0%, #eef8f8 66%, #f6fbf5 100%);
+  }
+  .app:not(.app--active)[data-intro-scene="editorial"] {
+    background: linear-gradient(180deg, #fffaf1 0%, #fbf2e8 66%, #faf9f0 100%);
+  }
+  .conversation-hero--fresh .warm-island-scene.intro-scene--future {
+    background-image: linear-gradient(180deg, #f8fbfc 0%, rgba(248,251,252,.74) 13%,
+      transparent 39%, transparent 74%, #f8fbfc 100%), url("/assets/intro-ai-horizon.svg");
+    background-position: center, center 51%;
+    background-size: cover;
+    filter: none;
+  }
+  .conversation-hero--fresh .warm-island-scene.intro-scene--editorial {
+    background-image: linear-gradient(180deg, #fffaf1 0%, rgba(255,250,241,.72) 13%,
+      transparent 39%, transparent 74%, #fffaf1 100%), url("/assets/intro-editorial-coast.svg");
+    background-position: center, center 54%;
+    background-size: cover;
+    filter: none;
+  }
+}

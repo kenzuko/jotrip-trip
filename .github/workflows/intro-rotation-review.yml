@@ -1,0 +1,41 @@
+name: JoTrip Three Intro Scenes QA
+
+on:
+  push:
+    branches: [feat/chat-ai11-intro-rotation-v1]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install and prepare locked original mascot files
+        run: npm install --no-audit --no-fund
+      - name: Browser test dependencies
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.55.0
+          npx playwright install --with-deps chromium webkit
+      - name: Build and test three scenes without touching production
+        run: |
+          npm run build
+          npm run preview -- --host 127.0.0.1 --port 4173 > vite-preview.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 1
+          done
+          JOTRIP_QA_URL=http://127.0.0.1:4173 node tools/intro-rotation-qa.mjs
+      - name: Screenshots and QA report for approval
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jotrip-three-intros-iphone-review
+          path: qa-intro-rotation/
+          retention-days: 14
+          if-no-files-found: warn

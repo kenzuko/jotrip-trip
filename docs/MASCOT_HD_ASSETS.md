@@ -1,18 +1,26 @@
-# Locked mascot HD pack - deployment gate
+# Locked JoTrip mascot HD assets - release gate
 
-Source archive: `JOTRIP_MASCOT_STATE_PACK_LOCKED_2026-09-22.zip`.
-All eight original PNG SHA-256 values are locked in `src/mascotState.ts`.
+Approved source: `JOTRIP_MASCOT_STATE_PACK_LOCKED_2026-09-22.zip`.
+The original logo and all eight mascot poses remain unchanged. All derivative SHA-256 values are locked in `public/assets/mascot-v1/manifest.json`.
 
-## The 100 x 125 px image problem
+## What changed
 
-The old WebP derivatives are only 100 x 125 pixels, so they blur when expanded on an iPhone. The approved PNGs are 1122 x 1402. The 8 HD files included in `JoTrip_Mascot_HD_8_States_2026-09-23.zip` are mechanically resized from the originals at 720 x 900, WebP quality 78. No images have been redrawn.
+The original 100x125 WebP files blur when enlarged on iPhones. Eight approved 720x900 WebP derivatives were mechanically resized from the SHA-256 verified original PNGs, without regeneration or redraw.
 
-## Release requirements
+The app now references `*_hd.webp`. The first screen preloads four relevant poses; other poses load when needed.
 
-Place **all eight** `*_hd.webp` files from that archive into `public/assets/mascot-v1/` on the same feature branch as the code change. The sha256 of each file must equal the matching entry in `manifest.json > hd_derivatives.files`.
+## One-ZIP installation
 
-**Do not merge or deploy this branch until all 8 files have been committed.** Existing original PNG and older low-resolution WebP assets remain unchanged for rollback.
+Upload **one** file, `JoTrip_Mascot_HD_8_States_2026-09-23.zip`, to the **root of this pull-request branch** (`fix/mascot-hd-remaining-states`). Do not extract it manually. The archive is included in the handoff package.
 
-The first screen now preloads only four likely states; the other four load on demand. The main greeting changes to the 720px derivative so the iPhone no longer downloads the 1.1 MB original PNG on every visit.
+The repo's `predev` and `prebuild` scripts run `tools/prepare-mascot-hd.mjs`, which:
+1. Finds the approved ZIP in the repository root.
+2. Extracts only the eight named `*_hd.webp` assets to `public/assets/mascot-v1/`.
+3. Requires exactly the approved SHA-256 hashes, expected byte sizes, valid WebP format and dimensions 720x900.
+4. Fails the build when the ZIP or any required asset is missing or altered.
 
-To regenerate in future, run `python install_mascot_hd.py SOURCE_ZIP --out public/assets/mascot-v1` from the accompanying asset package after installing Pillow.
+Vite copies the verified assets into `dist/assets/mascot-v1/` during `npm run build`. No native unzip or Pillow is needed in the Cloudflare build environment.
+
+**Do not merge or deploy this branch until the ZIP is committed and the asset verification + build pass.** The canonical greeting PNG and older WebP files remain unchanged for rollback. Do not replace the approved logo, repaint the mascot, or publish without all eight poses.
+
+To regenerate the ZIP from original PNGs in the future, use the accompanying `install_mascot_hd.py` in the original approved handoff package with Pillow and reverify all checksums.

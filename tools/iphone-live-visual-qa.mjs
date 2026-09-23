@@ -35,6 +35,12 @@ for (const item of cases) {
     await page.locator('.mascot-state-greeting .mascot-frame--state').evaluate(
       async img => { if (!img.complete) await img.decode(); }
     );
+    // iPhone 320 px can race the responsive <picture> decode even after the mascot loads.
+    // Wait for the official logo's actual resource before checking currentSrc/naturalWidth.
+    await page.locator('.brand img').evaluate(async img => {
+      if (!img.complete) await img.decode();
+      if (!img.naturalWidth) throw new Error('Official logo failed to decode');
+    });
     let initial = await page.evaluate(() => {
       const image = document.querySelector('.conversation-hero--fresh .mascot-frame--state');
       const logo = document.querySelector('.brand img');

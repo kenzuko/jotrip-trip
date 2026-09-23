@@ -53,5 +53,55 @@
       1402
     ],
     "note": "Unmodified original from approved mascot pack; replaces undersized 100x125 runtime derivative for greeting only."
+  },
+  "hd_derivatives": {
+    "version": "2026-09-23",
+    "dimensions": [
+      720,
+      900
+    ],
+    "method": "Locked canonical PNG to WebP via LANCZOS resize, Pillow quality 78; no redraw",
+    "files": [
+      {
+        "file": "01_greeting_wave_hd.webp",
+        "size_bytes": 74326,
+        "sha256": "b8f498e9e3be9c028f8d912b0093c87c5acbc846cbf4eb41a2aa2ec6ab9a3401"
+      },
+      {
+        "file": "02_listening_hd.webp",
+        "size_bytes": 67932,
+        "sha256": "1727dcbb71f0701679c4b39b806355d78f9c38b120dbba07b4f7464d49cfb07f"
+      },
+      {
+        "file": "03_thinking_hd.webp",
+        "size_bytes": 60322,
+        "sha256": "e9b5c4a61edfec03fbf4602692bb79a47039cd1573d86fe03e7561e41a7c3a29"
+      },
+      {
+        "file": "04_speaking_hd.webp",
+        "size_bytes": 66400,
+        "sha256": "235aa336c98952fda98faf83b47ec357c8afbdb44a5e51661c547af6d1505a2f"
+      },
+      {
+        "file": "05_guiding_map_hd.webp",
+        "size_bytes": 75628,
+        "sha256": "dec982d5c4e62e37afaf159b9f77839f761ceb4e6dcf77995953727702ade56b"
+      },
+      {
+        "file": "06_compare_two_directions_hd.webp",
+        "size_bytes": 69586,
+        "sha256": "b828053ae6e33a8cb3fceade8ea87e4ba64bd9e541b0e220c149d7bd8432e75e"
+      },
+      {
+        "file": "07_checking_phone_review_hd.webp",
+        "size_bytes": 61660,
+        "sha256": "ced35eaeb1fe3220b59029dcc1537c43816dfba9e7b8585efe38d5de63dafc71"
+      },
+      {
+        "file": "08_confirm_thumbs_up_hd.webp",
+        "size_bytes": 59748,
+        "sha256": "fd0b88a3ac232cad8ad816bd981c0f64a460678c716cf5af0d0af546b8e445f7"
+      }
+    ]
   }
 }

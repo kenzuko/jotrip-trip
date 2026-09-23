@@ -844,7 +844,7 @@ export default function App() {
   return (
     <main className={hasResponse ? "app app--active" : "app"}>
       <div className="mascot-preload" aria-hidden="true">
-        {(["greeting","listening","thinking","speaking","guiding","compare","checking","confirm"] as const).map((state) => (
+        {(["greeting","listening","thinking","speaking"] as const).map((state) => (
           <img src={runtimeMascotPath(state)} alt="" key={state} />
         ))}
       </div>

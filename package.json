@@ -4,7 +4,9 @@
   "version": "0.0.2",
   "type": "module",
   "scripts": {
+    "predev": "node tools/prepare-mascot-hd.mjs",
     "dev": "vite",
+    "prebuild": "node tools/prepare-mascot-hd.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "wrangler deploy",

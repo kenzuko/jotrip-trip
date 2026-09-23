@@ -4,6 +4,7 @@ import App from "./App";
 import "./styles.css";
 import "./iphoneGreeting.css";
 import "./warmIslandIntro.css";
+import "./introRotation.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

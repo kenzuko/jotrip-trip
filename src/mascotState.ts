@@ -22,14 +22,14 @@ export const MASCOT_CANONICAL_FILES: Record<MascotState, string> = {
 };
 
 export const MASCOT_RUNTIME_FILES: Record<MascotState, string> = {
-  greeting: "01_greeting_wave.webp",
-  listening: "02_listening.webp",
-  thinking: "03_thinking.webp",
-  speaking: "04_speaking.webp",
-  guiding: "05_guiding_map.webp",
-  compare: "06_compare_two_directions.webp",
-  checking: "07_checking_phone_review.webp",
-  confirm: "08_confirm_thumbs_up.webp",
+  greeting: "01_greeting_wave_hd.webp",
+  listening: "02_listening_hd.webp",
+  thinking: "03_thinking_hd.webp",
+  speaking: "04_speaking_hd.webp",
+  guiding: "05_guiding_map_hd.webp",
+  compare: "06_compare_two_directions_hd.webp",
+  checking: "07_checking_phone_review_hd.webp",
+  confirm: "08_confirm_thumbs_up_hd.webp",
 };
 
 export const MASCOT_CANONICAL_SHA256: Record<MascotState, string> = {
@@ -48,10 +48,8 @@ export function canonicalMascotPath(state: MascotState) {
 }
 
 export function runtimeMascotPath(state: MascotState) {
-  // Preserve the approved illustration. The 100×125 px WebP is too small
-  // for the greeting hero on high-density iPhones, so use the exact
-  // canonical 1122×1402 PNG until a verified high-res derivative ships.
-  if (state === "greeting") return canonicalMascotPath("greeting");
+  // All HD files are mechanically resized from the SHA-256 locked original PNGs.
+  // Their release must accompany this code; do not merge without eight assets.
   return `/assets/mascot-v1/${MASCOT_RUNTIME_FILES[state]}`;
 }
 

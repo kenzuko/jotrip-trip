@@ -1,0 +1,42 @@
+name: JoTrip Mascot HD Release Gate
+
+on:
+  push:
+    branches:
+      - fix/mascot-hd-remaining-states
+    paths:
+      - JoTrip_Mascot_HD_8_States_2026-09-23.zip
+      - tools/prepare-mascot-hd.mjs
+      - public/assets/mascot-v1/manifest.json
+      - package.json
+  workflow_dispatch:
+
+jobs:
+  verify-hd:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out approved branch
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install frontend dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install verified 8-state pack and build
+        run: npm run build
+      - name: Verify eight HD files shipped in dist
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          const manifest = JSON.parse(readFileSync('public/assets/mascot-v1/manifest.json', 'utf8'));
+          for (const item of manifest.hd_derivatives.files) {
+            const data = readFileSync(`dist/assets/mascot-v1/${item.file}`);
+            const hash = createHash('sha256').update(data).digest('hex');
+            if (hash !== item.sha256) throw new Error(`Dist file changed or missing: ${item.file}`);
+          }
+          console.log('PASS: all eight approved mascot poses are present in the production bundle.');
+          NODE

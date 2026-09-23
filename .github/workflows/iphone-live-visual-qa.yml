@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - .github/workflows/iphone-live-visual-qa.yml
+      - tools/iphone-live-visual-qa.mjs
   workflow_dispatch:
 
 jobs:

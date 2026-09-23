@@ -1,0 +1,62 @@
+name: JoTrip Live Mascot HD Check
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/live-mascot-smoke.yml]
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check live Cloudflare site and all 8 approved HD assets
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          import { setTimeout as delay } from 'node:timers/promises';
+
+          const manifest = JSON.parse(readFileSync('public/assets/mascot-v1/manifest.json', 'utf8'));
+          const candidates = [
+            'https://jotrip-trip.kenzuko.workers.dev',
+            'https://trip.kenzuko.workers.dev',
+            'https://trip.jotrip.vn',
+          ];
+          const fetchFresh = (url) => fetch(url, {
+            redirect: 'follow',
+            signal: AbortSignal.timeout(6500),
+            headers: { 'cache-control': 'no-cache' }
+          });
+          const check = async (site) => {
+            const home = await fetchFresh(site + '/');
+            if (!home.ok || !(await home.text()).includes('id="root"')) {
+              throw new Error('Homepage returned ' + home.status + ' or is not JoTrip React app');
+            }
+            for (const asset of manifest.hd_derivatives.files) {
+              const url = site + '/assets/mascot-v1/' + asset.file;
+              const res = await fetchFresh(url);
+              if (!res.ok) throw new Error(asset.file + ' HTTP ' + res.status);
+              const bytes = Buffer.from(await res.arrayBuffer());
+              const digest = createHash('sha256').update(bytes).digest('hex');
+              if (digest !== asset.sha256) {
+                throw new Error(asset.file + ' is stale or not the locked HD derivative');
+              }
+            }
+            console.log('LIVE PASS: ' + site + ' serves all 8 approved HD mascot assets.');
+            return true;
+          };
+          for (let attempt = 1; attempt <= 5; attempt++) {
+            console.log('Live check attempt ' + attempt + '/5');
+            const outcomes = await Promise.allSettled(candidates.map(check));
+            if (outcomes.some(x => x.status === 'fulfilled')) process.exit(0);
+            outcomes.forEach((x, i) =>
+              console.log(candidates[i] + ': ' + (x.reason?.message || 'not reachable')));
+            if (attempt < 5) await delay(12000);
+          }
+          console.error('LIVE NOT VERIFIED: The tested URLs are unreachable or do not yet serve all 8 assets.');
+          process.exit(1);
+          NODE

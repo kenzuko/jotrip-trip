@@ -3,8 +3,10 @@ name: JoTrip Mascot HD Release Gate
 on:
   push:
     branches:
+      - main
       - fix/mascot-hd-remaining-states
     paths:
+      - .github/workflows/verify-mascot-hd.yml
       - JoTrip_Mascot_HD_8_States_2026-09-23.zip
       - tools/prepare-mascot-hd.mjs
       - public/assets/mascot-v1/manifest.json

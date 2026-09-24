@@ -2122,3 +2122,13 @@ a {
   }
   .composer-mascot { width: 36px; height: 48px; }
 }
+
+/* Opaque active chrome: avoid previous chat content bleeding through sticky controls. */
+.app--active .topbar {
+  background: #ffffff;
+  backdrop-filter: none;
+}
+.app--active .conversation-hero--active .prompt {
+  background: #ffffff;
+  backdrop-filter: none;
+}

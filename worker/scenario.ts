@@ -24,6 +24,13 @@ type ParsedTrip = {
   raw: string;
 };
 
+// Conversational acknowledgements are not fresh trip requests. Keep this narrow:
+// a substantive follow-up such as "thêm Hòn Thơm" must still reach the parser.
+export function isShortAcknowledgement(raw: string): boolean {
+  const text = raw.trim().toLocaleLowerCase().replace(/[.!?。！]+$/u, "").trim();
+  return /^(?:a|à|ừ|ừm|ờ|ừa|vâng|dạ|ok|okay|oke|yes|sure|uh|tiếp|tiếp đi|được|đúng rồi|네|응|да|ага|好的|嗯)$/iu.test(text);
+}
+
 const interestRules: Array<[RegExp, string]> = [
   [/\bvin\b|vinwonders|빈원더스|винвандерс|珍珠乐园|珍珠樂園/i, "VinWonders"],
   [/safari|사파리|сафари|野生动物园|野生動物園/i, "Safari"],
@@ -81,7 +88,7 @@ function detectLanguage(text: string): TripLanguage {
   if (/[가-힣]/.test(text)) return "ko";
   if (/[一-龥]/.test(text)) return "zh";
   if (/[А-Яа-яЁё]/.test(text)) return "ru";
-  if (/\b(?:days?|nights?|adults?|children|family|beach|hotel|budget|restaurant|coffee|airport|want|stay|trip)\b/i.test(text)) return "en";
+  if (/\b(?:days?|nights?|adults?|children|family|beach|hotel|budget|restaurant|coffee|airport|want|stay|trip)\b/i.test(text) || /^(?:yes|sure|okay)$/i.test(text.trim())) return "en";
   return "vi";
 }
 
@@ -187,8 +194,13 @@ export function parseTripText(raw: string): ParsedTrip {
 
 export function buildParseResponse(raw: string) {
   const parsed = parseTripText(raw);
+  const conversationAction = isShortAcknowledgement(raw) ? "acknowledgement" as const : "request" as const;
   const assumptions: string[] = [];
   const nextNeeded: string[] = [];
+
+  if (conversationAction === "acknowledgement") {
+    return { ok: Boolean(parsed.raw), parsed, assumptions, nextNeeded, conversationAction };
+  }
 
   if (!parsed.adults && !parsed.children) assumptions.push(noPeopleText[parsed.language]);
   if (parsed.mode === "trip_plan") {
@@ -197,5 +209,5 @@ export function buildParseResponse(raw: string) {
     nextNeeded.push("travel_dates");
   }
 
-  return { ok: Boolean(parsed.raw), parsed, assumptions, nextNeeded };
+  return { ok: Boolean(parsed.raw), parsed, assumptions, nextNeeded, conversationAction };
 }

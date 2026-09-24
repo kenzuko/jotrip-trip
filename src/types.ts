@@ -18,6 +18,7 @@ export type TripParseResponse = {
   parsed: ParsedTrip;
   assumptions: string[];
   nextNeeded: string[];
+  conversationAction?: "request" | "acknowledgement";
   assistantText?: string;
 };
 

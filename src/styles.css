@@ -2063,3 +2063,72 @@ a {
     animation: none;
   }
 }
+
+/* Chat continuity: compact active composer and readable iOS input. */
+.conversation-hero--active .prompt textarea {
+  min-height: 52px;
+  max-height: 132px;
+  resize: vertical;
+}
+.prompt button { min-height: 48px; }
+.conversation-thread { min-width: 0; }
+.message p { overflow-wrap: anywhere; line-height: 1.55; }
+.message--pending { opacity: .75; }
+.composer-error {
+  margin: 4px 0;
+  padding: 9px 12px;
+  color: #93472b;
+  font-size: 14px;
+  background: #fff6ef;
+  border-radius: 12px;
+}
+@media (max-width: 560px) {
+  .prompt textarea { font-size: 16px; }
+  .conversation-hero--active .prompt textarea {
+    min-height: 48px;
+    max-height: 112px;
+    resize: none;
+    font-size: 16px;
+  }
+  .conversation-hero--active .prompt button { min-height: 48px; }
+  .app--active .page-shell { padding-bottom: calc(124px + env(safe-area-inset-bottom)); }
+  .app--active .composer-error {
+    position: fixed;
+    z-index: 31;
+    left: 10px;
+    right: 10px;
+    bottom: calc(78px + env(safe-area-inset-bottom));
+    box-shadow: var(--shadow-soft);
+  }
+}
+
+/* The approved mascot remains a small semantic guide beside the active composer. */
+.conversation-hero--active .prompt {
+  grid-template-columns: 44px minmax(0,1fr) auto;
+  align-items: center;
+}
+.composer-mascot {
+  display: block;
+  width: 42px;
+  height: 50px;
+  object-fit: contain;
+  object-position: center bottom;
+  pointer-events: none;
+}
+@media (max-width: 560px) {
+  .conversation-hero--active .prompt {
+    grid-template-columns: 36px minmax(0,1fr) auto;
+    align-items: center;
+  }
+  .composer-mascot { width: 36px; height: 48px; }
+}
+
+/* Opaque active chrome: avoid previous chat content bleeding through sticky controls. */
+.app--active .topbar {
+  background: #ffffff;
+  backdrop-filter: none;
+}
+.app--active .conversation-hero--active .prompt {
+  background: #ffffff;
+  backdrop-filter: none;
+}

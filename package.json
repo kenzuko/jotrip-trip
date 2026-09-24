@@ -13,7 +13,8 @@
     "cf-types": "wrangler types",
     "db:migrations:list:remote": "wrangler d1 migrations list jotrip-trip-db --remote",
     "db:migrate:remote": "wrangler d1 migrations apply jotrip-trip-db --remote",
-    "route:build:osrm": "node tools/build_osrm_matrix.mjs"
+    "route:build:osrm": "node tools/build_osrm_matrix.mjs",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs"
   },
   "dependencies": {
     "react": "^19.0.0",

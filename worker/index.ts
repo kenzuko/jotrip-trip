@@ -135,6 +135,16 @@ function localizedInterest(value: string, lang: string) {
 function assistantTextFor(result: ReturnType<typeof buildParseResponse>) {
   const p = result.parsed;
   const lang = p.language || "vi";
+  if (result.conversationAction === "acknowledgement") {
+    // Never repeat the previous recommendation or imply the guest supplied new facts.
+    return ({
+      vi: "Ừ, mình nghe đây. Bạn muốn xem tiếp phần nào của chuyến đi?",
+      en: "Got it. Which part of the trip would you like to explore next?",
+      ko: "네, 듣고 있어요. 여행의 어느 부분을 더 살펴볼까요?",
+      ru: "Понял. Какую часть поездки обсудим дальше?",
+      zh: "好的，我在听。接下来想了解行程的哪一部分？",
+    } as const)[lang];
+  }
 
   const duration = p.days && p.nights
     ? lang === "en" ? `${p.days} days, ${p.nights} nights`

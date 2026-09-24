@@ -23,93 +23,6 @@ const languageNames: Record<string, string> = {
   zh: "中文",
 };
 
-function voiceLocale(lang = "vi") {
-  return {
-    vi: "vi-VN",
-    en: "en-US",
-    ko: "ko-KR",
-    ru: "ru-RU",
-    zh: "zh-CN",
-  }[lang] || "vi-VN";
-}
-
-function voiceRate(lang = "vi") {
-  if (lang === "vi") return 1.18;
-  if (lang === "ko" || lang === "zh") return 1.1;
-  return 1.14;
-}
-
-function pickVoice(lang: string) {
-  if (!("speechSynthesis" in window)) return null;
-
-  const locale = voiceLocale(lang).toLowerCase();
-  const base = locale.split("-")[0];
-  const preferredNames =
-    lang === "vi"
-      ? /linh|hoai|mai|siri|natural|premium|enhanced|neural/i
-      : /siri|natural|premium|enhanced|neural|google|microsoft/i;
-
-  const voices = window.speechSynthesis
-    .getVoices()
-    .filter((voice) => {
-      const value = String(voice.lang || "").toLowerCase();
-      return value === locale || value.startsWith(base);
-    });
-
-  const score = (voice: SpeechSynthesisVoice) => {
-    let value = voice.lang.toLowerCase() === locale ? 40 : 15;
-    if (preferredNames.test(voice.name)) value += 40;
-    if (/apple|google|microsoft/i.test(voice.name)) value += 12;
-    if (voice.localService) value += 5;
-    return value;
-  };
-
-  const ranked = voices.sort((a, b) => score(b) - score(a));
-  const best = ranked[0];
-  return best && score(best) >= 65 ? best : null;
-}
-
-function speak(
-  text: string,
-  lang = "vi",
-  onStart?: () => void,
-  onEnd?: () => void,
-) {
-  if (!("speechSynthesis" in window)) {
-    onEnd?.();
-    return;
-  }
-
-  const engine = window.speechSynthesis;
-  engine.cancel();
-
-  const compact = text
-    .replace(/\s+/g, " ")
-    .replace(/\s*[-:]+\s*/g, ", ")
-    .trim()
-    .slice(0, 165);
-
-  if (!compact) return;
-
-  const utterance = new SpeechSynthesisUtterance(compact);
-  utterance.lang = voiceLocale(lang);
-  utterance.rate = voiceRate(lang);
-  utterance.pitch = 1.02;
-  utterance.volume = 0.94;
-
-  const voice = pickVoice(lang);
-  if (!voice) {
-    onEnd?.();
-    return;
-  }
-  utterance.voice = voice;
-
-  utterance.onstart = () => onStart?.();
-  utterance.onend = () => onEnd?.();
-  utterance.onerror = () => onEnd?.();
-  engine.speak(utterance);
-}
-
 function getSessionId() {
   const key = "jotrip_trip_session_id";
   const existing = localStorage.getItem(key);
@@ -480,7 +393,9 @@ export default function App() {
   const [checkin, setCheckin] = useState("");
   const [checkout, setCheckout] = useState("");
   const [busy, setBusy] = useState(false);
-  const [voiceOn, setVoiceOn] = useState(true);
+  const [voiceOn, setVoiceOn] = useState(false);
+  const [voiceError, setVoiceError] = useState("");
+  const [apiError, setApiError] = useState("");
   const [handoffOpen, setHandoffOpen] = useState(false);
   const [leadContact, setLeadContact] = useState("");
   const [leadConsent, setLeadConsent] = useState(false);
@@ -491,6 +406,8 @@ export default function App() {
   const [inputFocused, setInputFocused] = useState(false);
   const [activeDecisionArea, setActiveDecisionArea] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const inFlightRef = useRef(false);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const guideCue = useMemo(() => directGuide(result, plan), [result, plan]);
   const firstGreeting =
@@ -580,46 +497,63 @@ export default function App() {
   async function speakResponse(text: string, lang: string) {
     audioRef.current?.pause();
     audioRef.current = null;
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     setSpeaking(false);
+    setVoiceError("");
+
+    // Read a brief answer, never the entire comparison or evidence cards.
+    const compact = text.replace(/\s+/g, " ").trim()
+      .split(/(?<=[.!?])\s+/u).slice(0, 2).join(" ").slice(0, 240);
+    if (!compact) return;
 
     try {
       const response = await fetch("/api/voice", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text, language: lang }),
+        body: JSON.stringify({ text: compact, language: lang }),
       });
 
-      if (response.ok && response.headers.get("content-type")?.includes("audio")) {
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        audio.onplay = () => setSpeaking(true);
-        audio.onended = () => {
-          setSpeaking(false);
-          URL.revokeObjectURL(url);
-          if (audioRef.current === audio) audioRef.current = null;
-        };
-        audio.onerror = () => {
-          setSpeaking(false);
-          URL.revokeObjectURL(url);
-          if (audioRef.current === audio) audioRef.current = null;
-          speak(text, lang, () => setSpeaking(true), () => setSpeaking(false));
-        };
+      if (!response.ok || !response.headers.get("content-type")?.includes("audio")) {
+        throw new Error("natural_tts_unavailable");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      const cleanup = () => {
+        setSpeaking(false);
+        URL.revokeObjectURL(url);
+        if (audioRef.current === audio) audioRef.current = null;
+      };
+      audio.onplay = () => setSpeaking(true);
+      audio.onended = cleanup;
+      audio.onerror = () => {
+        cleanup();
+        setVoiceOn(false);
+        setVoiceError("Giọng đọc tự nhiên đang chưa sẵn sàng. Bạn vẫn có thể chat bằng chữ.");
+      };
+      try {
         await audio.play();
-        return;
+      } catch {
+        cleanup();
+        throw new Error("audio_play_failed");
       }
     } catch {
-      // Natural voice is optional during engine development.
+      setSpeaking(false);
+      setVoiceOn(false);
+      setVoiceError("Giọng đọc tự nhiên đang chưa sẵn sàng. Bạn vẫn có thể chat bằng chữ.");
     }
-
-    speak(text, lang, () => setSpeaking(true), () => setSpeaking(false));
   }
 
   async function submit(text = input) {
     const value = text.trim();
-    if (!value) return;
+    if (!value || inFlightRef.current) return;
+    inFlightRef.current = true;
+    setApiError("");
+    setInput("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+    audioRef.current?.pause();
+    setSpeaking(false);
 
     const previousResult = result;
     const previousPlan = plan;
@@ -644,8 +578,29 @@ export default function App() {
         }),
       });
 
+      if (!res.ok) throw new Error("parse_failed");
       const json = (await res.json()) as TripParseResponse;
+      if (!json.ok) throw new Error("parse_failed");
 
+      if (json.conversationAction === "acknowledgement") {
+        // A short "a"/"ừ"/"ok" is a continuation, not a fresh planning request.
+        // Keep the existing result, compared options and context exactly as they were.
+        if (!previousResult) setResult(json);
+        const reply = json.assistantText || "Ừ, mình đang nghe. Bạn cứ nói tiếp nha.";
+        setReplyText(reply);
+        setTurns((items) => [...items, {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          text: reply,
+          language: previousResult?.parsed.language || json.parsed.language,
+        }].slice(-12));
+        if (voiceOn) void speakResponse(reply, previousResult?.parsed.language || json.parsed.language);
+        return;
+      }
+
+      // The upcoming response must not sit beside a stale plan from the prior turn.
+      setPlan(null);
+      setAdvisor(null);
       const isFreshTrip = Boolean(json.parsed.days || json.parsed.nights);
       const inheritedInterests =
         previousResult && !isFreshTrip
@@ -711,7 +666,9 @@ export default function App() {
             budgetVnd: contextualResult.parsed.budgetVnd,
           }),
         });
+        if (!planRes.ok) throw new Error("build_failed");
         const nextPlan = (await planRes.json()) as TripBuildResponse;
+        if (!nextPlan.ok) throw new Error("build_failed");
         setPlan(nextPlan);
         spoken = planningReply(contextualResult, nextPlan) || spoken;
       } else if (json.ok) {
@@ -727,7 +684,9 @@ export default function App() {
             mentionedZone: inheritedZone,
           }),
         });
+        if (!advisorRes.ok) throw new Error("advisor_failed");
         const nextAdvisor = (await advisorRes.json()) as AdvisorResponse;
+        if (!nextAdvisor.ok) throw new Error("advisor_failed");
 
         if (json.parsed.mode === "contact") {
           setHandoffOpen(true);
@@ -757,11 +716,14 @@ export default function App() {
       }
 
       if (voiceOn && json.ok && spoken) {
-        window.setTimeout(() => {
-          void speakResponse(spoken, contextualResult.parsed.language);
-        }, 40);
+        void speakResponse(spoken, contextualResult.parsed.language);
       }
+    } catch {
+      // Network failures are UI status, not fabricated assistant transcript entries.
+      setApiError("Kết nối đang gián đoạn. Bạn gửi lại câu vừa rồi giúp mình nhé.");
+      setInput((current) => current || value);
     } finally {
+      inFlightRef.current = false;
       setBusy(false);
     }
   }
@@ -870,9 +832,9 @@ export default function App() {
                 if (!next) {
                   audioRef.current?.pause();
                   audioRef.current = null;
-                  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
                   setSpeaking(false);
                 }
+                setVoiceError("");
                 return next;
               })
             }
@@ -897,7 +859,7 @@ export default function App() {
             )}
           </div>
 
-          <div className="assistant-stage">
+          {!hasResponse && <div className="assistant-stage">
             <div
               className={[
                 "mascot-shell",
@@ -926,12 +888,17 @@ export default function App() {
                 </div>
               )}
             </div>
-          </div>
+          </div>}
 
           <form className="prompt" onSubmit={onSubmit}>
             <textarea
+              ref={textareaRef}
               value={input}
               onChange={(event) => setInput(event.target.value)}
+              onInput={(event) => {
+                event.currentTarget.style.height = "auto";
+                event.currentTarget.style.height = Math.min(event.currentTarget.scrollHeight, 132) + "px";
+              }}
               onFocus={() => setInputFocused(true)}
               onBlur={() => setInputFocused(false)}
               placeholder={
@@ -941,13 +908,15 @@ export default function App() {
                     ? "Ví dụ: 3 ngày 2 đêm, có bé..."
                     : "Cứ nói tự nhiên, ví dụ: nhà mình 3 ngày 2 đêm, có bé, muốn chơi Vin nhưng tối vẫn thích ra ngoài ăn."
               }
-              rows={3}
+              rows={1}
               aria-label="Hỏi JoTrip"
             />
             <button type="submit" disabled={busy}>
               {busy ? "Đang xem..." : hasResponse ? "Gửi" : "Hỏi JoTrip"}
             </button>
           </form>
+          {apiError && <p className="composer-error" role="alert">{apiError}</p>}
+          {voiceError && <p className="composer-error" role="status">{voiceError}</p>}
 
           {!hasResponse && <p className="fresh-examples-title">Hoặc bắt đầu bằng một câu này</p>}
           <div className="example-chips" aria-label="Câu hỏi gợi ý">
@@ -1000,6 +969,15 @@ export default function App() {
                     </div>
                   </div>
                 ),
+              )}
+
+              {busy && (
+                <div className="message message--assistant message--pending" role="status">
+                  <div className="message-avatar message-avatar--mascot">
+                    <img src={runtimeMascotPath("thinking")} alt="" aria-hidden="true" />
+                  </div>
+                  <div><span>JoTrip</span><p>Đang xem câu hỏi của bạn...</p></div>
+                </div>
               )}
 
               {summaryBits.length > 0 && (

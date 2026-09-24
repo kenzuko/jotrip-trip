@@ -1,0 +1,59 @@
+name: JoTrip Trip guarded deployment
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_trip_only:
+        description: 'Type DEPLOY_JOTRIP_TRIP after restoring the full Work tree'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    environment: jotrip-trip-staging
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Block deployment of the incomplete GitHub fallback tree
+        shell: bash
+        env:
+          CONFIRM: ${{ inputs.confirm_trip_only }}
+        run: |
+          set -euo pipefail
+          test "$CONFIRM" = "DEPLOY_JOTRIP_TRIP"
+          test -f worker/tripTurn.ts || { echo "::error::Restore the Work engine worker/tripTurn.ts first"; exit 1; }
+          test -f tests/trip-turn.integration.mjs || { echo "::error::Restore original D1 integration tests first"; exit 1; }
+          for n in $(seq -w 9 15); do
+            test -n "$(find migrations -maxdepth 1 -type f -name "00${n}*.sql" -print -quit)" || {
+              echo "::error::Missing migration 00${n}"; exit 1;
+            }
+          done
+          echo "Full-tree source preflight passed"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
+      - name: Verify Cloudflare authentication without printing secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID" || {
+            echo "::error::Configure scoped Cloudflare secrets in the protected staging environment"; exit 1;
+          }
+          npx wrangler whoami
+      - name: List remote D1 migrations for human review
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler d1 migrations list jotrip-trip-db --remote
+      - name: Deployment intentionally held for migration and DNS review
+        run: |
+          echo "::notice::Preflight complete. Apply only reviewed D1 migrations and confirm DNS rollback before enabling deployment."
+          echo "No wrangler deploy executed by this workflow."

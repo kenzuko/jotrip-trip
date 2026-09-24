@@ -1,0 +1,28 @@
+name: Chat continuity regression
+on:
+  push:
+    branches:
+      - fix/chat-continuity-safe-20260924
+  pull_request:
+    paths:
+      - worker/scenario.ts
+      - worker/index.ts
+      - src/App.tsx
+      - src/styles.css
+      - src/types.ts
+      - tests/conversation-ack.test.mjs
+      - package.json
+      - .github/workflows/chat-continuity.yml
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build

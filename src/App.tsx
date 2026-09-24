@@ -905,6 +905,7 @@ export default function App() {
           </div>}
 
           <form className="prompt" onSubmit={onSubmit}>
+            {hasResponse && <img className="composer-mascot" src={mascotSrc} data-state={mascotState} alt="" aria-hidden="true" />}
             <textarea
               ref={textareaRef}
               value={input}

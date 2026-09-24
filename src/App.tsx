@@ -407,6 +407,7 @@ export default function App() {
   const [activeDecisionArea, setActiveDecisionArea] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const inFlightRef = useRef(false);
+  const voiceRequestRef = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const guideCue = useMemo(() => directGuide(result, plan), [result, plan]);
@@ -495,6 +496,7 @@ export default function App() {
   const mascotSrc = runtimeMascotPath(mascotState);
 
   async function speakResponse(text: string, lang: string) {
+    const requestId = ++voiceRequestRef.current;
     audioRef.current?.pause();
     audioRef.current = null;
     setSpeaking(false);
@@ -517,20 +519,28 @@ export default function App() {
       }
 
       const blob = await response.blob();
+      // A newer answer or a manual voice-off action cancels pending playback.
+      if (requestId !== voiceRequestRef.current) return;
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       audioRef.current = audio;
+      let released = false;
       const cleanup = () => {
-        setSpeaking(false);
+        if (released) return;
+        released = true;
+        if (requestId === voiceRequestRef.current) setSpeaking(false);
         URL.revokeObjectURL(url);
         if (audioRef.current === audio) audioRef.current = null;
       };
-      audio.onplay = () => setSpeaking(true);
+      audio.onplay = () => { if (requestId === voiceRequestRef.current) setSpeaking(true); };
       audio.onended = cleanup;
+      audio.onpause = cleanup;
       audio.onerror = () => {
         cleanup();
-        setVoiceOn(false);
-        setVoiceError("Giọng đọc tự nhiên đang chưa sẵn sàng. Bạn vẫn có thể chat bằng chữ.");
+        if (requestId === voiceRequestRef.current) {
+          setVoiceOn(false);
+          setVoiceError("Giọng đọc tự nhiên đang chưa sẵn sàng. Bạn vẫn có thể chat bằng chữ.");
+        }
       };
       try {
         await audio.play();
@@ -539,9 +549,11 @@ export default function App() {
         throw new Error("audio_play_failed");
       }
     } catch {
-      setSpeaking(false);
-      setVoiceOn(false);
-      setVoiceError("Giọng đọc tự nhiên đang chưa sẵn sàng. Bạn vẫn có thể chat bằng chữ.");
+      if (requestId === voiceRequestRef.current) {
+        setSpeaking(false);
+        setVoiceOn(false);
+        setVoiceError("Giọng đọc tự nhiên đang chưa sẵn sàng. Bạn vẫn có thể chat bằng chữ.");
+      }
     }
   }
 
@@ -552,6 +564,7 @@ export default function App() {
     setApiError("");
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
+    voiceRequestRef.current += 1;
     audioRef.current?.pause();
     setSpeaking(false);
 
@@ -830,6 +843,7 @@ export default function App() {
               setVoiceOn((value) => {
                 const next = !value;
                 if (!next) {
+                  voiceRequestRef.current += 1;
                   audioRef.current?.pause();
                   audioRef.current = null;
                   setSpeaking(false);

@@ -17,7 +17,7 @@ class D1Fixture {
       bind: (...params) => ({
         sql, params,
         first: async () => {
-          if (/FROM trip_turns_v2 WHERE/i.test(sql)) {
+          if (/FROM trip_turns_v2\s+WHERE/i.test(sql)) {
             if (/client_turn_id=\?/i.test(sql)) {
               return this.turns.get(params[0] + ":" + params[1]) || null;
             }

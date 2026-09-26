@@ -91,12 +91,14 @@ export function TripPulse({
   aiSignals = [],
   hotels,
   selectedArea,
+  tradeoff,
   onSelectArea,
 }: {
   summary: string[];
   aiSignals?: string[];
   hotels: PlanningHotel[];
   selectedArea: string | null;
+  tradeoff?: { gain: string; trade: string } | null;
   onSelectArea: (area: string) => void;
 }) {
   const areas: PlanningHotel[] = [];
@@ -108,6 +110,7 @@ export function TripPulse({
     }
     if (areas.length === 2) break;
   }
+  const active = areas.find((item) => item.hotel.area_code === selectedArea);
   return (
     <section className="trip-pulse" aria-label="Chuyến đi đang hình thành">
       <div className="trip-pulse-heading">
@@ -153,6 +156,33 @@ export function TripPulse({
               </button>
             ))}
           </div>
+        </div>
+      )}
+      {active && (
+        <div className="trip-pulse-detail" aria-live="polite">
+          <div className="trip-pulse-detail-heading">
+            <span>ĐANG XEM: {areaLabel(active.hotel.area_code)}</span>
+            <h3>{active.hotel.canonical_name}</h3>
+            <p>{active.stayContext.summary}</p>
+          </div>
+          {tradeoff && (
+            <div className="trip-pulse-tradeoffs">
+              <div><span>Điểm thuận</span><strong>{tradeoff.gain}</strong></div>
+              <div><span>Cần cân nhắc</span><strong>{tradeoff.trade}</strong></div>
+            </div>
+          )}
+          {active.routeFacts?.length ? (
+            <div className="trip-pulse-routes">
+              {active.routeFacts.slice(0, 3).map((fact) => (
+                <div key={fact.destinationId}>
+                  <span>{fact.label}</span>
+                  <strong>~{fact.minutes} phút · {fact.distanceKm.toFixed(1)} km</strong>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="trip-pulse-route-note">Chưa có thời gian di chuyển đủ tin cậy cho hướng này.</p>
+          )}
         </div>
       )}
       <p className="trip-pulse-disclaimer">Đây là các hướng để cùng cân nhắc, chưa phải xác nhận đặt chỗ. Giá, giờ hoạt động và lịch di chuyển cần được kiểm tra theo ngày đi.</p>

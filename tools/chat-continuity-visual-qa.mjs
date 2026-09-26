@@ -78,23 +78,38 @@ try {
         deviceScaleFactor: 3, isMobile: true, hasTouch: true, reducedMotion: "reduce",
       });
       const errors = [];
-      const requests = { parse: 0, plan: 0, voice: 0 };
+      const requests = { parse: 0, plan: 0, voice: 0, deleted: 0 };
       page.on("pageerror", e => errors.push(String(e)));
       await page.route("**/api/trip/turn", async route => {
         requests.parse++;
         const body = route.request().postDataJSON();
         const parsed = parseResponse(body.text);
         const ack = parsed.conversationAction === "acknowledgement";
+        const dated = Boolean(body.checkin && body.checkout);
+        if (dated) {
+          parsed.parsed.checkin = body.checkin;
+          parsed.parsed.checkout = body.checkout;
+          parsed.nextNeeded = [];
+          parsed.assistantText = "Mình đã lưu ngày đi của bạn.";
+        }
         if (!ack) requests.plan++;
         await new Promise(resolve => setTimeout(resolve, 450));
         await route.fulfill({
           status: 200, contentType: "application/json",
           body: JSON.stringify({
-            ...parsed, action: ack ? "acknowledgement" : "request",
+            ...parsed, action: dated ? "set_dates" : ack ? "acknowledgement" : "request",
             tripId: "qa-trip-1", clientTurnId: body.clientTurnId,
             version: requests.parse, plan: ack ? null : plan, advisor: null,
           }),
         });
+      });
+      await page.route("**/api/trip/session", async route => {
+        if (route.request().method() === "DELETE") {
+          requests.deleted++;
+          await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, deleted: true }) });
+        } else {
+          await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ ok: false, error: "trip_session_not_found" }) });
+        }
       });
       await page.route("**/api/trip/build", async route => {
         requests.plan++;
@@ -152,6 +167,24 @@ try {
       await viewportCheck();
       await page.screenshot({ path: `qa-output/${item.engine}-text-only.png`, animations: "disabled" });
 
+      // Selecting dates must use the same saved trip turn, never the legacy builder.
+      await page.locator(".trip-controls input[type=date]").first().fill("2030-01-10");
+      await page.locator(".trip-controls input[type=date]").nth(1).fill("2030-01-12");
+      await page.getByRole("button", { name: "Tính theo ngày này" }).click();
+      await page.locator(".conversation-thread .message--assistant:not(.message--pending)").nth(3).waitFor();
+      assert.equal(requests.plan, 2, "date selection did not use the canonical turn");
+      assert.equal(await page.locator(".trip-controls input[type=date]").first().inputValue(), "2030-01-10");
+      assert.equal(await page.locator(".trip-controls input[type=date]").nth(1).inputValue(), "2030-01-12");
+      await viewportCheck();
+      await page.screenshot({ path: `qa-output/${item.engine}-saved-dates.png`, animations: "disabled" });
+
+      await page.getByRole("button", { name: "Xóa lịch sử" }).click();
+      await page.getByRole("button", { name: "Xóa chuyến này" }).click();
+      await page.locator(".living-story").first().waitFor();
+      assert.equal(requests.deleted, 1);
+      assert.equal(await page.locator(".conversation-thread").count(), 0);
+      await viewportCheck();
+
       // V2 discovery is a real conversational entry, not a decorative card.
       const parseBeforeStory = requests.parse;
       const planBeforeStory = requests.plan;
@@ -171,7 +204,7 @@ try {
       await page.screenshot({ path: `qa-output/${item.engine}-living-canvas.png`, animations: "disabled" });
       assert.deepEqual(errors, []);
       results.push({ engine: item.engine, width: item.width, height: item.height, result: "PASS", requests });
-      console.log("PASS " + item.engine + " " + item.width + "x" + item.height + " six mobile states");
+      console.log("PASS " + item.engine + " " + item.width + "x" + item.height + " seven mobile states + saved dates and deletion");
     } catch (error) {
       results.push({ engine: item.engine, width: item.width, height: item.height, result: "FAIL", error: String(error) });
       console.error("FAIL " + item.engine + ": " + error);

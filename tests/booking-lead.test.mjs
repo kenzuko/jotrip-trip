@@ -170,3 +170,55 @@ test("staff erasure uses a separate secret, leaves no contact and records reason
   // Chat remains independently managed by its own retention policy.
   assert.equal(db.sessions.size, 1);
 });
+
+test("lost-response retry creates only one lead and rejects changed contact", async () => {
+  const db = new BookingDB();
+  const payload = { ...leadIdentity, sessionId: "session-booking-0001",
+    contact: "guest@example.com", consent: true };
+  const first = await worker.fetch(post("/api/booking/lead", payload), { DB: db });
+  assert.equal(first.status, 200);
+  const retry = await worker.fetch(post("/api/booking/lead", payload), { DB: db });
+  assert.equal(retry.status, 200);
+  assert.equal((await retry.json()).alreadyReceived, true);
+  assert.equal(db.leads.size, 1);
+  const changed = await worker.fetch(post("/api/booking/lead", {
+    ...payload, contact: "another@example.com",
+  }), { DB: db });
+  assert.equal(changed.status, 409);
+  assert.equal((await changed.json()).error, "lead_id_conflict");
+  assert.equal(db.leads.size, 1);
+});
+
+test("another tab editing the trip before or during lead submission blocks handoff", async () => {
+  const db = new BookingDB();
+  const payload = { ...leadIdentity, sessionId: "session-booking-0001",
+    contact: "guest@example.com", consent: true };
+  db.sessions.get(payload.sessionId).version = 8;
+  const stale = await worker.fetch(post("/api/booking/lead", payload), { DB: db });
+  assert.equal(stale.status, 409);
+  assert.equal((await stale.json()).error, "stale_trip_refresh_required");
+  assert.equal(db.leads.size, 0);
+  db.beforeBatch = () => { db.sessions.get(payload.sessionId).trip_id = "trip-changed-in-other-tab"; };
+  const racing = await worker.fetch(post("/api/booking/lead", {
+    ...payload, clientLeadId: "22222222-2222-4222-8222-222222222222", expectedVersion: 8,
+  }), { DB: db });
+  assert.equal(racing.status, 409);
+  assert.equal((await racing.json()).error, "stale_trip_refresh_required");
+  assert.equal(db.leads.size, 0);
+});
+
+test("erased lead cannot be recreated by a delayed browser retry", async () => {
+  const db = new BookingDB();
+  const payload = { ...leadIdentity, sessionId: "session-booking-0001",
+    contact: "guest@example.com", consent: true };
+  const saved = await worker.fetch(post("/api/booking/lead", payload), { DB: db });
+  assert.equal(saved.status, 200);
+  const erased = await worker.fetch(post("/api/internal/booking-lead/erase", {
+    leadId: leadIdentity.clientLeadId, reason: "verified_customer_request",
+  }, "staff-only"), { DB: db, LEAD_ADMIN_TOKEN: "staff-only" });
+  assert.equal(erased.status, 200);
+  const replay = await worker.fetch(post("/api/booking/lead", payload), { DB: db });
+  assert.equal(replay.status, 410);
+  assert.equal((await replay.json()).error, "lead_erased");
+  assert.equal(db.leads.size, 0);
+});

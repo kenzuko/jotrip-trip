@@ -4,12 +4,31 @@ import { buildTripScenarios } from "./engine/buildTrip";
 import { answerAdvisor } from "./advisor";
 
 type Env = { DB?: D1Database };
-type RequestBody = { sessionId?: string; clientTurnId?: string; text?: string };
+type RequestBody = { sessionId?: string; clientTurnId?: string; text?: string; checkin?: string; checkout?: string };
 type SessionRow = { state_json: string; trip_id: string; version: number };
 type StoredTurn = { input_text: string; response_json: string };
 
 const MAX_TEXT = 2000;
 const VALID_ID = /^[a-zA-Z0-9_-]{8,100}$/;
+const DATE_ISO = /^\d{4}-\d{2}-\d{2}$/;
+function validDate(value: string): number | null {
+  if (!DATE_ISO.test(value)) return null;
+  const time = Date.parse(value + "T00:00:00Z");
+  return Number.isFinite(time) && new Date(time).toISOString().slice(0, 10) === value ? time : null;
+}
+function validatedDates(checkin?: string, checkout?: string) {
+  if (!checkin && !checkout) return null;
+  if (!checkin || !checkout) return false;
+  const start = validDate(checkin), end = validDate(checkout);
+  if (start === null || end === null) return false;
+  const nights = Math.round((end - start) / 86_400_000);
+  const today = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
+  if (checkin < today || nights < 1 || nights > 30) return false;
+  return { checkin, checkout, nights };
+}
+
 
 function resultError(error: string, status: number) {
   return Response.json({ ok: false, error }, { status, headers: { "cache-control": "no-store" } });
@@ -46,6 +65,9 @@ export async function processTripTurn(
   const turnId = body.clientTurnId || "";
   if (!text || text.length > MAX_TEXT) return resultError("invalid_text", 400);
   if (!VALID_ID.test(sessionId) || !VALID_ID.test(turnId)) return resultError("invalid_turn_identity", 400);
+  const dates = validatedDates(body.checkin, body.checkout);
+  if (dates === false) return resultError("invalid_travel_dates", 400);
+
   if (!env.DB) return resultError("trip_state_unavailable", 503);
   const db = env.DB;
 
@@ -55,6 +77,14 @@ export async function processTripTurn(
     ).bind(sessionId, turnId).first<StoredTurn>();
     if (duplicate) {
       if (duplicate.input_text !== text) return resultError("turn_id_reused_with_different_text", 409);
+      const original = JSON.parse(duplicate.response_json) as {
+        action?: string; parsed?: { checkin?: string; checkout?: string };
+      };
+      if (Boolean(dates) !== (original.action === "set_dates") ||
+          (dates && (original.parsed?.checkin !== dates.checkin ||
+                     original.parsed?.checkout !== dates.checkout))) {
+        return resultError("turn_id_reused_with_different_dates", 409);
+      }
       return Response.json(JSON.parse(duplicate.response_json), { headers: { "cache-control": "no-store" } });
     }
 
@@ -65,6 +95,14 @@ export async function processTripTurn(
     if (row) previous = JSON.parse(row.state_json) as TripContext;
 
     const turn = resolveTripTurn(previous, text);
+    if (dates) {
+      // Date selection is a structured action, not an inference from free text.
+      turn.parsed = {
+        ...turn.parsed, checkin: dates.checkin, checkout: dates.checkout,
+        nights: dates.nights, days: dates.nights + 1, mode: "trip_plan",
+      };
+      turn.nextNeeded = turn.nextNeeded.filter(item => item !== "travel_dates" && item !== "duration");
+    }
     const tripId = turn.action === "new_trip" || !row ? crypto.randomUUID() : row.trip_id;
     const base = buildParseResponse(text);
     const parsedResponse = {
@@ -87,9 +125,20 @@ export async function processTripTurn(
           stayPreferences: turn.parsed.stayPreferences as Parameters<typeof buildTripScenarios>[1]["stayPreferences"],
           language: turn.parsed.language, days: turn.parsed.days,
           nights: turn.parsed.nights, budgetVnd: turn.parsed.budgetVnd,
+          checkin: turn.parsed.checkin, checkout: turn.parsed.checkout,
         });
         if (!plan.ok) return resultError("trip_build_failed", 503);
         assistantText = replyForPlanning(turn.parsed, plan, assistantText);
+        if (dates) {
+          const window = dates.checkin + " - " + dates.checkout;
+          assistantText = plan.mode === "priced" && plan.scenarios?.length
+            ? (turn.parsed.language === "vi"
+              ? "Mình đã lưu ngày " + window + " và tính các phương án có dữ liệu giá xác minh. Mình xem phần đi lại cùng bạn trước khi chốt nha."
+              : "I've saved " + window + " and calculated options with available verified rates. Let's review the travel tradeoffs before booking.")
+            : (turn.parsed.language === "vi"
+              ? "Mình đã lưu ngày " + window + ". Chưa có đủ giá phòng xác minh cho khoảng này, nên mình chỉ so khu ở và đường đi, chưa báo tổng tiền nha."
+              : "I've saved " + window + ". Verified room rates are not complete for these dates, so I can compare areas and routes but not quote a total yet.");
+        }
       } else {
         advisor = await answerAdvisor(env, {
           rawText: text, language: turn.parsed.language, mode: turn.parsed.mode,
@@ -108,7 +157,7 @@ export async function processTripTurn(
       ok: true,
       assistantText,
       aiSignals: [],
-      action: turn.action,
+      action: dates ? "set_dates" as const : turn.action,
       tripId,
       clientTurnId: turnId,
       version,

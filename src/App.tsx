@@ -345,8 +345,6 @@ export default function App() {
   const [checkin, setCheckin] = useState("");
   const [checkout, setCheckout] = useState("");
   const [busy, setBusy] = useState(false);
-  const [voiceOn, setVoiceOn] = useState(false);
-  const [voiceError, setVoiceError] = useState("");
   const [apiError, setApiError] = useState("");
   const [handoffOpen, setHandoffOpen] = useState(false);
   const [leadContact, setLeadContact] = useState("");
@@ -354,13 +352,10 @@ export default function App() {
   const [leadStatus, setLeadStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [replyText, setReplyText] = useState("");
   const [turns, setTurns] = useState<LocalTurn[]>([]);
-  const [speaking, setSpeaking] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const [activeDecisionArea, setActiveDecisionArea] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const inFlightRef = useRef(false);
   const retryTurnRef = useRef<{ text: string; id: string } | null>(null);
-  const voiceRequestRef = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const guideCue = useMemo(() => directGuide(result, plan), [result, plan]);
@@ -437,7 +432,7 @@ export default function App() {
     hasResponse: Boolean(result),
     inputFocused,
     busy,
-    speaking,
+    speaking: false,
     comparing: Boolean(activeDecision) || guideCue.state === "compare",
     // Keep this false until a real review/live-data check is wired.
     checking: false,
@@ -448,68 +443,6 @@ export default function App() {
   });
   const mascotSrc = runtimeMascotPath(mascotState);
 
-  async function speakResponse(text: string, lang: string) {
-    const requestId = ++voiceRequestRef.current;
-    audioRef.current?.pause();
-    audioRef.current = null;
-    setSpeaking(false);
-    setVoiceError("");
-
-    // Read a brief answer, never the entire comparison or evidence cards.
-    const compact = text.replace(/\s+/g, " ").trim()
-      .split(/(?<=[.!?])\s+/u).slice(0, 2).join(" ").slice(0, 240);
-    if (!compact) return;
-
-    try {
-      const response = await fetch("/api/voice", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text: compact, language: lang }),
-      });
-
-      if (!response.ok || !response.headers.get("content-type")?.includes("audio")) {
-        throw new Error("natural_tts_unavailable");
-      }
-
-      const blob = await response.blob();
-      // A newer answer or a manual voice-off action cancels pending playback.
-      if (requestId !== voiceRequestRef.current) return;
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      let released = false;
-      const cleanup = () => {
-        if (released) return;
-        released = true;
-        if (requestId === voiceRequestRef.current) setSpeaking(false);
-        URL.revokeObjectURL(url);
-        if (audioRef.current === audio) audioRef.current = null;
-      };
-      audio.onplay = () => { if (requestId === voiceRequestRef.current) setSpeaking(true); };
-      audio.onended = cleanup;
-      audio.onpause = cleanup;
-      audio.onerror = () => {
-        cleanup();
-        if (requestId === voiceRequestRef.current) {
-          setVoiceOn(false);
-          setVoiceError("Giọng đọc tự nhiên đang chưa sẵn sàng. Bạn vẫn có thể chat bằng chữ.");
-        }
-      };
-      try {
-        await audio.play();
-      } catch {
-        cleanup();
-        throw new Error("audio_play_failed");
-      }
-    } catch {
-      if (requestId === voiceRequestRef.current) {
-        setSpeaking(false);
-        setVoiceOn(false);
-        setVoiceError("Giọng đọc tự nhiên đang chưa sẵn sàng. Bạn vẫn có thể chat bằng chữ.");
-      }
-    }
-  }
-
   async function submit(text = input) {
     const value = text.trim();
     if (!value || inFlightRef.current) return;
@@ -517,9 +450,6 @@ export default function App() {
     setApiError("");
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
-    voiceRequestRef.current += 1;
-    audioRef.current?.pause();
-    setSpeaking(false);
 
     const previousResult = result;
     const previousPlan = plan;
@@ -579,7 +509,6 @@ export default function App() {
         text: reply,
         language: json.parsed.language,
       }].slice(-12));
-      if (voiceOn) void speakResponse(reply, json.parsed.language);
     } catch (error) {
       const code = error instanceof Error ? error.message : "";
       setApiError(code === "trip_state_unavailable" || code === "trip_turn_unavailable"
@@ -710,7 +639,6 @@ export default function App() {
               className={[
                 "mascot-shell",
                 `mascot-state-${mascotState}`,
-                speaking ? "mascot-is-talking" : "",
                 busy ? "mascot-is-thinking" : "",
               ].filter(Boolean).join(" ")}
               data-mascot-state={mascotState}
@@ -763,7 +691,6 @@ export default function App() {
             </button>
           </form>
           {apiError && <p className="composer-error" role="alert">{apiError}</p>}
-          {voiceError && <p className="composer-error" role="status">{voiceError}</p>}
 
           {!hasResponse && (
             <LivingWelcome

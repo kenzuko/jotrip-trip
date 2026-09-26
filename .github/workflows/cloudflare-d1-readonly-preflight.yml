@@ -53,6 +53,12 @@ jobs:
           npx wrangler d1 execute jotrip-trip-db --remote --json --command "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name" > /tmp/jotrip-d1-tables.json
           node --input-type=module -e 'import fs from "node:fs"; const a=JSON.parse(fs.readFileSync("/tmp/jotrip-d1-tables.json","utf8")); const rows=(Array.isArray(a)?a:[a]).flatMap(x=>x.results??[]); if(!rows.every(x=>typeof x.name==="string"))process.exit(2); console.log("Remote table inventory:",JSON.stringify(rows.map(x=>x.name)));'
           rm -f /tmp/jotrip-d1-tables.json
+      - name: Count legacy rows and applied migration records only (no customer fields)
+        shell: bash
+        run: |
+          npx wrangler d1 execute jotrip-trip-db --remote --json --command "SELECT (SELECT COUNT(*) FROM d1_migrations) AS migration_records, (SELECT COUNT(*) FROM chat_messages) AS chat_messages, (SELECT COUNT(*) FROM trips) AS trips, (SELECT COUNT(*) FROM users) AS users, (SELECT COUNT(*) FROM hotel_private_rates) AS private_hotel_rates" > /tmp/jotrip-d1-counts.json
+          node --input-type=module -e 'import fs from "node:fs"; const a=JSON.parse(fs.readFileSync("/tmp/jotrip-d1-counts.json","utf8")); const rows=(Array.isArray(a)?a:[a]).flatMap(x=>x.results??[]); if(rows.length!==1||!Object.values(rows[0]).every(x=>Number.isSafeInteger(x)&&x>=0))process.exit(2); console.log("Read-only legacy row counts:",JSON.stringify(rows[0]));'
+          rm -f /tmp/jotrip-d1-counts.json
       - name: Inspect allowlisted remote table definitions (read-only, no customer rows)
         shell: bash
         run: |

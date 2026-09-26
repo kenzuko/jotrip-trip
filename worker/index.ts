@@ -152,16 +152,29 @@ export default {
           tripStateReady = false;
         }
       }
+      let bookingLeadReady = false;
+      if (env.DB) {
+        try {
+          await env.DB.prepare("SELECT 1 FROM booking_leads LIMIT 1").first();
+          await env.DB.prepare("SELECT 1 FROM booking_lead_consents_v2 LIMIT 1").first();
+          await env.DB.prepare("SELECT 1 FROM booking_lead_erasure_audit LIMIT 1").first();
+          bookingLeadReady = true;
+        } catch {
+          bookingLeadReady = false;
+        }
+      }
+      const ready = tripStateReady && bookingLeadReady;
       return json({
-        ok: tripStateReady,
+        ok: ready,
         service: "jotrip-trip",
         dbBound: Boolean(env.DB),
-        schemaReady: tripStateReady,
+        schemaReady: ready,
         tripStateReady,
         chatLoggingReady: tripStateReady,
+        bookingLeadReady,
         naturalVoiceReady: false,
         time: new Date().toISOString(),
-      }, tripStateReady ? 200 : 503);
+      }, ready ? 200 : 503);
     }
 
     if (url.pathname === "/api/trip/session" && request.method === "POST") {

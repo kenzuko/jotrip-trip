@@ -221,6 +221,9 @@ export default {
       const body = await request
         .json<{
           sessionId?: string | null;
+          clientLeadId?: string;
+          expectedTripId?: string;
+          expectedVersion?: number;
           contact?: string;
           contactChannel?: "phone" | "email" | "whatsapp" | "other";
           language?: string;
@@ -234,6 +237,9 @@ export default {
       try {
         const result = await saveBookingLead(env, {
           sessionId: body.sessionId,
+          clientLeadId: body.clientLeadId,
+          expectedTripId: body.expectedTripId,
+          expectedVersion: body.expectedVersion,
           contact: String(body.contact || ""),
           contactChannel: body.contactChannel,
           note: body.note,
@@ -242,12 +248,13 @@ export default {
           // Client-provided tripContext is intentionally never trusted.
         });
         const status = result.ok ? 200 :
-          result.error === "session_deleted" ? 410 :
+          result.error === "session_deleted" || result.error === "lead_erased" ? 410 :
+          result.error === "stale_trip_refresh_required" || result.error === "lead_id_conflict" ? 409 :
           result.error === "trip_session_not_found" ? 404 :
           result.error === "db_not_bound" ? 503 : 400;
         return json(result, status);
-      } catch (error) {
-        console.error("booking_lead_failed", error);
+      } catch {
+        console.error("booking_lead_failed");
         return json({
           ok:false,
           error:"booking_lead_failed",

@@ -369,6 +369,11 @@ export default function App() {
       body: JSON.stringify({ sessionId }),
     })
       .then(async response => {
+        if (response.status === 410 && !hasSentRef.current) {
+          localStorage.removeItem("jotrip_trip_session_id");
+          sessionIdRef.current = getSessionId();
+          return null;
+        }
         if (!response.ok) return null;
         return response.json() as Promise<{
           ok: boolean; parsed: TripParseResponse["parsed"];
@@ -551,7 +556,17 @@ export default function App() {
       }].slice(-12));
     } catch (error) {
       const code = error instanceof Error ? error.message : "";
-      setApiError(code === "invalid_travel_dates"
+      if (code === "session_deleted") {
+        localStorage.removeItem("jotrip_trip_session_id");
+        sessionIdRef.current = getSessionId();
+        retryTurnRef.current = null;
+        setResult(null); setPlan(null); setAdvisor(null); setTurns([]);
+        setReplyText(""); setCheckin(""); setCheckout("");
+        setInput(value);
+      }
+      setApiError(code === "session_deleted"
+        ? "Chuyến trước đã được xóa ở một tab khác. Mình đã mở phiên mới, bạn gửi lại câu vừa rồi nha."
+        : code === "invalid_travel_dates"
         ? "Ngày đi chưa hợp lệ. Bạn chọn ngày nhận phòng từ hôm nay và thời gian ở từ 1 đến 30 đêm nha."
         : code === "trip_state_unavailable" || code === "trip_turn_unavailable"
         ? "Phần lưu chuyến đi đang gián đoạn. Mình chưa ghi nhận tin này, bạn thử lại sau nha."

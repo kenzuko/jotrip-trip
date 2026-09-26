@@ -104,6 +104,7 @@ export async function processTripTurn(
       turn.parsed = {
         ...turn.parsed, checkin: dates.checkin, checkout: dates.checkout,
         nights: dates.nights, days: dates.nights + 1, mode: "trip_plan",
+        language: previous?.language || turn.parsed.language,
       };
       turn.nextNeeded = turn.nextNeeded.filter(item => item !== "travel_dates" && item !== "duration");
     }

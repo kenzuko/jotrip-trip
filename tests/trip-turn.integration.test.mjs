@@ -334,3 +334,18 @@ test("restoration does not resurrect a stale plan after switching to food advice
   assert.ok(snapshot.advisor?.ok);
   assert.equal(snapshot.history.length, 4);
 });
+
+test("health is not ready until both canonical V2 D1 tables exist", async () => {
+  const noDb = await worker.fetch(new Request("https://trip.test/api/health"), {});
+  assert.equal(noDb.status, 503);
+  assert.equal((await noDb.json()).tripStateReady, false);
+  const readyDb = {
+    prepare: sql => ({ first: async () => {
+      if (!/trip_sessions_v2|trip_turns_v2/.test(sql)) throw Error("unexpected health query");
+      return null;
+    } }),
+  };
+  const ready = await worker.fetch(new Request("https://trip.test/api/health"), { DB: readyDb });
+  assert.equal(ready.status, 200);
+  assert.equal((await ready.json()).tripStateReady, true);
+});

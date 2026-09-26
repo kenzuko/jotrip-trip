@@ -1,52 +1,25 @@
-# Chat data and demand intelligence
+# Chat data - Living Trip V2
 
-JoTrip Trip keeps two layers of conversation data in D1 when the DB binding is enabled.
+## Authoritative operational record
 
-## Raw operational conversation
+The V2 browser sends one `POST /api/trip/turn` with a stable `sessionId`, `clientTurnId` and text. The Worker resolves the conversation state, builds the plan/advisor answer and stores **the same final response JSON returned to the browser** in D1.
 
-- `chat_sessions`
-- `chat_messages`
-- `chat_events`
+- `trip_sessions_v2`: current canonical trip context, trip ID, version and last accepted turn ID.
+- `trip_turns_v2`: unique (session ID, client turn ID), input and exact final response. A repeated ID with the same text returns the original response without a second turn.
+- `GET /api/trip/session`: restores recent turns and last available evidence canvas after a page refresh.
 
-This preserves the actual conversation so JoTrip can review product failures, understand wording, and improve the Trip Engine.
+Migration `0009_trip_turn_state.sql` adds these tables without dropping older schema. If D1 or this migration is missing, V2 reports an unavailable session instead of pretending to save.
 
-## Structured demand facts
+## Legacy analytics
 
-- `trip_intent_events`
+`chat_sessions`, `chat_messages`, `chat_events` and `trip_intent_events` are legacy V1 tables. The old `/api/trip/parse` writer has been retired from the V2 branch. Existing `GET /api/internal/analytics/chat-overview` currently reads legacy tables and **must not be presented as comprehensive V2 demand analytics** until its reader is adapted to `trip_turns_v2`.
 
-Each user turn may store structured fields such as:
+`INTERNAL_API_TOKEN` remains server-only. Never expose it in frontend code.
 
-- days / nights
-- adults / children
-- budget
-- interests
+## Privacy gates before public launch
 
-This allows demand analytics without repeatedly parsing the raw text.
+Publish a privacy notice, define a retention window for raw text, implement session deletion and redact sensitive customer details where feasible. Do not request passports or payment details in chat. A browser session ID is not authentication and must not be treated as permission to reveal private booking/contact data.
 
-## Internal-only analytics
+## Known next step
 
-`GET /api/internal/analytics/chat-overview`
-
-requires a runtime secret:
-
-`INTERNAL_API_TOKEN`
-
-Send it only from trusted internal tooling using:
-
-`Authorization: Bearer <token>`
-
-Never put this token in frontend JavaScript.
-
-## Future account linking
-
-Anonymous chat sessions use a browser-local session ID. When customer accounts are implemented, the existing anonymous session can be linked to the authenticated user/trip instead of starting over.
-
-## Privacy direction
-
-Before public launch:
-
-- publish a clear privacy notice
-- provide account/session deletion support
-- define a raw-chat retention window
-- keep aggregate/structured demand metrics separately when appropriate
-- avoid collecting passport/payment data through ordinary chat
+Date-specific repricing and booking lead submission still use their existing APIs. Persist check-in/check-out in the server's canonical trip context before calling the itinerary fully saved. Cross-device recovery will require explicit account linking or another authorized transfer method.

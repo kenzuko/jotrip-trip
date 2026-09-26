@@ -420,6 +420,14 @@ export default function App() {
       p.stayPreferences.length
         ? p.stayPreferences.map(preferenceLabel).join(" + ")
         : "",
+      ...(result.aiSignals || []).map((signal) => ({
+        slow_pace: "Ưu tiên ít di chuyển",
+        family_focus: "Ưu tiên gia đình",
+        food_focus: "Quan tâm ăn uống",
+        beach_focus: "Thích biển",
+        evening_focus: "Thích hoạt động buổi tối",
+        quiet_focus: "Thích không gian yên tĩnh",
+      })[signal]),
     ].filter(Boolean);
   }, [result]);
 
@@ -636,6 +644,7 @@ export default function App() {
         previousResult && !isFreshTrip
           ? {
               ...json,
+              aiSignals: Array.from(new Set([...(previousResult.aiSignals || []), ...(json.aiSignals || [])])),
               parsed: {
                 ...previousResult.parsed,
                 ...json.parsed,

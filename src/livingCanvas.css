@@ -85,6 +85,9 @@
   border: 1px solid #dce9d6; border-radius: 99px; padding: 8px 11px;
   background: #fff; color: #466a48; font-size: 12px; font-weight: 650;
 }
+.trip-pulse-inferred { display: grid; gap: 8px; border-top: 1px solid #e1ebd9; padding-top: 12px; }
+.trip-pulse-inferred strong { font-size: 12px; color: #71815e; font-weight: 750; }
+.trip-pulse-inferred .trip-pulse-facts > span { border-style: dashed; background: #f7faef; }
 .trip-pulse-directions { display: grid; gap: 10px; }
 .trip-pulse-intro { display: grid; gap: 4px; }
 .trip-pulse-intro strong { font-size: 15px; color: #203b32; }

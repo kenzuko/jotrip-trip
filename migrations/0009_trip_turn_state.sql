@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS trip_sessions_v2 (
   trip_id TEXT NOT NULL,
   state_json TEXT NOT NULL,
   version INTEGER NOT NULL DEFAULT 0,
+  last_turn_id TEXT,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

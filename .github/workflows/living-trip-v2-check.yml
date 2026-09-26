@@ -35,14 +35,14 @@ jobs:
         run: npm test
       - name: Real local D1 schema and lifecycle smoke (never remote)
         run: |
-          npx wrangler d1 execute jotrip-trip-db --local --persist-to /tmp/jotrip-v2-d1 --file migrations/0009_trip_turn_state.sql
-          npx wrangler d1 execute jotrip-trip-db --local --persist-to /tmp/jotrip-v2-d1 --file tests/fixtures/v2-d1-smoke.sql
-          npx wrangler d1 execute jotrip-trip-db --local --persist-to /tmp/jotrip-v2-d1 --file migrations/0010_booking_lead_privacy.sql
-          npx wrangler d1 execute jotrip-trip-db --local --persist-to /tmp/jotrip-v2-d1 --file tests/fixtures/v2-booking-lead-smoke.sql
-          npx wrangler d1 execute jotrip-trip-db --local --persist-to /tmp/jotrip-v2-d1 --file tests/fixtures/v2-booking-version-smoke.sql
+          npx wrangler d1 execute jotrip-trip-db --local --file migrations/0009_trip_turn_state.sql
+          npx wrangler d1 execute jotrip-trip-db --local --file tests/fixtures/v2-d1-smoke.sql
+          npx wrangler d1 execute jotrip-trip-db --local --file migrations/0010_booking_lead_privacy.sql
+          npx wrangler d1 execute jotrip-trip-db --local --file tests/fixtures/v2-booking-lead-smoke.sql
+          npx wrangler d1 execute jotrip-trip-db --local --file tests/fixtures/v2-booking-version-smoke.sql
       - name: Read-only schema export preflight against actual local D1
         run: |
-          npx wrangler d1 export jotrip-trip-db --local --persist-to /tmp/jotrip-v2-d1 --no-data --output=/tmp/jotrip-v2-local-schema.sql
+          npx wrangler d1 export jotrip-trip-db --local --no-data --output=/tmp/jotrip-v2-local-schema.sql
           node tools/d1-schema-preflight.mjs /tmp/jotrip-v2-local-schema.sql
       - name: Existing legacy booking table compatibility (separate local D1)
         run: |

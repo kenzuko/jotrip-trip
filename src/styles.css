@@ -2132,3 +2132,44 @@ a {
   background: #ffffff;
   backdrop-filter: none;
 }
+
+/* V2 anonymous-session controls: secondary, readable and reachable on mobile. */
+.reset-trip-button {
+  min-height: 44px;
+  border: 1px solid #b8d0ca;
+  border-radius: 999px;
+  padding: 9px 15px;
+  background: #fff;
+  color: #28534b;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.reset-trip-button:hover { border-color: #5a9686; }
+.reset-trip-button:focus-visible,
+.delete-confirm button:focus-visible { outline: 3px solid #388f80; outline-offset: 3px; }
+.reset-trip-button:disabled { opacity: .5; cursor: not-allowed; }
+.delete-confirm {
+  position: relative;
+  z-index: 45;
+  width: min(620px, calc(100% - 32px));
+  margin: 12px auto 0;
+  padding: 16px 20px;
+  border: 1px solid #b8d0ca;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(24, 65, 60, .12);
+}
+.delete-confirm p { margin: 0 0 14px; font-size: 14px; line-height: 1.5; }
+.delete-confirm > div { display: flex; flex-wrap: wrap; gap: 10px; }
+.delete-confirm button {
+  min-height: 44px; border-radius: 10px; padding: 10px 15px;
+  border: 1px solid #abc9c1; background: #f5faf8; color: #194c42;
+  font-weight: 700; cursor: pointer;
+}
+.delete-confirm button:last-child { background: #853e37; border-color: #853e37; color: #fff; }
+.prompt-note small { display: block; margin-top: 6px; font-size: 11px; line-height: 1.45; }
+@media (max-width: 560px) {
+  .topbar .topbar-promise { display: none; }
+  .reset-trip-button { min-height: 44px; font-size: 12px; padding: 9px 12px; }
+}

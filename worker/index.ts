@@ -11,81 +11,18 @@ import { buildDestinationContext } from "./destinationContext";
 import { importDestinationVenues } from "./destinationImport";
 import { answerAdvisor } from "./advisor";
 import { saveBookingLead } from "./bookingLead";
-import { interpretTravelNeeds, type AiBinding } from "./aiIntent";
 import { getTripSession, processTripTurn } from "./tripTurn";
 
 type Env = {
   DB?: D1Database;
   INTERNAL_API_TOKEN?: string;
-  AI?: AiBinding;
-  AI_INTERPRET_ENABLED?: string;
 };
-
-type ParsedShape = ReturnType<typeof buildParseResponse>["parsed"];
 
 function json(data: unknown, status = 200) {
   return Response.json(data, {
     status,
     headers: { "cache-control": "no-store" },
   });
-}
-
-async function logConversationTurn(
-  env: Env,
-  sessionId: string | undefined,
-  userText: string,
-  parsed: ParsedShape,
-  assistantText: string,
-) {
-  if (!env.DB || !sessionId) return;
-
-  const now = new Date().toISOString();
-  const userMessageId = crypto.randomUUID();
-
-  await env.DB.batch([
-    env.DB.prepare(
-      `INSERT INTO chat_sessions (id, last_seen_at)
-       VALUES (?, ?)
-       ON CONFLICT(id) DO UPDATE SET last_seen_at = excluded.last_seen_at`,
-    ).bind(sessionId, now),
-    env.DB.prepare(
-      `INSERT INTO chat_messages
-        (id, session_id, role, content, parsed_intent_json, created_at)
-       VALUES (?, ?, 'user', ?, ?, ?)`,
-    ).bind(
-      userMessageId,
-      sessionId,
-      userText,
-      JSON.stringify(parsed),
-      now,
-    ),
-    env.DB.prepare(
-      `INSERT INTO chat_messages
-        (id, session_id, role, content, created_at)
-       VALUES (?, ?, 'assistant', ?, ?)`,
-    ).bind(
-      crypto.randomUUID(),
-      sessionId,
-      assistantText,
-      now,
-    ),
-    env.DB.prepare(
-      `INSERT INTO trip_intent_events
-        (id, session_id, message_id, days, nights, adults, children, budget_vnd, interests_json, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).bind(
-      crypto.randomUUID(),
-      sessionId,
-      userMessageId,
-      parsed.days ?? null,
-      parsed.nights ?? null,
-      parsed.adults ?? null,
-      parsed.children ?? null,
-      parsed.budgetVnd ?? null,
-      JSON.stringify(parsed.interests || []),
-      now,
-    ),
-  ]);
 }
 
 function localizedInterest(value: string, lang: string) {
@@ -232,36 +169,6 @@ export default {
         text?: string; sessionId?: string; clientTurnId?: string;
       }>().catch(() => ({}));
       return processTripTurn(env, body, assistantTextFor);
-    }
-
-    if (url.pathname === "/api/trip/parse" && request.method === "POST") {
-      const body = await request
-        .json<{ text?: string; sessionId?: string }>()
-        .catch(() => ({}));
-
-      if (!body.text?.trim()) {
-        return json({ ok: false, error: "text_required" }, 400);
-      }
-
-      const result = buildParseResponse(body.text);
-      const assistantText = assistantTextFor(result);
-      const aiSignals = result.conversationAction === "acknowledgement"
-        ? []
-        : await interpretTravelNeeds(env.AI, body.text, env.AI_INTERPRET_ENABLED === "true");
-
-      try {
-        await logConversationTurn(
-          env,
-          body.sessionId,
-          body.text,
-          result.parsed,
-          assistantText,
-        );
-      } catch (error) {
-        console.error("chat_log_failed", error);
-      }
-
-      return json({ ...result, assistantText, aiSignals });
     }
 
     if (url.pathname === "/api/booking/lead" && request.method === "POST") {

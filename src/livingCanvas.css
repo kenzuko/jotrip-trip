@@ -1,4 +1,6 @@
 /* Living Trip V2 - no external image requests or animation libraries. */
+.topbar-promise { color: #64806b; font-size: 12px; font-weight: 650; }
+@media (max-width: 560px) { .topbar-promise { display: none; } }
 .living-welcome { width: min(940px, 100%); margin: 0 auto; }
 .living-section-heading { text-align: center; margin: 4px 0 16px; }
 .living-section-heading > span, .trip-pulse-heading > div > span {

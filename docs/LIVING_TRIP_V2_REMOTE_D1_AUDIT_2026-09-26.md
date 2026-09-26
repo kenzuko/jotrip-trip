@@ -24,9 +24,9 @@ Wrangler lists `0000_bootstrap_all.sql` through `0010_booking_lead_privacy.sql` 
 ## Next gates
 
 1. **Confirmed** in a separate read-only check: `chat_sessions` and `chat_messages` both contain rows. `trips` and `hotels_public` are empty. The audit deliberately reported only presence/absence, never customer content or exact counts. Run: https://github.com/kenzuko/jotrip-home/actions/runs/36239698819. Preserve legacy chat records until an access-restricted, durable backup and retention decision exist.
-2. **Confirmed**: no existing D1 with the `jotrip-trip` prefix other than `jotrip-trip-db`. An isolated preview database must be newly created if needed.
+2. **Confirmed**: no existing D1 with the `jotrip-trip` prefix other than `jotrip-trip-db` before the preview test. Created isolated `jotrip-trip-v2-preview-20260926` (UUID `ac9aec13-a732-42e9-918f-6a401982bdd2`) in the same Cloudflare account. Ran `0000`, `0005` through `0010` against **preview only**. The exported preview schema passed all six V2 table contracts; synthetic session, consent, erasure, stale-tab and retry SQL fixtures passed remotely. Run: https://github.com/kenzuko/jotrip-home/actions/runs/36239851207.
 3. Take a **durable, access-restricted backup** and test its recovery before changing the live D1. An ephemeral CI export is not a backup.
-4. Test the additive V2 migrations and real D1 concurrency in an isolated preview DB.
+4. **Done for SQL migrations and synthetic D1 regression** on isolated preview. End-to-end live Worker HTTP concurrency, session restore and mobile testing remain pending; do not confuse SQL fixtures with full browser-to-Worker QA.
 5. Only then approve a minimal live migration plan; no deployment or DNS change is implied by this audit.
 
-No full remote backup, live migration, preview deploy or production Worker change has been performed. Do not delete legacy chat data just because V2 replaces its interface.
+No durable full remote backup, live production migration, preview Worker deploy or production Worker change has been performed. The isolated preview database is a new Cloudflare resource and contains synthetic test data only. Do not delete legacy chat data just because V2 replaces its interface.

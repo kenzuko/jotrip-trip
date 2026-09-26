@@ -535,7 +535,7 @@ export default function App() {
     setActiveDecisionArea(null);
     setTurns((items) => [
       ...items.filter((item) => item.id !== pending.id),
-      { id: pending.id, role: "user", text: value },
+      { id: pending.id, role: "user" as const, text: value },
     ].slice(-12));
 
     try {
@@ -575,7 +575,7 @@ export default function App() {
       setReplyText(reply);
       setTurns((items) => [...items, {
         id: json.clientTurnId + ":assistant",
-        role: "assistant",
+        role: "assistant" as const,
         text: reply,
         language: json.parsed.language,
       }].slice(-12));
@@ -650,7 +650,7 @@ export default function App() {
           },
         }),
       });
-      const json = await res.json();
+      const json = await res.json() as { ok?: boolean };
       setLeadStatus(json.ok ? "sent" : "error");
     } catch {
       setLeadStatus("error");

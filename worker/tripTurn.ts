@@ -247,3 +247,44 @@ export async function getTripSession(env: Env, sessionId: string): Promise<Respo
     return resultError("trip_session_unavailable", 503);
   }
 }
+
+/** Deletion covers V2 chat/session only. A separately consented booking lead
+ * remains subject to its own operational retention and deletion process.
+ */
+export async function deleteTripSession(env: Env, sessionId: string): Promise<Response> {
+  if (!VALID_ID.test(sessionId)) return resultError("invalid_session_id", 400);
+  if (!env.DB) return resultError("trip_state_unavailable", 503);
+  try {
+    const [turns, session] = await env.DB.batch([
+      env.DB.prepare("DELETE FROM trip_turns_v2 WHERE session_id=?").bind(sessionId),
+      env.DB.prepare("DELETE FROM trip_sessions_v2 WHERE session_id=?").bind(sessionId),
+    ]);
+    return Response.json({
+      ok: true, deleted: session.meta.changes > 0,
+      turnsDeleted: turns.meta.changes,
+      bookingLeadsAffected: false,
+    }, { headers: { "cache-control": "no-store" } });
+  } catch (error) {
+    console.error("trip_session_delete_failed", error);
+    return resultError("trip_session_delete_unavailable", 503);
+  }
+}
+
+/** Invoked only by the Worker daily cron; retention is based on last activity. */
+export async function purgeExpiredTripSessions(env: Env, days = 90) {
+  if (!env.DB) return { ok: false, error: "db_not_bound" };
+  const retention = Math.max(7, Math.min(365, Math.floor(days)));
+  const cutoff = new Date(Date.now() - retention * 86_400_000).toISOString();
+  try {
+    const [turns, sessions] = await env.DB.batch([
+      env.DB.prepare(
+        "DELETE FROM trip_turns_v2 WHERE session_id IN (SELECT session_id FROM trip_sessions_v2 WHERE updated_at < ?)",
+      ).bind(cutoff),
+      env.DB.prepare("DELETE FROM trip_sessions_v2 WHERE updated_at < ?").bind(cutoff),
+    ]);
+    return { ok: true, sessionsDeleted: sessions.meta.changes, turnsDeleted: turns.meta.changes };
+  } catch (error) {
+    console.error("trip_session_purge_failed", error);
+    return { ok: false, error: "trip_session_purge_unavailable" };
+  }
+}

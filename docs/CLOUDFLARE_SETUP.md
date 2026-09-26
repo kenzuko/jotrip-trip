@@ -1,6 +1,6 @@
 # Cloudflare setup - JoTrip Trip
 
-The base Worker can deploy before D1, AI, or the custom domain are connected.
+Living Trip V2 requires its D1 chat and booking tables before serving trip requests. Do not deploy it to an existing production Worker before the read-only remote D1 preflight and backup described in `docs/LIVING_TRIP_V2_REMOTE_D1_PREFLIGHT.md`.
 
 ## D1
 
@@ -31,7 +31,7 @@ Do not commit its value.
 
 ## Workers AI
 
-Not required for V0.
+Workers AI is not enabled for the V2 MVP. Keep deterministic parsing as the default and do not add an AI binding or paid inference without a separately approved budget and privacy gate.
 
 The deterministic parser remains the primary parser for common Phu Quoc trip requests. Workers AI can be added later only as a fallback for complex natural-language requests.
 

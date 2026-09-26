@@ -1,6 +1,6 @@
 import { buildParseResponse } from "./scenario";
 import { estimateSevenSeatPrice } from "./rules/mobility";
-import { chatAnalyticsOverview, isInternalAuthorized } from "./internal";
+import { chatAnalyticsOverview, isInternalAuthorized, tripV2AnalyticsOverview } from "./internal";
 import { quotePublicActivity } from "./publicCatalog";
 import { buildTripScenarios } from "./engine/buildTrip";
 import { importPrivateHotelRates } from "./privateHotelImport";
@@ -10,80 +10,21 @@ import { importTravelMatrix } from "./travelMatrixImport";
 import { buildDestinationContext } from "./destinationContext";
 import { importDestinationVenues } from "./destinationImport";
 import { answerAdvisor } from "./advisor";
-import { saveBookingLead } from "./bookingLead";
-import { createNaturalSpeech } from "./voice";
+import { eraseBookingLead, saveBookingLead } from "./bookingLead";
+import { deleteTripSession, getTripSession, processTripTurn, purgeExpiredTripSessions } from "./tripTurn";
 
 type Env = {
   DB?: D1Database;
   INTERNAL_API_TOKEN?: string;
-  OPENAI_API_KEY?: string;
+  LEAD_ADMIN_TOKEN?: string;
+  TRIP_RETENTION_DAYS?: string;
 };
-
-type ParsedShape = ReturnType<typeof buildParseResponse>["parsed"];
 
 function json(data: unknown, status = 200) {
   return Response.json(data, {
     status,
     headers: { "cache-control": "no-store" },
   });
-}
-
-async function logConversationTurn(
-  env: Env,
-  sessionId: string | undefined,
-  userText: string,
-  parsed: ParsedShape,
-  assistantText: string,
-) {
-  if (!env.DB || !sessionId) return;
-
-  const now = new Date().toISOString();
-  const userMessageId = crypto.randomUUID();
-
-  await env.DB.batch([
-    env.DB.prepare(
-      `INSERT INTO chat_sessions (id, last_seen_at)
-       VALUES (?, ?)
-       ON CONFLICT(id) DO UPDATE SET last_seen_at = excluded.last_seen_at`,
-    ).bind(sessionId, now),
-    env.DB.prepare(
-      `INSERT INTO chat_messages
-        (id, session_id, role, content, parsed_intent_json, created_at)
-       VALUES (?, ?, 'user', ?, ?, ?)`,
-    ).bind(
-      userMessageId,
-      sessionId,
-      userText,
-      JSON.stringify(parsed),
-      now,
-    ),
-    env.DB.prepare(
-      `INSERT INTO chat_messages
-        (id, session_id, role, content, created_at)
-       VALUES (?, ?, 'assistant', ?, ?)`,
-    ).bind(
-      crypto.randomUUID(),
-      sessionId,
-      assistantText,
-      now,
-    ),
-    env.DB.prepare(
-      `INSERT INTO trip_intent_events
-        (id, session_id, message_id, days, nights, adults, children, budget_vnd, interests_json, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).bind(
-      crypto.randomUUID(),
-      sessionId,
-      userMessageId,
-      parsed.days ?? null,
-      parsed.nights ?? null,
-      parsed.adults ?? null,
-      parsed.children ?? null,
-      parsed.budgetVnd ?? null,
-      JSON.stringify(parsed.interests || []),
-      now,
-    ),
-  ]);
 }
 
 function localizedInterest(value: string, lang: string) {
@@ -200,65 +141,89 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === "/api/health") {
-      let schemaReady = false;
+      let tripStateReady = false;
       if (env.DB) {
         try {
-          await env.DB.prepare("SELECT 1 FROM chat_sessions LIMIT 1").first();
-          schemaReady = true;
+          await env.DB.prepare("SELECT 1 FROM trip_sessions_v2 LIMIT 1").first();
+          await env.DB.prepare("SELECT 1 FROM trip_turns_v2 LIMIT 1").first();
+          await env.DB.prepare("SELECT 1 FROM trip_deleted_sessions_v2 LIMIT 1").first();
+          tripStateReady = true;
         } catch {
-          schemaReady = false;
+          tripStateReady = false;
         }
       }
-
+      let bookingLeadReady = false;
+      if (env.DB) {
+        try {
+          await env.DB.prepare("SELECT 1 FROM booking_leads LIMIT 1").first();
+          await env.DB.prepare("SELECT 1 FROM booking_lead_consents_v2 LIMIT 1").first();
+          await env.DB.prepare("SELECT 1 FROM booking_lead_erasure_audit LIMIT 1").first();
+          bookingLeadReady = true;
+        } catch {
+          bookingLeadReady = false;
+        }
+      }
+      const ready = tripStateReady && bookingLeadReady;
       return json({
-        ok: true,
+        ok: ready,
         service: "jotrip-trip",
         dbBound: Boolean(env.DB),
-        schemaReady,
-        chatLoggingReady: Boolean(env.DB) && schemaReady,
-        naturalVoiceReady: Boolean(env.OPENAI_API_KEY),
+        schemaReady: ready,
+        tripStateReady,
+        chatLoggingReady: tripStateReady,
+        bookingLeadReady,
+        naturalVoiceReady: false,
         time: new Date().toISOString(),
-      });
+      }, ready ? 200 : 503);
     }
 
-    if (url.pathname === "/api/trip/parse" && request.method === "POST") {
-      const body = await request
-        .json<{ text?: string; sessionId?: string }>()
-        .catch(() => ({}));
+    if (url.pathname === "/api/trip/session" && request.method === "POST") {
+      const body = await request.json<{ sessionId?: string }>().catch(() => ({}));
+      return getTripSession(env, body.sessionId || "");
+    }
 
-      if (!body.text?.trim()) {
-        return json({ ok: false, error: "text_required" }, 400);
+    if (url.pathname === "/api/trip/session" && request.method === "DELETE") {
+      const body = await request.json<{ sessionId?: string }>().catch(() => ({}));
+      return deleteTripSession(env, body.sessionId || "");
+    }
+
+    if (url.pathname === "/api/trip/turn" && request.method === "POST") {
+      const body = await request.json<{
+        text?: string; sessionId?: string; clientTurnId?: string;
+        checkin?: string; checkout?: string;
+      }>().catch(() => ({}));
+      return processTripTurn(env, body, assistantTextFor);
+    }
+
+    if (url.pathname === "/api/internal/booking-lead/erase" && request.method === "POST") {
+      // Separate secret from analytics; never permit deletion with an
+      // anonymous trip session ID or a read-only analytics token.
+      if (!env.LEAD_ADMIN_TOKEN ||
+          request.headers.get("authorization") !== `Bearer ${env.LEAD_ADMIN_TOKEN}`) {
+        return json({ ok: false, error: "unauthorized" }, 401);
       }
-
-      const result = buildParseResponse(body.text);
-      const assistantText = assistantTextFor(result);
-
+      const body = await request.json<{
+        leadId?: string; reason?: "verified_customer_request" | "operational_cleanup";
+      }>().catch(() => ({}));
+      if (body.reason !== "verified_customer_request" &&
+          body.reason !== "operational_cleanup") {
+        return json({ ok: false, error: "invalid_reason" }, 400);
+      }
       try {
-        await logConversationTurn(
-          env,
-          body.sessionId,
-          body.text,
-          result.parsed,
-          assistantText,
-        );
-      } catch (error) {
-        console.error("chat_log_failed", error);
+        const result = await eraseBookingLead(env, body.leadId || "", body.reason);
+        return json(result, result.ok ? 200 : result.error === "db_not_bound" ? 503 : 400);
+      } catch {
+        return json({ ok: false, error: "lead_erasure_unavailable" }, 503);
       }
-
-      return json({ ...result, assistantText });
-    }
-
-    if (url.pathname === "/api/voice" && request.method === "POST") {
-      const body = await request
-        .json<{ text?: string; language?: string }>()
-        .catch(() => ({}));
-      return createNaturalSpeech(env,String(body.text||""),String(body.language||"vi"));
     }
 
     if (url.pathname === "/api/booking/lead" && request.method === "POST") {
       const body = await request
         .json<{
           sessionId?: string | null;
+          clientLeadId?: string;
+          expectedTripId?: string;
+          expectedVersion?: number;
           contact?: string;
           contactChannel?: "phone" | "email" | "whatsapp" | "other";
           language?: string;
@@ -270,22 +235,30 @@ export default {
         .catch(() => ({}));
 
       try {
-        return json(await saveBookingLead(env,{
-          sessionId:body.sessionId,
-          contact:String(body.contact||""),
-          contactChannel:body.contactChannel,
-          language:body.language,
-          note:body.note,
-          tripContext:body.tripContext,
-          consent:body.consent,
-          website:body.website,
-        }));
-      } catch (error) {
-        console.error("booking_lead_failed", error);
+        const result = await saveBookingLead(env, {
+          sessionId: body.sessionId,
+          clientLeadId: body.clientLeadId,
+          expectedTripId: body.expectedTripId,
+          expectedVersion: body.expectedVersion,
+          contact: String(body.contact || ""),
+          contactChannel: body.contactChannel,
+          note: body.note,
+          consent: body.consent,
+          website: body.website,
+          // Client-provided tripContext is intentionally never trusted.
+        });
+        const status = result.ok ? 200 :
+          result.error === "session_deleted" || result.error === "lead_erased" ? 410 :
+          result.error === "stale_trip_refresh_required" || result.error === "lead_id_conflict" ? 409 :
+          result.error === "trip_session_not_found" ? 404 :
+          result.error === "db_not_bound" ? 503 : 400;
+        return json(result, status);
+      } catch {
+        console.error("booking_lead_failed");
         return json({
           ok:false,
           error:"booking_lead_failed",
-          message:error instanceof Error?error.message:String(error),
+          // Never expose database errors or customer information to the browser.
         },500);
       }
     }
@@ -511,6 +484,11 @@ export default {
       });
     }
 
+    if (url.pathname === "/api/internal/analytics/trip-v2" && request.method === "GET") {
+      if (!isInternalAuthorized(request, env)) return json({ ok: false, error: "unauthorized" }, 401);
+      return json(await tripV2AnalyticsOverview(env));
+    }
+
     if (
       url.pathname === "/api/internal/analytics/chat-overview" &&
       request.method === "GET"
@@ -522,5 +500,10 @@ export default {
     }
 
     return json({ ok: false, error: "not_found" }, 404);
+  },
+  async scheduled(_controller: ScheduledController, env: Env) {
+    const days = Number(env.TRIP_RETENTION_DAYS || "90");
+    const result = await purgeExpiredTripSessions(env, Number.isFinite(days) ? days : 90);
+    if (!result.ok) console.error("trip_retention_purge_failed", result.error);
   },
 } satisfies ExportedHandler<Env>;

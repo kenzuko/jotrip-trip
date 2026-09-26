@@ -26,6 +26,7 @@
     "@vitejs/plugin-react": "latest",
     "typescript": "latest",
     "vite": "latest",
-    "wrangler": "latest"
+    "wrangler": "latest",
+    "@cloudflare/workers-types": "latest"
   }
 }

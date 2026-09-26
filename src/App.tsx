@@ -1,27 +1,15 @@
-import { FormEvent, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type {
   AdvisorResponse,
   DestinationContext,
   PlanningHotel,
   TripBuildResponse,
   TripParseResponse,
+  TripTurnResponse,
 } from "./types";
 import { directGuide } from "./guideDirector";
+import { LivingWelcome, TripPulse } from "./LivingCanvas";
 import { resolveMascotState, runtimeMascotPath } from "./mascotState";
-
-const examples = [
-  { label: "Gợi ý", text: "3 ngày 2 đêm, nhà mình có bé, muốn chơi Vin và Safari thì ở đâu hợp?", mobileText: "Có bé, đi Vin và Safari, ở đâu tiện?" },
-  { label: "Gợi ý", text: "Ở Sunset Town thì buổi tối ăn gì, cafe ở đâu, còn gì để chơi?", mobileText: "Tối ở Sunset Town ăn gì, chơi gì?" },
-  { label: "EN", text: "Where should we stay for Safari, coffee and quiet evenings?", mobileText: "Ask JoTrip in English" },
-];
-
-const languageNames: Record<string, string> = {
-  vi: "VI",
-  en: "EN",
-  ko: "KO",
-  ru: "RU",
-  zh: "中文",
-};
 
 function getSessionId() {
   const key = "jotrip_trip_session_id";
@@ -89,50 +77,6 @@ type LocalTurn = {
   text: string;
   language?: string;
 };
-
-function planningReply(result: TripParseResponse, plan: TripBuildResponse) {
-  const lang = result.parsed.language;
-  const top = plan.planningHotels?.[0];
-  if (!top) return result.assistantText || "";
-
-  const area = top.hotel.area_code;
-  const areaNames: Record<string, Record<string, string>> = {
-    north: { vi: "Bắc đảo", en: "the north", ko: "북부", ru: "север острова", zh: "北岛" },
-    south: { vi: "Nam đảo", en: "the south", ko: "남부", ru: "юг острова", zh: "南岛" },
-    duong_dong: { vi: "Dương Đông", en: "Duong Dong", ko: "즈엉동", ru: "Зыонгдонг", zh: "阳东" },
-    long_beach: { vi: "Bãi Trường", en: "Long Beach", ko: "롱비치", ru: "Лонг-Бич", zh: "长滩" },
-    north_central: { vi: "Ông Lang", en: "Ong Lang", ko: "옹랑", ru: "Онг Ланг", zh: "翁朗" },
-  };
-  const label = areaNames[area]?.[lang] || area;
-
-  if (lang === "en") return "I’d look at " + label + " first for this trip. I’ll compare what you gain there with the extra travel or evening convenience before we get into room prices.";
-  if (lang === "ko") return "이 일정은 우선 " + label + " 쪽부터 볼게요. 객실 가격보다 먼저, 그 지역에서 편해지는 점과 이동·저녁 활동에서 생기는 차이를 같이 볼게요.";
-  if (lang === "ru") return "Для этой поездки я бы сначала посмотрел " + label + ". Сначала сравню, что этот район упрощает и чем за это приходится платить во времени или вечерней мобильности.";
-  if (lang === "zh") return "这趟行程我会先看" + label + "。我先比较住这里能省下什么，以及交通和晚上活动会多出什么，再看房价。";
-
-  const p = result.parsed;
-  const hasNorth = p.interests.includes("VinWonders") || p.interests.includes("Safari");
-  const hasSouth = p.interests.includes("Hòn Thơm") || p.interests.includes("Sunset Town");
-  const likesEvening =
-    p.stayPreferences.includes("evening") ||
-    p.stayPreferences.includes("walkable") ||
-    p.stayPreferences.includes("food") ||
-    p.stayPreferences.includes("cafe");
-
-  if (area === "north" && hasNorth && likesEvening) {
-    return "Nếu VinWonders với Safari là hai điểm chính thì mình hơi nghiêng về phía Bắc hơn, đi ban ngày sẽ nhẹ cho cả nhà. Nhưng nếu tối nhà mình hay ra ngoài ăn uống, cafe hay đi dạo thì Dương Đông dễ hơn; ở phía Bắc mà tối chạy xuống trung tâm thì tiền xe với thời gian cũng nên tính vào. Mình đặt hai hướng cạnh nhau cho bạn dễ chọn nha.";
-  }
-
-  if (area === "north" && hasNorth) {
-    return "Nếu VinWonders với Safari là phần chính của chuyến đi thì mình hơi nghiêng về phía Bắc hơn. Đi lại ban ngày nhẹ hơn khá nhiều. Mình vẫn sẽ để ý phần buổi tối với tiền xe trước khi nói nhà mình nên chọn khu nào.";
-  }
-
-  if (area === "south" && hasSouth && likesEvening) {
-    return "Nếu Hòn Thơm với Sunset Town là phần chính thì mình hơi nghiêng về phía Nam hơn. Ban ngày đỡ chạy xe, buổi tối cũng có nhiều thứ để làm quanh khu này. Mình sẽ đặt thêm một lựa chọn khác cạnh bên để nhà mình nhìn rõ được - mất gì trước khi chọn.";
-  }
-
-  return "Với chuyến này mình hơi nghiêng về " + label + " trước. Mình muốn nhìn cả cách đi, buổi tối quanh chỗ ở và tiền xe chứ chưa chọn theo giá phòng ngay. Tuỳ nhà mình thích kiểu nào hơn, mình đặt các hướng cạnh nhau cho dễ nhìn nha.";
-}
 
 function compactBubbleText(text: string) {
   const value = text.replace(/\s+/g, " ").trim();
@@ -393,22 +337,65 @@ export default function App() {
   const [checkin, setCheckin] = useState("");
   const [checkout, setCheckout] = useState("");
   const [busy, setBusy] = useState(false);
-  const [voiceOn, setVoiceOn] = useState(false);
-  const [voiceError, setVoiceError] = useState("");
   const [apiError, setApiError] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [handoffOpen, setHandoffOpen] = useState(false);
   const [leadContact, setLeadContact] = useState("");
   const [leadConsent, setLeadConsent] = useState(false);
-  const [leadStatus, setLeadStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [tripIdentity, setTripIdentity] = useState<{ tripId: string; version: number } | null>(null);
+  const [leadStatus, setLeadStatus] = useState<"idle" | "sending" | "sent" | "error" | "stale">("idle");
   const [replyText, setReplyText] = useState("");
   const [turns, setTurns] = useState<LocalTurn[]>([]);
-  const [speaking, setSpeaking] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const [activeDecisionArea, setActiveDecisionArea] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const inFlightRef = useRef(false);
-  const voiceRequestRef = useRef(0);
+  const retryTurnRef = useRef<{ text: string; id: string; dates?: { checkin: string; checkout: string } } | null>(null);
+  const hasSentRef = useRef(false);
+  const leadRetryRef = useRef<{ id: string; contact: string; tripId: string; version: number } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const sessionId = sessionIdRef.current;
+    if (!sessionId) return;
+    void fetch("/api/trip/session", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sessionId }),
+    })
+      .then(async response => {
+        if (response.status === 410 && !hasSentRef.current) {
+          localStorage.removeItem("jotrip_trip_session_id");
+          sessionIdRef.current = getSessionId();
+          return null;
+        }
+        if (!response.ok) return null;
+        return response.json() as Promise<{
+          ok: boolean; tripId: string; version: number;
+          parsed: TripParseResponse["parsed"];
+          plan: TripBuildResponse | null; advisor: AdvisorResponse | null;
+          history: LocalTurn[];
+        }>;
+      })
+      .then(snapshot => {
+        if (!snapshot?.ok || cancelled || hasSentRef.current) return;
+        const lastReply = [...snapshot.history].reverse().find(item => item.role === "assistant")?.text || "";
+        setResult({
+          ok: true, parsed: snapshot.parsed, assumptions: [], nextNeeded: [],
+          assistantText: lastReply,
+        });
+        setTripIdentity({ tripId: snapshot.tripId, version: snapshot.version });
+        setPlan(snapshot.plan);
+        setAdvisor(snapshot.advisor);
+        setCheckin(snapshot.parsed.checkin || "");
+        setCheckout(snapshot.parsed.checkout || "");
+        setReplyText(lastReply);
+        setTurns(snapshot.history.slice(-12));
+      })
+      .catch(() => {
+        // New visitor or temporary offline state: do not fabricate a recovered trip.
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const guideCue = useMemo(() => directGuide(result, plan), [result, plan]);
   const firstGreeting =
@@ -419,6 +406,7 @@ export default function App() {
     const p = result.parsed;
     return [
       p.days && p.nights ? `${p.days} ngày / ${p.nights} đêm` : "",
+      p.checkin && p.checkout ? `${p.checkin} - ${p.checkout}` : "",
       p.adults ? `${p.adults} người lớn` : "",
       p.children ? `${p.children} trẻ em` : "",
       p.interests.length ? p.interests.join(" + ") : "",
@@ -484,7 +472,7 @@ export default function App() {
     hasResponse: Boolean(result),
     inputFocused,
     busy,
-    speaking,
+    speaking: false,
     comparing: Boolean(activeDecision) || guideCue.state === "compare",
     // Keep this false until a real review/live-data check is wired.
     checking: false,
@@ -495,246 +483,97 @@ export default function App() {
   });
   const mascotSrc = runtimeMascotPath(mascotState);
 
-  async function speakResponse(text: string, lang: string) {
-    const requestId = ++voiceRequestRef.current;
-    audioRef.current?.pause();
-    audioRef.current = null;
-    setSpeaking(false);
-    setVoiceError("");
-
-    // Read a brief answer, never the entire comparison or evidence cards.
-    const compact = text.replace(/\s+/g, " ").trim()
-      .split(/(?<=[.!?])\s+/u).slice(0, 2).join(" ").slice(0, 240);
-    if (!compact) return;
-
-    try {
-      const response = await fetch("/api/voice", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text: compact, language: lang }),
-      });
-
-      if (!response.ok || !response.headers.get("content-type")?.includes("audio")) {
-        throw new Error("natural_tts_unavailable");
-      }
-
-      const blob = await response.blob();
-      // A newer answer or a manual voice-off action cancels pending playback.
-      if (requestId !== voiceRequestRef.current) return;
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      let released = false;
-      const cleanup = () => {
-        if (released) return;
-        released = true;
-        if (requestId === voiceRequestRef.current) setSpeaking(false);
-        URL.revokeObjectURL(url);
-        if (audioRef.current === audio) audioRef.current = null;
-      };
-      audio.onplay = () => { if (requestId === voiceRequestRef.current) setSpeaking(true); };
-      audio.onended = cleanup;
-      audio.onpause = cleanup;
-      audio.onerror = () => {
-        cleanup();
-        if (requestId === voiceRequestRef.current) {
-          setVoiceOn(false);
-          setVoiceError("Giọng đọc tự nhiên đang chưa sẵn sàng. Bạn vẫn có thể chat bằng chữ.");
-        }
-      };
-      try {
-        await audio.play();
-      } catch {
-        cleanup();
-        throw new Error("audio_play_failed");
-      }
-    } catch {
-      if (requestId === voiceRequestRef.current) {
-        setSpeaking(false);
-        setVoiceOn(false);
-        setVoiceError("Giọng đọc tự nhiên đang chưa sẵn sàng. Bạn vẫn có thể chat bằng chữ.");
-      }
-    }
-  }
-
-  async function submit(text = input) {
+  async function submit(text = input, selectedDates?: { checkin: string; checkout: string }) {
     const value = text.trim();
     if (!value || inFlightRef.current) return;
     inFlightRef.current = true;
+    hasSentRef.current = true;
     setApiError("");
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
-    voiceRequestRef.current += 1;
-    audioRef.current?.pause();
-    setSpeaking(false);
 
     const previousResult = result;
     const previousPlan = plan;
     const previousAdvisor = advisor;
+    const pending = retryTurnRef.current?.text === value &&
+      JSON.stringify(retryTurnRef.current.dates || null) === JSON.stringify(selectedDates || null)
+      ? retryTurnRef.current
+      : { text: value, id: crypto.randomUUID(), dates: selectedDates };
+    retryTurnRef.current = pending;
 
     setBusy(true);
     setHandoffOpen(false);
     setLeadStatus("idle");
     setActiveDecisionArea(null);
     setTurns((items) => [
-      ...items,
-      { id: crypto.randomUUID(), role: "user", text: value },
+      ...items.filter((item) => item.id !== pending.id),
+      { id: pending.id, role: "user" as const, text: value },
     ].slice(-12));
 
     try {
-      const res = await fetch("/api/trip/parse", {
+      const res = await fetch("/api/trip/turn", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           text: value,
           sessionId: sessionIdRef.current,
+          clientTurnId: pending.id,
+          ...(selectedDates || {}),
         }),
       });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(error.error || "turn_failed");
+      }
+      const json = (await res.json()) as TripTurnResponse;
+      if (!json.ok) throw new Error("turn_failed");
+      retryTurnRef.current = null;
+      leadRetryRef.current = null;
+      setTripIdentity({ tripId: json.tripId, version: json.version });
 
-      if (!res.ok) throw new Error("parse_failed");
-      const json = (await res.json()) as TripParseResponse;
-      if (!json.ok) throw new Error("parse_failed");
-
-      if (json.conversationAction === "acknowledgement") {
-        // A short "a"/"ừ"/"ok" is a continuation, not a fresh planning request.
-        // Keep the existing result, compared options and context exactly as they were.
-        if (!previousResult) setResult(json);
-        const reply = json.assistantText || "Ừ, mình đang nghe. Bạn cứ nói tiếp nha.";
-        setReplyText(reply);
-        setTurns((items) => [...items, {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          text: reply,
-          language: previousResult?.parsed.language || json.parsed.language,
-        }].slice(-12));
-        if (voiceOn) void speakResponse(reply, previousResult?.parsed.language || json.parsed.language);
-        return;
+      setCheckin(json.parsed.checkin || "");
+      setCheckout(json.parsed.checkout || "");
+      if (json.action !== "acknowledgement") {
+        setResult(json);
+        setPlan(json.plan || (json.action === "new_trip" ? null :
+          json.parsed.mode === "compare" || json.parsed.mode === "contact" ? previousPlan : null));
+        setAdvisor(json.advisor || (json.action === "new_trip" ? null :
+          json.parsed.mode === "compare" || json.parsed.mode === "contact" ? previousAdvisor : null));
+        setHandoffOpen(json.parsed.mode === "contact");
+      } else if (!previousResult) {
+        setResult(json);
       }
 
-      // The upcoming response must not sit beside a stale plan from the prior turn.
-      setPlan(null);
-      setAdvisor(null);
-      const isFreshTrip = Boolean(json.parsed.days || json.parsed.nights);
-      const inheritedInterests =
-        previousResult && !isFreshTrip
-          ? Array.from(new Set([
-              ...previousResult.parsed.interests,
-              ...json.parsed.interests,
-            ]))
-          : json.parsed.interests;
-      const inheritedPreferences =
-        previousResult && !isFreshTrip
-          ? Array.from(new Set([
-              ...previousResult.parsed.stayPreferences,
-              ...json.parsed.stayPreferences,
-            ]))
-          : json.parsed.stayPreferences;
-      const inheritedZone =
-        json.parsed.mentionedZone ||
-        previousPlan?.planningHotels?.[0]?.hotel.area_code ||
-        previousAdvisor?.hotels?.[0]?.hotel.area_code ||
-        previousAdvisor?.context?.zoneCode ||
-        previousResult?.parsed.mentionedZone ||
-        undefined;
-
-      const contextualResult: TripParseResponse =
-        previousResult && !isFreshTrip
-          ? {
-              ...json,
-              parsed: {
-                ...previousResult.parsed,
-                ...json.parsed,
-                days: json.parsed.days ?? previousResult.parsed.days,
-                nights: json.parsed.nights ?? previousResult.parsed.nights,
-                adults: json.parsed.adults ?? previousResult.parsed.adults,
-                children: json.parsed.children ?? previousResult.parsed.children,
-                budgetVnd: json.parsed.budgetVnd ?? previousResult.parsed.budgetVnd,
-                interests: inheritedInterests,
-                stayPreferences: inheritedPreferences,
-                mentionedZone: inheritedZone,
-                raw: json.parsed.raw,
-                language: json.parsed.language,
-                mode: json.parsed.mode,
-              },
-            }
-          : json;
-
-      setResult(contextualResult);
-
-      let spoken = json.assistantText || "";
-
-      if (json.ok && json.parsed.mode === "trip_plan") {
-        setAdvisor(null);
-        const planRes = await fetch("/api/trip/build", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            adults: contextualResult.parsed.adults,
-            children: contextualResult.parsed.children,
-            interests: inheritedInterests,
-            stayPreferences: inheritedPreferences,
-            language: contextualResult.parsed.language,
-            days: contextualResult.parsed.days,
-            nights: contextualResult.parsed.nights,
-            budgetVnd: contextualResult.parsed.budgetVnd,
-          }),
-        });
-        if (!planRes.ok) throw new Error("build_failed");
-        const nextPlan = (await planRes.json()) as TripBuildResponse;
-        if (!nextPlan.ok) throw new Error("build_failed");
-        setPlan(nextPlan);
-        spoken = planningReply(contextualResult, nextPlan) || spoken;
-      } else if (json.ok) {
-        const advisorRes = await fetch("/api/advisor/answer", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            rawText: json.parsed.raw,
-            language: json.parsed.language,
-            mode: json.parsed.mode,
-            interests: inheritedInterests,
-            stayPreferences: inheritedPreferences,
-            mentionedZone: inheritedZone,
-          }),
-        });
-        if (!advisorRes.ok) throw new Error("advisor_failed");
-        const nextAdvisor = (await advisorRes.json()) as AdvisorResponse;
-        if (!nextAdvisor.ok) throw new Error("advisor_failed");
-
-        if (json.parsed.mode === "contact") {
-          setHandoffOpen(true);
-          spoken = nextAdvisor.answerText || spoken;
-        } else if (json.parsed.mode === "compare") {
-          spoken =
-            json.parsed.language === "vi" && previousPlan?.insights?.[0]?.body
-              ? previousPlan.insights[0].body
-              : nextAdvisor.answerText || spoken;
-        } else {
-          setAdvisor(nextAdvisor);
-          spoken = nextAdvisor.answerText || spoken;
-        }
+      const reply = json.assistantText || "Mình đang theo chuyến này cùng bạn.";
+      setReplyText(reply);
+      setTurns((items) => [...items, {
+        id: json.clientTurnId + ":assistant",
+        role: "assistant" as const,
+        text: reply,
+        language: json.parsed.language,
+      }].slice(-12));
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "";
+      if (code === "session_deleted") {
+        localStorage.removeItem("jotrip_trip_session_id");
+        sessionIdRef.current = getSessionId();
+        retryTurnRef.current = null;
+        leadRetryRef.current = null;
+        setTripIdentity(null);
+        setResult(null); setPlan(null); setAdvisor(null); setTurns([]);
+        setReplyText(""); setCheckin(""); setCheckout("");
+        setInput(value);
       }
-
-      setReplyText(spoken);
-      if (spoken) {
-        setTurns((items) => [
-          ...items,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            text: spoken,
-            language: json.parsed.language,
-          },
-        ].slice(-12));
-      }
-
-      if (voiceOn && json.ok && spoken) {
-        void speakResponse(spoken, contextualResult.parsed.language);
-      }
-    } catch {
-      // Network failures are UI status, not fabricated assistant transcript entries.
-      setApiError("Kết nối đang gián đoạn. Bạn gửi lại câu vừa rồi giúp mình nhé.");
-      setInput((current) => current || value);
+      setApiError(code === "session_deleted"
+        ? "Chuyến trước đã được xóa ở một tab khác. Mình đã mở phiên mới, bạn gửi lại câu vừa rồi nha."
+        : code === "invalid_travel_dates"
+        ? "Ngày đi chưa hợp lệ. Bạn chọn ngày nhận phòng từ hôm nay và thời gian ở từ 1 đến 30 đêm nha."
+        : code === "trip_state_unavailable" || code === "trip_turn_unavailable"
+        ? "Phần lưu chuyến đi đang gián đoạn. Mình chưa ghi nhận tin này, bạn thử lại sau nha."
+        : code === "concurrent_turn_retry"
+          ? "Có hai tin gửi sát nhau. Bạn thử gửi lại tin vừa rồi nha."
+          : "Kết nối đang gián đoạn. Bạn gửi lại câu vừa rồi giúp mình nhé.");
+      if (!selectedDates) setInput((current) => current || value);
     } finally {
       inFlightRef.current = false;
       setBusy(false);
@@ -747,27 +586,33 @@ export default function App() {
   }
 
   async function repriceWithDates() {
-    if (!result || !checkin || !checkout) return;
+    if (!result || !checkin || !checkout || busy) return;
+    await submit("Tính chuyến từ " + checkin + " đến " + checkout, { checkin, checkout });
+  }
 
+  async function deleteCurrentTrip() {
+    if (!sessionIdRef.current || busy) return;
     setBusy(true);
+    setApiError("");
     try {
-      const res = await fetch("/api/trip/build", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          checkin,
-          checkout,
-          adults: result.parsed.adults,
-          children: result.parsed.children,
-          interests: result.parsed.interests,
-          stayPreferences: result.parsed.stayPreferences,
-          language: result.parsed.language,
-          days: result.parsed.days,
-          nights: result.parsed.nights,
-          budgetVnd: result.parsed.budgetVnd,
-        }),
+      const response = await fetch("/api/trip/session", {
+        method: "DELETE", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sessionId: sessionIdRef.current }),
       });
-      setPlan((await res.json()) as TripBuildResponse);
+      const data = await response.json() as { ok?: boolean };
+      if (!response.ok || !data.ok) throw new Error("delete_failed");
+      localStorage.removeItem("jotrip_trip_session_id");
+      sessionIdRef.current = getSessionId();
+      hasSentRef.current = false;
+      retryTurnRef.current = null;
+      leadRetryRef.current = null;
+      setTripIdentity(null);
+      setResult(null); setPlan(null); setAdvisor(null); setTurns([]);
+      setReplyText(""); setInput(""); setCheckin(""); setCheckout("");
+      setLeadContact(""); setLeadConsent(false); setLeadStatus("idle");
+      setHandoffOpen(false); setActiveDecisionArea(null); setDeleteConfirm(false);
+    } catch {
+      setApiError("Chưa xóa được lịch sử trên máy chủ. Bạn thử lại sau nha.");
     } finally {
       setBusy(false);
     }
@@ -775,8 +620,19 @@ export default function App() {
 
   async function sendLead(event: FormEvent) {
     event.preventDefault();
-    if (!result || !leadContact.trim() || !leadConsent) return;
+    if (!result || !tripIdentity || !leadContact.trim() || !leadConsent ||
+      leadStatus === "sending" || leadStatus === "sent" ||
+      checkin !== (result.parsed.checkin || "") ||
+      checkout !== (result.parsed.checkout || "")) return;
 
+    const contact = leadContact.trim();
+    const pending = leadRetryRef.current?.contact === contact &&
+      leadRetryRef.current.tripId === tripIdentity.tripId &&
+      leadRetryRef.current.version === tripIdentity.version
+      ? leadRetryRef.current
+      : { id: crypto.randomUUID(), contact,
+          tripId: tripIdentity.tripId, version: tripIdentity.version };
+    leadRetryRef.current = pending;
     setLeadStatus("sending");
     try {
       const res = await fetch("/api/booking/lead", {
@@ -784,22 +640,26 @@ export default function App() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           sessionId: sessionIdRef.current,
-          contact: leadContact.trim(),
-          language: result.parsed.language,
+          clientLeadId: pending.id,
+          expectedTripId: pending.tripId,
+          expectedVersion: pending.version,
+          contact,
           consent: leadConsent,
-          tripContext: {
-            query: result.parsed.raw,
-            parsed: result.parsed,
-            checkin,
-            checkout,
-            plan,
-            advisorMode: advisor?.mode,
-          },
         }),
       });
-      const json = await res.json();
-      setLeadStatus(json.ok ? "sent" : "error");
+      const json = await res.json() as { ok?: boolean; error?: string; status?: string };
+      if (res.status === 409 && json.error === "stale_trip_refresh_required") {
+        leadRetryRef.current = null;
+        setLeadStatus("stale");
+      } else if (res.ok && json.ok && json.status !== "ignored") {
+        setLeadStatus("sent");
+        leadRetryRef.current = null;
+      } else {
+        setLeadStatus("error");
+      }
     } catch {
+      // A network failure may occur after the server has committed. Retain
+      // clientLeadId so a retry cannot create a second booking request.
       setLeadStatus("error");
     }
   }
@@ -808,6 +668,9 @@ export default function App() {
   const isPhoneWelcome = typeof window !== "undefined" &&
     window.matchMedia("(max-width: 560px)").matches;
   const hasResponse = Boolean(result);
+  const datesPending = Boolean(result &&
+    (checkin !== (result.parsed.checkin || "") ||
+     checkout !== (result.parsed.checkout || "")));
   const canHandoff = Boolean(
     result &&
       (plan?.planningHotels?.length ||
@@ -836,29 +699,19 @@ export default function App() {
         </a>
 
         <div className="top-actions">
-          <span className="language-line">VI · EN · KO · RU · 中文</span>
-          <button
-            className={voiceOn ? "quiet active" : "quiet"}
-            onClick={() =>
-              setVoiceOn((value) => {
-                const next = !value;
-                if (!next) {
-                  voiceRequestRef.current += 1;
-                  audioRef.current?.pause();
-                  audioRef.current = null;
-                  setSpeaking(false);
-                }
-                setVoiceError("");
-                return next;
-              })
-            }
-            type="button"
-          >
-            {voiceOn ? "Giọng nói bật" : "Giọng nói tắt"}
-          </button>
+          <span className="topbar-promise">Lên kế hoạch theo cách của bạn</span>
+          {result && <button type="button" className="reset-trip-button"
+            disabled={busy} onClick={() => setDeleteConfirm(true)}>Xóa lịch sử</button>}
         </div>
       </header>
 
+      {deleteConfirm && <div className="delete-confirm" role="region" aria-label="Xác nhận xóa lịch sử">
+        <p>Xóa lịch sử tư vấn và chuyến đi này khỏi JoTrip? Yêu cầu liên hệ hoặc booking đã gửi riêng sẽ không bị xóa tại đây.</p>
+        <div>
+          <button type="button" disabled={busy} onClick={() => setDeleteConfirm(false)}>Giữ lại</button>
+          <button type="button" disabled={busy} onClick={() => void deleteCurrentTrip()}>Xóa chuyến này</button>
+        </div>
+      </div>}
       <div className="page-shell">
         <section className={hasResponse ? "conversation-hero conversation-hero--active" : "conversation-hero conversation-hero--fresh"}>
           {!hasResponse && <div className="warm-island-scene" aria-hidden="true" />}
@@ -878,7 +731,6 @@ export default function App() {
               className={[
                 "mascot-shell",
                 `mascot-state-${mascotState}`,
-                speaking ? "mascot-is-talking" : "",
                 busy ? "mascot-is-thinking" : "",
               ].filter(Boolean).join(" ")}
               data-mascot-state={mascotState}
@@ -931,29 +783,18 @@ export default function App() {
             </button>
           </form>
           {apiError && <p className="composer-error" role="alert">{apiError}</p>}
-          {voiceError && <p className="composer-error" role="status">{voiceError}</p>}
 
-          {!hasResponse && <p className="fresh-examples-title">Hoặc bắt đầu bằng một câu này</p>}
-          <div className="example-chips" aria-label="Câu hỏi gợi ý">
-            {examples.map((example) => (
-              <button
-                key={example.text}
-                aria-label={example.text}
-                type="button"
-                onClick={() => {
-                  setInput(example.text);
-                  void submit(example.text);
-                }}
-              >
-                <b>{example.label}</b>
-                <span className="full-example">{example.text}</span>
-                <span className="mobile-example" aria-hidden="true">{example.mobileText}</span>
-              </button>
-            ))}
-          </div>
+          {!hasResponse && (
+            <LivingWelcome
+              onExplore={(prompt) => void submit(prompt)}
+              onWrite={() => textareaRef.current?.focus()}
+              disabled={busy}
+            />
+          )}
 
           <div className="prompt-note">
             Bạn không cần điền form. Cứ nói như đang hỏi một người ở đảo.
+            <small>JoTrip lưu cuộc trò chuyện để nhớ chuyến đi. Bạn có thể xóa lịch sử bất cứ lúc nào.</small>
           </div>
 
           <div className="trust-line">
@@ -964,7 +805,7 @@ export default function App() {
           {!hasResponse && <div className="warm-brand-whisper" aria-hidden="true">PHÚ QUỐC · NHIỀU HƠN MỘT CHUYẾN ĐI</div>}
         </section>
 
-        {result && (
+        {(result || busy || turns.length > 0) && (
           <section className="workspace">
             <div className="conversation-thread">
               {turns.map((turn) =>
@@ -995,15 +836,24 @@ export default function App() {
                 </div>
               )}
 
-              {summaryBits.length > 0 && (
-                <div className="conversation-context">
-                  <span className="language-pill">
-                    {languageNames[result.parsed.language] || result.parsed.language}
-                  </span>
-                  {summaryBits.map((bit) => <span key={bit}>{bit}</span>)}
-                </div>
-              )}
             </div>
+
+            {result && (<>
+            <TripPulse
+              summary={summaryBits}
+              aiSignals={(result.aiSignals || []).map((signal) => ({
+                slow_pace: "Muốn ít di chuyển",
+                family_focus: "Ưu tiên gia đình",
+                food_focus: "Quan tâm ăn uống",
+                beach_focus: "Thích biển",
+                evening_focus: "Thích hoạt động buổi tối",
+                quiet_focus: "Thích không gian yên tĩnh",
+              })[signal])}
+              hotels={plan?.planningHotels || []}
+              selectedArea={activeDecisionArea}
+              tradeoff={activeDecision && result ? decisionTradeoffs(activeDecision, result.parsed.interests, result.parsed.stayPreferences) : null}
+              onSelectArea={setActiveDecisionArea}
+            />
 
             {preAdvice.length > 0 && (
               <section className="pre-advice">
@@ -1018,85 +868,6 @@ export default function App() {
                       <p>{tip}</p>
                     </article>
                   ))}
-                </div>
-              </section>
-            )}
-
-            {result.parsed.mode === "trip_plan" && compareDirections.length >= 2 && (
-              <section className="decision-canvas" aria-label="So sánh hai cách ở">
-                <div className="decision-canvas-head">
-                  <span className="label">MÌNH ĐẶT HAI HƯỚNG CẠNH NHAU</span>
-                  <h2>Nhà mình thích kiểu nào hơn?</h2>
-                  <p>
-                    Không có hướng nào thắng tuyệt đối. Mỗi chỗ sẽ nhẹ ở một phần và đổi lại ở một phần khác.
-                  </p>
-                </div>
-
-                <div className="decision-hint">Chạm từng hướng - JoTrip sẽ nói phần được và phần đổi lại.</div>
-
-                <div className="decision-cards">
-                  {compareDirections.map((item) => {
-                    const isActive = activeDecision?.hotel.area_code === item.hotel.area_code;
-                    return (
-                      <button
-                        className={isActive ? "decision-card decision-card--active" : "decision-card"}
-                        key={item.hotel.id}
-                        type="button"
-                        aria-pressed={isActive}
-                        onClick={() => {
-                          setActiveDecisionArea(item.hotel.area_code);
-                          const text = decisionGuideText(
-                            item,
-                            result.parsed.interests,
-                            result.parsed.stayPreferences,
-                          );
-                          if (voiceOn && text) void speakResponse(text, result.parsed.language);
-                        }}
-                      >
-                        <div className="decision-card-top">
-                          <span>{areaDisplay(item.hotel.area_code)}</span>
-                          <small>{isActive ? "JoTrip đang nói về hướng này" : "Chạm để nghe"}</small>
-                        </div>
-                        <h3>{item.hotel.canonical_name}</h3>
-                        <p>{item.stayContext.summary}</p>
-
-                        {(() => {
-                          const tradeoff = decisionTradeoffs(
-                            item,
-                            result.parsed.interests,
-                            result.parsed.stayPreferences,
-                          );
-                          return (
-                            <div className="decision-tradeoffs">
-                              <div>
-                                <span>Được</span>
-                                <b>{tradeoff.gain}</b>
-                              </div>
-                              <div>
-                                <span>Đổi lại</span>
-                                <b>{tradeoff.trade}</b>
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                        {item.routeFacts?.length ? (
-                          <div className="decision-route-list">
-                            {item.routeFacts.slice(0, 3).map((fact) => (
-                              <div key={fact.destinationId}>
-                                <span>{fact.label}</span>
-                                <b>~{fact.minutes} phút · {fact.distanceKm.toFixed(1)} km</b>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="decision-route-pending">
-                            Mình chưa có đủ số km/phút cho mốc này, nên chưa dùng con số để thuyết phục bạn.
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
                 </div>
               </section>
             )}
@@ -1146,11 +917,11 @@ export default function App() {
             {result.parsed.mode === "trip_plan" && (
               <section className="trip-controls">
                 <div className="trip-controls-copy">
-                  <span className="label">NẾU MUỐN TÍNH TIẾP</span>
-                  <h2>Cho mình ngày đi nha.</h2>
-                  <p>
-                    Có ngày cụ thể thì mình mới kiểm tra tiếp phần phòng, vé và tổng chi phí cho đúng chuyến của nhà mình.
-                  </p>
+                  <span className="label">{result.parsed.checkin && result.parsed.checkout ? "NGÀY ĐI ĐÃ LƯU" : "NẾU MUỐN TÍNH TIẾP"}</span>
+                  <h2>{result.parsed.checkin && result.parsed.checkout ? "Ngày đi của nhà mình" : "Cho mình ngày đi nha."}</h2>
+                  <p>{result.parsed.checkin && result.parsed.checkout
+                    ? "Mình đã lưu khoảng ngày này vào chuyến đi. Nếu đổi ngày, mình sẽ tính lại theo dữ liệu đang có, không tự nhận là đã giữ phòng hay vé."
+                    : "Có ngày cụ thể thì mình mới kiểm tra tiếp phần phòng, vé và tổng chi phí cho đúng chuyến của nhà mình."}</p>
                 </div>
 
                 <div className="date-row">
@@ -1171,11 +942,12 @@ export default function App() {
                     />
                   </label>
                   <button
-                    disabled={!checkin || !checkout || busy}
+                    disabled={!checkin || !checkout || busy ||
+                      (checkin === result.parsed.checkin && checkout === result.parsed.checkout)}
                     onClick={() => void repriceWithDates()}
                     type="button"
                   >
-                    Tính theo ngày này
+                    {result.parsed.checkin && result.parsed.checkout ? "Cập nhật ngày đi" : "Tính theo ngày này"}
                   </button>
                 </div>
               </section>
@@ -1289,7 +1061,7 @@ export default function App() {
                   <form className="handoff-form" onSubmit={sendLead}>
                     <input
                       value={leadContact}
-                      onChange={(event) => setLeadContact(event.target.value)}
+                      onChange={(event) => { setLeadContact(event.target.value); leadRetryRef.current = null; setLeadStatus("idle"); }}
                       placeholder="Số điện thoại, email hoặc WhatsApp"
                       aria-label="Thông tin liên hệ"
                     />
@@ -1299,16 +1071,22 @@ export default function App() {
                         checked={leadConsent}
                         onChange={(event) => setLeadConsent(event.target.checked)}
                       />
-                      <span>Tôi đồng ý để JoTrip liên hệ về chuyến đi này.</span>
+                      <span>Tôi đồng ý để JoTrip lưu thông tin liên hệ và tóm tắt chuyến đi, nhằm kiểm tra dịch vụ và liên hệ với tôi. Yêu cầu này được lưu riêng với lịch sử chat.</span>
                     </label>
                     <button
                       type="submit"
-                      disabled={!leadContact.trim() || !leadConsent || leadStatus === "sending"}
+                      disabled={!tripIdentity || !leadContact.trim() || !leadConsent || datesPending ||
+                        leadStatus === "sending" || leadStatus === "sent"}
                     >
                       {leadStatus === "sending" ? "Đang gửi..." : "Gửi cho JoTrip"}
                     </button>
+                    {datesPending && <p className="lead-error">Bạn cập nhật ngày đi ở phía trên trước khi gửi để JoTrip nhận đúng chuyến nha.</p>}
+                    <p className="lead-privacy-note">Bạn có thể yêu cầu JoTrip xoá thông tin liên hệ qua kênh đã trao đổi. Xoá lịch sử chat không tự xoá yêu cầu này.</p>
                     {leadStatus === "sent" && (
-                      <p className="lead-success">Đã nhận. JoTrip sẽ dùng đúng phương án bạn vừa xem để kiểm tra lại.</p>
+                      <p className="lead-success">JoTrip đã nhận thông tin liên hệ và tóm tắt chuyến đi. Nhân viên sẽ kiểm tra dịch vụ trước khi xác nhận với bạn.</p>
+                    )}
+                    {leadStatus === "stale" && (
+                      <p className="lead-error">Chuyến đi đã thay đổi ở tab khác. Bạn tải lại chuyến để kiểm tra trước khi gửi nha. <button type="button" onClick={() => window.location.reload()}>Tải lại chuyến</button></p>
                     )}
                     {leadStatus === "error" && (
                       <p className="lead-error">Chưa gửi được. Thử lại sau một chút.</p>
@@ -1317,6 +1095,7 @@ export default function App() {
                 )}
               </section>
             )}
+            </>)}
           </section>
         )}
       </div>

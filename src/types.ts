@@ -4,6 +4,8 @@ export type ParsedTrip = {
   adults?: number;
   children?: number;
   budgetVnd?: number;
+  checkin?: string;
+  checkout?: string;
   interests: string[];
   stayPreferences: string[];
   language: "vi" | "en" | "ko" | "ru" | "zh";
@@ -20,6 +22,16 @@ export type TripParseResponse = {
   nextNeeded: string[];
   conversationAction?: "request" | "acknowledgement";
   assistantText?: string;
+  aiSignals?: Array<"slow_pace" | "family_focus" | "food_focus" | "beach_focus" | "evening_focus" | "quiet_focus">;
+};
+
+export type TripTurnResponse = TripParseResponse & {
+  action: "request" | "acknowledgement" | "new_trip" | "set_dates";
+  tripId: string;
+  clientTurnId: string;
+  version: number;
+  plan: TripBuildResponse | null;
+  advisor: AdvisorResponse | null;
 };
 
 export type StayContextSignal = {

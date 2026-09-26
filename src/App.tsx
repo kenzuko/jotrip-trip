@@ -346,6 +346,7 @@ export default function App() {
   const [checkout, setCheckout] = useState("");
   const [busy, setBusy] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [handoffOpen, setHandoffOpen] = useState(false);
   const [leadContact, setLeadContact] = useState("");
   const [leadConsent, setLeadConsent] = useState(false);
@@ -363,7 +364,10 @@ export default function App() {
     let cancelled = false;
     const sessionId = sessionIdRef.current;
     if (!sessionId) return;
-    void fetch("/api/trip/session?sessionId=" + encodeURIComponent(sessionId))
+    void fetch("/api/trip/session", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sessionId }),
+    })
       .then(async response => {
         if (!response.ok) return null;
         return response.json() as Promise<{
@@ -571,6 +575,32 @@ export default function App() {
     await submit("Tính chuyến từ " + checkin + " đến " + checkout, { checkin, checkout });
   }
 
+  async function deleteCurrentTrip() {
+    if (!sessionIdRef.current || busy) return;
+    setBusy(true);
+    setApiError("");
+    try {
+      const response = await fetch("/api/trip/session", {
+        method: "DELETE", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sessionId: sessionIdRef.current }),
+      });
+      const data = await response.json() as { ok?: boolean };
+      if (!response.ok || !data.ok) throw new Error("delete_failed");
+      localStorage.removeItem("jotrip_trip_session_id");
+      sessionIdRef.current = getSessionId();
+      hasSentRef.current = false;
+      retryTurnRef.current = null;
+      setResult(null); setPlan(null); setAdvisor(null); setTurns([]);
+      setReplyText(""); setInput(""); setCheckin(""); setCheckout("");
+      setLeadContact(""); setLeadConsent(false); setLeadStatus("idle");
+      setHandoffOpen(false); setActiveDecisionArea(null); setDeleteConfirm(false);
+    } catch {
+      setApiError("Chưa xóa được lịch sử trên máy chủ. Bạn thử lại sau nha.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function sendLead(event: FormEvent) {
     event.preventDefault();
     if (!result || !leadContact.trim() || !leadConsent) return;
@@ -633,9 +663,20 @@ export default function App() {
           )}
         </a>
 
-        <div className="top-actions"><span className="topbar-promise">Lên kế hoạch theo cách của bạn</span></div>
+        <div className="top-actions">
+          <span className="topbar-promise">Lên kế hoạch theo cách của bạn</span>
+          {result && <button type="button" className="reset-trip-button"
+            disabled={busy} onClick={() => setDeleteConfirm(true)}>Xóa lịch sử</button>}
+        </div>
       </header>
 
+      {deleteConfirm && <div className="delete-confirm" role="region" aria-label="Xác nhận xóa lịch sử">
+        <p>Xóa lịch sử tư vấn và chuyến đi này khỏi JoTrip? Yêu cầu liên hệ hoặc booking đã gửi riêng sẽ không bị xóa tại đây.</p>
+        <div>
+          <button type="button" disabled={busy} onClick={() => setDeleteConfirm(false)}>Giữ lại</button>
+          <button type="button" disabled={busy} onClick={() => void deleteCurrentTrip()}>Xóa chuyến này</button>
+        </div>
+      </div>}
       <div className="page-shell">
         <section className={hasResponse ? "conversation-hero conversation-hero--active" : "conversation-hero conversation-hero--fresh"}>
           {!hasResponse && <div className="warm-island-scene" aria-hidden="true" />}
@@ -718,6 +759,7 @@ export default function App() {
 
           <div className="prompt-note">
             Bạn không cần điền form. Cứ nói như đang hỏi một người ở đảo.
+            <small>JoTrip lưu cuộc trò chuyện để nhớ chuyến đi. Bạn có thể xóa lịch sử bất cứ lúc nào.</small>
           </div>
 
           <div className="trust-line">

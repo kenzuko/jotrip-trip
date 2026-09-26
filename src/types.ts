@@ -20,6 +20,7 @@ export type TripParseResponse = {
   nextNeeded: string[];
   conversationAction?: "request" | "acknowledgement";
   assistantText?: string;
+  aiSignals?: Array<"slow_pace" | "family_focus" | "food_focus" | "beach_focus" | "evening_focus" | "quiet_focus">;
 };
 
 export type StayContextSignal = {

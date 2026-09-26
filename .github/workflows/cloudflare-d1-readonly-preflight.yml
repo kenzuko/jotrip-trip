@@ -66,13 +66,58 @@ jobs:
           node tools/d1-schema-from-wrangler.mjs /tmp/jotrip-d1-table-definitions.json /tmp/jotrip-d1-schema.sql
           node tools/d1-schema-preflight.mjs /tmp/jotrip-d1-schema.sql
           rm -f /tmp/jotrip-d1-table-definitions.json /tmp/jotrip-d1-schema.sql /tmp/jotrip-d1-info.json
-      - name: Verify remote D1 schema export permission (no customer data)
+      - name: Diagnose active token identity and safe alternate (no token values logged)
         shell: bash
+        env:
+          PRIMARY_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          FALLBACK_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: |
+          set -euo pipefail
+          echo "Primary CLOUDFLARE_API_TOKEN present: $([[ -n "$PRIMARY_TOKEN" ]] && echo yes || echo no)"
+          echo "Fallback CF_API_TOKEN present: $([[ -n "$FALLBACK_TOKEN" ]] && echo yes || echo no)"
+          if [[ -n "$PRIMARY_TOKEN" && -n "$FALLBACK_TOKEN" ]]; then
+            echo "Two configured token values are identical: $([[ "$PRIMARY_TOKEN" == "$FALLBACK_TOKEN" ]] && echo yes || echo no)"
+          fi
+          for label in primary fallback; do
+            token="$PRIMARY_TOKEN"
+            [[ "$label" == fallback ]] && token="$FALLBACK_TOKEN"
+            [[ -z "$token" ]] && continue
+            if curl --fail --silent --show-error --max-time 15 -H "Authorization: Bearer $token" https://api.cloudflare.com/client/v4/user/tokens/verify > "/tmp/trip-verify-$label.json" 2>/dev/null; then
+              LABEL="$label" node --input-type=module -e 'import fs from "node:fs"; import crypto from "node:crypto";const x=JSON.parse(fs.readFileSync("/tmp/trip-verify-"+process.env.LABEL+".json","utf8"));if(!x.success||!x.result?.id)process.exit(2);console.log(process.env.LABEL+" token active: "+x.result.status+"; token ID comparison hash: "+crypto.createHash("sha256").update(x.result.id).digest("hex").slice(0,16));'
+            else
+              echo "$label token verification endpoint unavailable (not proof of invalid token)."
+            fi
+            rm -f "/tmp/trip-verify-$label.json"
+          done
+      - name: Verify remote D1 schema export with configured tokens (no customer data)
+        shell: bash
+        env:
+          PRIMARY_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          FALLBACK_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          set -euo pipefail
           umask 077
-          trap 'rm -f /tmp/jotrip-d1-schema-export.sql' EXIT
-          npx wrangler d1 export jotrip-trip-db --remote --no-data --output=/tmp/jotrip-d1-schema-export.sql
-          node tools/d1-schema-preflight.mjs /tmp/jotrip-d1-schema-export.sql
+          trap 'rm -f /tmp/jotrip-d1-schema-export.sql /tmp/jotrip-d1-export.log' EXIT
+          for label in primary fallback; do
+            token="$PRIMARY_TOKEN"
+            [[ "$label" == fallback ]] && token="$FALLBACK_TOKEN"
+            [[ -z "$token" ]] && continue
+            if [[ "$label" == fallback && "$token" == "$PRIMARY_TOKEN" ]]; then
+              echo "Fallback is identical to primary; skipping duplicate export."
+              continue
+            fi
+            export CLOUDFLARE_API_TOKEN="$token"
+            if npx wrangler d1 export jotrip-trip-db --remote --no-data --output=/tmp/jotrip-d1-schema-export.sql > /tmp/jotrip-d1-export.log 2>&1; then
+              echo "$label token: D1 schema-only export succeeded."
+              node tools/d1-schema-preflight.mjs /tmp/jotrip-d1-schema-export.sql
+              exit 0
+            fi
+            echo "$label token: D1 schema-only export failed. Sanitized error codes:"
+            grep -oE 'code: [0-9]+' /tmp/jotrip-d1-export.log | sort -u || true
+            rm -f /tmp/jotrip-d1-schema-export.sql /tmp/jotrip-d1-export.log
+          done
+          echo "::error::Neither configured token can export the schema; no customer data was downloaded."
+          exit 1
       - name: Safety statement
         run: |
           echo "Read-only table inspection complete. Full D1 export/backup remains a separate permission gate. No migration, Worker deploy, DNS change or remote mutation occurred."

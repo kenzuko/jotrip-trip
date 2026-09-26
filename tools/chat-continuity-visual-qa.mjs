@@ -175,6 +175,8 @@ try {
       assert.equal(requests.plan, 2, "date selection did not use the canonical turn");
       assert.equal(await page.locator(".trip-controls input[type=date]").first().inputValue(), "2030-01-10");
       assert.equal(await page.locator(".trip-controls input[type=date]").nth(1).inputValue(), "2030-01-12");
+      await page.getByRole("heading", { name: "Ngày đi của nhà mình" }).waitFor();
+      assert.equal(await page.getByRole("button", { name: "Cập nhật ngày đi" }).isDisabled(), true);
       await viewportCheck();
       await page.screenshot({ path: `qa-output/${item.engine}-saved-dates.png`, animations: "disabled" });
 

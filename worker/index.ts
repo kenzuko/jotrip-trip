@@ -11,11 +11,12 @@ import { buildDestinationContext } from "./destinationContext";
 import { importDestinationVenues } from "./destinationImport";
 import { answerAdvisor } from "./advisor";
 import { saveBookingLead } from "./bookingLead";
-import { getTripSession, processTripTurn } from "./tripTurn";
+import { deleteTripSession, getTripSession, processTripTurn, purgeExpiredTripSessions } from "./tripTurn";
 
 type Env = {
   DB?: D1Database;
   INTERNAL_API_TOKEN?: string;
+  TRIP_RETENTION_DAYS?: string;
 };
 
 function json(data: unknown, status = 200) {
@@ -160,8 +161,14 @@ export default {
       });
     }
 
-    if (url.pathname === "/api/trip/session" && request.method === "GET") {
-      return getTripSession(env, url.searchParams.get("sessionId") || "");
+    if (url.pathname === "/api/trip/session" && request.method === "POST") {
+      const body = await request.json<{ sessionId?: string }>().catch(() => ({}));
+      return getTripSession(env, body.sessionId || "");
+    }
+
+    if (url.pathname === "/api/trip/session" && request.method === "DELETE") {
+      const body = await request.json<{ sessionId?: string }>().catch(() => ({}));
+      return deleteTripSession(env, body.sessionId || "");
     }
 
     if (url.pathname === "/api/trip/turn" && request.method === "POST") {
@@ -443,5 +450,10 @@ export default {
     }
 
     return json({ ok: false, error: "not_found" }, 404);
+  },
+  async scheduled(_controller: ScheduledController, env: Env) {
+    const days = Number(env.TRIP_RETENTION_DAYS || "90");
+    const result = await purgeExpiredTripSessions(env, Number.isFinite(days) ? days : 90);
+    if (!result.ok) console.error("trip_retention_purge_failed", result.error);
   },
 } satisfies ExportedHandler<Env>;

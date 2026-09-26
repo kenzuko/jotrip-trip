@@ -52,3 +52,11 @@ test("schema parser accepts quoted table names and ignores constraints and comma
   // treat a comma inside them as a column delimiter.
   assert.equal(result.state, "SCHEMA_COLUMNS_PRESENT");
 });
+
+test("IF NOT EXISTS never masks an incompatible legacy table", () => {
+  const oldTable = "CREATE TABLE booking_leads(id TEXT PRIMARY KEY, contact TEXT);";
+  const result = inspectSchema(oldTable + "\n" + migration9 + "\n" + migration10);
+  assert.equal(result.state, "STOP_SCHEMA_DRIFT");
+  assert.ok(result.incompatible.find(x => x.table === "booking_leads")
+    .missingColumns.includes("trip_context_json"));
+});

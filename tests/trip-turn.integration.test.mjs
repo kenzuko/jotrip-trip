@@ -136,3 +136,79 @@ test("session context can be restored after refresh", async () => {
   assert.equal(snapshot.tripId, first.body.tripId);
   assert.equal(snapshot.version, 1);
 });
+
+test("date selection is saved and repriced in the same authoritative trip", async () => {
+  const db = new D1Fixture();
+  const first = await turn(db, "3 ngày 2 đêm, 2 người lớn, Safari", "client-turn-400", "session-qa-0004");
+  assert.equal(first.status, 200);
+  const body = {
+    text: "Tính chuyến từ 2030-01-10 đến 2030-01-12",
+    sessionId: "session-qa-0004", clientTurnId: "client-turn-401",
+    checkin: "2030-01-10", checkout: "2030-01-12",
+  };
+  const request = () => new Request("https://trip.test/api/trip/turn", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const selected = await worker.fetch(request(), { DB: db });
+  assert.equal(selected.status, 200);
+  const result = await selected.json();
+  assert.equal(result.action, "set_dates");
+  assert.equal(result.tripId, first.body.tripId);
+  assert.equal(result.parsed.checkin, "2030-01-10");
+  assert.equal(result.parsed.checkout, "2030-01-12");
+  assert.equal(result.parsed.nights, 2);
+  assert.ok(result.plan?.ok);
+  assert.ok(!result.nextNeeded.includes("travel_dates"));
+
+  const duplicate = await worker.fetch(request(), { DB: db });
+  assert.deepEqual(await duplicate.json(), result);
+  assert.equal(db.turns.size, 2);
+
+  const next = await turn(db, "thêm Hòn Thơm", "client-turn-402", "session-qa-0004");
+  assert.equal(next.status, 200);
+  assert.equal(next.body.parsed.checkin, "2030-01-10");
+  assert.equal(next.body.parsed.checkout, "2030-01-12");
+
+  const changed = await turn(db, "đổi thành 4 ngày 3 đêm", "client-turn-403", "session-qa-0004");
+  assert.equal(changed.status, 200);
+  assert.equal(changed.body.parsed.checkin, undefined);
+  assert.equal(changed.body.parsed.checkout, undefined);
+
+  const newTrip = await turn(db, "chuyến mới cho 2 người lớn", "client-turn-404", "session-qa-0004");
+  assert.equal(newTrip.status, 200);
+  assert.equal(newTrip.body.parsed.checkin, undefined);
+  assert.notEqual(newTrip.body.tripId, first.body.tripId);
+});
+
+test("invalid or conflicting date selections do not change the saved trip", async () => {
+  const db = new D1Fixture();
+  const invalid = await worker.fetch(new Request("https://trip.test/api/trip/turn", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      text: "Tính ngày", sessionId: "session-qa-0005", clientTurnId: "client-turn-500",
+      checkin: "2030-02-30", checkout: "2030-03-03",
+    }),
+  }), { DB: db });
+  assert.equal(invalid.status, 400);
+  assert.equal(db.sessions.size, 0);
+
+  const first = await worker.fetch(new Request("https://trip.test/api/trip/turn", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      text: "Tính ngày", sessionId: "session-qa-0005", clientTurnId: "client-turn-500",
+      checkin: "2030-02-10", checkout: "2030-02-12",
+    }),
+  }), { DB: db });
+  assert.equal(first.status, 200);
+  const changedDates = await worker.fetch(new Request("https://trip.test/api/trip/turn", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      text: "Tính ngày", sessionId: "session-qa-0005", clientTurnId: "client-turn-500",
+      checkin: "2030-02-11", checkout: "2030-02-13",
+    }),
+  }), { DB: db });
+  assert.equal(changedDates.status, 409);
+  assert.equal((await changedDates.json()).error, "turn_id_reused_with_different_dates");
+  assert.equal(db.turns.size, 1);
+});

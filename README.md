@@ -65,7 +65,7 @@ Workers AI is **not required for V0**.
 
 ### Current conversational endpoint
 
-The V2 client uses `POST /api/trip/turn` for parsing, server-side planning and the final reply. `GET /api/trip/session` restores the latest trip and recent conversation. The old stateless `/api/trip/parse` endpoint and public paid voice route are retired in this development branch.
+The V2 client uses `POST /api/trip/turn` for parsing, server-side planning and the final reply. `POST /api/trip/session` restores the latest trip, selected dates and recent conversation; `DELETE /api/trip/session` clears the anonymous V2 history. The internal `/api/internal/analytics/trip-v2` endpoint exposes only bearer-protected aggregates. The old stateless `/api/trip/parse` endpoint and public paid voice route are retired in this development branch.
 
 Voice and optional AI interpretation can be evaluated later, after budget limits, consent and abuse controls are in place. No paid model is called in the V2 turn path.
 

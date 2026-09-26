@@ -355,7 +355,7 @@ export default function App() {
   const [inputFocused, setInputFocused] = useState(false);
   const [activeDecisionArea, setActiveDecisionArea] = useState<string | null>(null);
   const inFlightRef = useRef(false);
-  const retryTurnRef = useRef<{ text: string; id: string } | null>(null);
+  const retryTurnRef = useRef<{ text: string; id: string; dates?: { checkin: string; checkout: string } } | null>(null);
   const hasSentRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -381,6 +381,8 @@ export default function App() {
         });
         setPlan(snapshot.plan);
         setAdvisor(snapshot.advisor);
+        setCheckin(snapshot.parsed.checkin || "");
+        setCheckout(snapshot.parsed.checkout || "");
         setReplyText(lastReply);
         setTurns(snapshot.history.slice(-12));
       })
@@ -399,6 +401,7 @@ export default function App() {
     const p = result.parsed;
     return [
       p.days && p.nights ? `${p.days} ngày / ${p.nights} đêm` : "",
+      p.checkin && p.checkout ? `${p.checkin} - ${p.checkout}` : "",
       p.adults ? `${p.adults} người lớn` : "",
       p.children ? `${p.children} trẻ em` : "",
       p.interests.length ? p.interests.join(" + ") : "",
@@ -475,7 +478,7 @@ export default function App() {
   });
   const mascotSrc = runtimeMascotPath(mascotState);
 
-  async function submit(text = input) {
+  async function submit(text = input, selectedDates?: { checkin: string; checkout: string }) {
     const value = text.trim();
     if (!value || inFlightRef.current) return;
     inFlightRef.current = true;
@@ -487,9 +490,10 @@ export default function App() {
     const previousResult = result;
     const previousPlan = plan;
     const previousAdvisor = advisor;
-    const pending = retryTurnRef.current?.text === value
+    const pending = retryTurnRef.current?.text === value &&
+      JSON.stringify(retryTurnRef.current.dates || null) === JSON.stringify(selectedDates || null)
       ? retryTurnRef.current
-      : { text: value, id: crypto.randomUUID() };
+      : { text: value, id: crypto.randomUUID(), dates: selectedDates };
     retryTurnRef.current = pending;
 
     setBusy(true);
@@ -509,6 +513,7 @@ export default function App() {
           text: value,
           sessionId: sessionIdRef.current,
           clientTurnId: pending.id,
+          ...(selectedDates || {}),
         }),
       });
       if (!res.ok) {
@@ -519,10 +524,8 @@ export default function App() {
       if (!json.ok) throw new Error("turn_failed");
       retryTurnRef.current = null;
 
-      if (json.action === "new_trip") {
-        setCheckin("");
-        setCheckout("");
-      }
+      setCheckin(json.parsed.checkin || "");
+      setCheckout(json.parsed.checkout || "");
       if (json.action !== "acknowledgement") {
         setResult(json);
         setPlan(json.plan || (json.action === "new_trip" ? null :
@@ -544,12 +547,14 @@ export default function App() {
       }].slice(-12));
     } catch (error) {
       const code = error instanceof Error ? error.message : "";
-      setApiError(code === "trip_state_unavailable" || code === "trip_turn_unavailable"
+      setApiError(code === "invalid_travel_dates"
+        ? "Ngày đi chưa hợp lệ. Bạn chọn ngày nhận phòng từ hôm nay và thời gian ở từ 1 đến 30 đêm nha."
+        : code === "trip_state_unavailable" || code === "trip_turn_unavailable"
         ? "Phần lưu chuyến đi đang gián đoạn. Mình chưa ghi nhận tin này, bạn thử lại sau nha."
         : code === "concurrent_turn_retry"
           ? "Có hai tin gửi sát nhau. Bạn thử gửi lại tin vừa rồi nha."
           : "Kết nối đang gián đoạn. Bạn gửi lại câu vừa rồi giúp mình nhé.");
-      setInput((current) => current || value);
+      if (!selectedDates) setInput((current) => current || value);
     } finally {
       inFlightRef.current = false;
       setBusy(false);
@@ -562,30 +567,8 @@ export default function App() {
   }
 
   async function repriceWithDates() {
-    if (!result || !checkin || !checkout) return;
-
-    setBusy(true);
-    try {
-      const res = await fetch("/api/trip/build", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          checkin,
-          checkout,
-          adults: result.parsed.adults,
-          children: result.parsed.children,
-          interests: result.parsed.interests,
-          stayPreferences: result.parsed.stayPreferences,
-          language: result.parsed.language,
-          days: result.parsed.days,
-          nights: result.parsed.nights,
-          budgetVnd: result.parsed.budgetVnd,
-        }),
-      });
-      setPlan((await res.json()) as TripBuildResponse);
-    } finally {
-      setBusy(false);
-    }
+    if (!result || !checkin || !checkout || busy) return;
+    await submit("Tính chuyến từ " + checkin + " đến " + checkout, { checkin, checkout });
   }
 
   async function sendLead(event: FormEvent) {

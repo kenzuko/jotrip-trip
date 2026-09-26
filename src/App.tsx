@@ -976,6 +976,7 @@ export default function App() {
               })[signal])}
               hotels={plan?.planningHotels || []}
               selectedArea={activeDecisionArea}
+              tradeoff={activeDecision && result ? decisionTradeoffs(activeDecision, result.parsed.interests, result.parsed.stayPreferences) : null}
               onSelectArea={setActiveDecisionArea}
             />
 
@@ -992,85 +993,6 @@ export default function App() {
                       <p>{tip}</p>
                     </article>
                   ))}
-                </div>
-              </section>
-            )}
-
-            {result.parsed.mode === "trip_plan" && compareDirections.length >= 2 && (
-              <section className="decision-canvas" aria-label="So sánh hai cách ở">
-                <div className="decision-canvas-head">
-                  <span className="label">MÌNH ĐẶT HAI HƯỚNG CẠNH NHAU</span>
-                  <h2>Nhà mình thích kiểu nào hơn?</h2>
-                  <p>
-                    Không có hướng nào thắng tuyệt đối. Mỗi chỗ sẽ nhẹ ở một phần và đổi lại ở một phần khác.
-                  </p>
-                </div>
-
-                <div className="decision-hint">Chạm từng hướng để xem phần được và phần cần cân nhắc.</div>
-
-                <div className="decision-cards">
-                  {compareDirections.map((item) => {
-                    const isActive = activeDecision?.hotel.area_code === item.hotel.area_code;
-                    return (
-                      <button
-                        className={isActive ? "decision-card decision-card--active" : "decision-card"}
-                        key={item.hotel.id}
-                        type="button"
-                        aria-pressed={isActive}
-                        onClick={() => {
-                          setActiveDecisionArea(item.hotel.area_code);
-                          const text = decisionGuideText(
-                            item,
-                            result.parsed.interests,
-                            result.parsed.stayPreferences,
-                          );
-                          if (voiceOn && text) void speakResponse(text, result.parsed.language);
-                        }}
-                      >
-                        <div className="decision-card-top">
-                          <span>{areaDisplay(item.hotel.area_code)}</span>
-                          <small>{isActive ? "Đang xem hướng này" : "Xem hướng này"}</small>
-                        </div>
-                        <h3>{item.hotel.canonical_name}</h3>
-                        <p>{item.stayContext.summary}</p>
-
-                        {(() => {
-                          const tradeoff = decisionTradeoffs(
-                            item,
-                            result.parsed.interests,
-                            result.parsed.stayPreferences,
-                          );
-                          return (
-                            <div className="decision-tradeoffs">
-                              <div>
-                                <span>Được</span>
-                                <b>{tradeoff.gain}</b>
-                              </div>
-                              <div>
-                                <span>Đổi lại</span>
-                                <b>{tradeoff.trade}</b>
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                        {item.routeFacts?.length ? (
-                          <div className="decision-route-list">
-                            {item.routeFacts.slice(0, 3).map((fact) => (
-                              <div key={fact.destinationId}>
-                                <span>{fact.label}</span>
-                                <b>~{fact.minutes} phút · {fact.distanceKm.toFixed(1)} km</b>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="decision-route-pending">
-                            Mình chưa có đủ số km/phút cho mốc này, nên chưa dùng con số để thuyết phục bạn.
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
                 </div>
               </section>
             )}

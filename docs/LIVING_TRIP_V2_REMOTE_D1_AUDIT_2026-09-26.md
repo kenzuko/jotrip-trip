@@ -23,10 +23,10 @@ Wrangler lists `0000_bootstrap_all.sql` through `0010_booking_lead_privacy.sql` 
 
 ## Next gates
 
-1. Confirm whether legacy tables contain customer or operational records. A schema-only export cannot answer this.
-2. Determine whether a dedicated preview D1 already exists; use it rather than creating a duplicate if possible.
+1. **Confirmed** in a separate read-only check: `chat_sessions` and `chat_messages` both contain rows. `trips` and `hotels_public` are empty. The audit deliberately reported only presence/absence, never customer content or exact counts. Run: https://github.com/kenzuko/jotrip-home/actions/runs/36239698819. Preserve legacy chat records until an access-restricted, durable backup and retention decision exist.
+2. **Confirmed**: no existing D1 with the `jotrip-trip` prefix other than `jotrip-trip-db`. An isolated preview database must be newly created if needed.
 3. Take a **durable, access-restricted backup** and test its recovery before changing the live D1. An ephemeral CI export is not a backup.
 4. Test the additive V2 migrations and real D1 concurrency in an isolated preview DB.
 5. Only then approve a minimal live migration plan; no deployment or DNS change is implied by this audit.
 
-No full remote backup, live migration, preview deploy or production Worker change has been performed.
+No full remote backup, live migration, preview deploy or production Worker change has been performed. Do not delete legacy chat data just because V2 replaces its interface.

@@ -242,8 +242,8 @@ export async function getTripSession(env: Env, sessionId: string): Promise<Respo
         }
       : null;
     const retainsPrevious = last?.parsed?.mode === "compare" || last?.parsed?.mode === "contact";
-    let plan = last?.plan || null;
-    let advisor = last?.advisor || null;
+    let plan: unknown = last?.plan || null;
+    let advisor: unknown = last?.advisor || null;
     if (retainsPrevious) {
       const planRow = await env.DB.prepare(
         `SELECT response_json FROM trip_turns_v2

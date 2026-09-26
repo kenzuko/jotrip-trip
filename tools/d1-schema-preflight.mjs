@@ -53,7 +53,13 @@ function tableDefinitions(sql) {
       if (name && !["primary", "foreign", "unique", "constraint", "check"].includes(name))
         columns.add(name);
     }
-    definitions.set(match[1].toLowerCase(), columns);
+    const tableName = match[1].toLowerCase();
+    if (definitions.has(tableName)) {
+      // CREATE TABLE IF NOT EXISTS does not repair a pre-existing legacy table.
+      // Keep its original columns; a duplicate unconditional CREATE is invalid.
+      if (!/IF\s+NOT\s+EXISTS/i.test(match[0]))
+        throw new Error("Duplicate unconditional CREATE TABLE");
+    } else definitions.set(tableName, columns);
     create.lastIndex = end;
   }
   return definitions;

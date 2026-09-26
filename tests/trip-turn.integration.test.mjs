@@ -18,14 +18,36 @@ class D1Fixture {
         sql, params,
         first: async () => {
           if (/FROM trip_turns_v2 WHERE/i.test(sql)) {
-            return this.turns.get(params[0] + ":" + params[1]) || null;
+            if (/client_turn_id=\?/i.test(sql)) {
+              return this.turns.get(params[0] + ":" + params[1]) || null;
+            }
+            const records = [...this.turns.entries()]
+              .filter(([key, value]) => key.startsWith(params[0] + ":") && value.trip_id === params[1])
+              .map(([, value]) => value)
+              .sort((a, b) => JSON.parse(b.response_json).version - JSON.parse(a.response_json).version);
+            return records.find(item => {
+              const response = JSON.parse(item.response_json);
+              if (/!= 'acknowledgement'/i.test(sql) && response.action === "acknowledgement") return false;
+              if (/\$\.plan/i.test(sql) && !response.plan) return false;
+              if (/\$\.advisor/i.test(sql) && !response.advisor) return false;
+              return true;
+            }) || null;
           }
           if (/FROM trip_sessions_v2 WHERE/i.test(sql)) {
             return this.sessions.get(params[0]) || null;
           }
           return null;
         },
-        all: async () => ({ results: [] }),
+        all: async () => {
+          if (/FROM trip_turns_v2/i.test(sql)) {
+            return { results: [...this.turns.entries()]
+              .filter(([key, value]) => key.startsWith(params[0] + ":") && value.trip_id === params[1])
+              .map(([key, value]) => ({ ...value, client_turn_id: key.split(":")[1] }))
+              .sort((a, b) => JSON.parse(b.response_json).version - JSON.parse(a.response_json).version)
+              .slice(0, 6) };
+          }
+          return { results: [] };
+        },
       }),
     };
   }
@@ -154,6 +176,8 @@ test("session context can be restored after refresh", async () => {
   assert.equal(snapshot.parsed.adults, 2);
   assert.equal(snapshot.tripId, first.body.tripId);
   assert.equal(snapshot.version, 1);
+  assert.equal(snapshot.history.length, 2);
+  assert.ok(snapshot.plan?.ok);
 });
 
 test("date selection is saved and repriced in the same authoritative trip", async () => {
@@ -291,4 +315,22 @@ test("V2 analytics requires internal authorization and returns only aggregates",
   assert.equal(body.sessionsWithDates, 1);
   assert.equal(JSON.stringify(body).includes("session-qa"), false);
   assert.equal(Object.hasOwn(body, "recent"), false);
+});
+
+test("restoration does not resurrect a stale plan after switching to food advice", async () => {
+  const db = new D1Fixture();
+  const first = await turn(db, "3 ngày 2 đêm, Safari", "client-turn-800", "session-qa-0009");
+  assert.equal(first.status, 200);
+  const food = await turn(db, "Tối ăn gì ở Dương Đông?", "client-turn-801", "session-qa-0009");
+  assert.equal(food.status, 200, JSON.stringify(food.body));
+  assert.equal(food.body.parsed.mode, "food");
+  const restored = await worker.fetch(new Request("https://trip.test/api/trip/session", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ sessionId: "session-qa-0009" }),
+  }), { DB: db });
+  assert.equal(restored.status, 200);
+  const snapshot = await restored.json();
+  assert.equal(snapshot.plan, null);
+  assert.ok(snapshot.advisor?.ok);
+  assert.equal(snapshot.history.length, 4);
 });

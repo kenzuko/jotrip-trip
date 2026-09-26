@@ -88,11 +88,13 @@ function areaLabel(area: string) {
 
 export function TripPulse({
   summary,
+  aiSignals = [],
   hotels,
   selectedArea,
   onSelectArea,
 }: {
   summary: string[];
+  aiSignals?: string[];
   hotels: PlanningHotel[];
   selectedArea: string | null;
   onSelectArea: (area: string) => void;
@@ -118,6 +120,12 @@ export function TripPulse({
       {summary.length > 0 && (
         <div className="trip-pulse-facts" aria-label="Những điều JoTrip đã hiểu">
           {summary.map((fact) => <span key={fact}>{fact}</span>)}
+        </div>
+      )}
+      {aiSignals.length > 0 && (
+        <div className="trip-pulse-inferred">
+          <strong>JoTrip đang hiểu thêm từ câu bạn nói - chưa xác nhận</strong>
+          <div className="trip-pulse-facts">{aiSignals.map((signal) => <span key={signal}>{signal}</span>)}</div>
         </div>
       )}
       {areas.length > 0 && (

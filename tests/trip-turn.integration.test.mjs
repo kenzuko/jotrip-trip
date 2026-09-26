@@ -12,11 +12,15 @@ const worker = (await import("data:text/javascript;base64," +
 class D1Fixture {
   sessions = new Map();
   turns = new Map();
+  tombstones = new Map();
   prepare(sql) {
     return {
       bind: (...params) => ({
         sql, params,
         first: async () => {
+          if (/FROM trip_deleted_sessions_v2 WHERE/i.test(sql)) {
+            return this.tombstones.has(params[0]) ? { blocked: 1 } : null;
+          }
           if (/FROM trip_turns_v2\s+WHERE/i.test(sql)) {
             if (/client_turn_id=\?/i.test(sql)) {
               return this.turns.get(params[0] + ":" + params[1]) || null;
@@ -52,22 +56,34 @@ class D1Fixture {
     };
   }
   async batch(statements) {
-    const [first, second] = statements;
-    if (/^DELETE FROM trip_turns_v2/i.test(first.sql)) {
-      const id = first.params[0];
-      const isRetention = /SELECT session_id/i.test(first.sql);
+    const [first, second, third] = statements;
+    const deletion = /^INSERT OR IGNORE INTO trip_deleted_sessions_v2/i.test(first.sql);
+    const retention = /^DELETE FROM trip_turns_v2/i.test(first.sql);
+    if (deletion || retention) {
+      const id = deletion ? first.params[1] : first.params[0];
+      const isRetention = retention && /SELECT session_id/i.test(first.sql);
       const cutoff = isRetention ? id : null;
       const ids = isRetention
         ? [...this.sessions.entries()].filter(([, row]) => row.updated_at < cutoff).map(([key]) => key)
         : [id];
-      let turnsDeleted = 0, sessionsDeleted = 0;
+      let turnsDeleted = 0, sessionsDeleted = 0, tombstonesChanged = 0;
+      if (deletion && this.sessions.has(id) && !this.tombstones.has(id)) {
+        this.tombstones.set(id, first.params[0]); tombstonesChanged++;
+      }
       for (const sessionId of ids) {
         for (const key of [...this.turns.keys()]) {
           if (key.startsWith(sessionId + ":")) { this.turns.delete(key); turnsDeleted++; }
         }
         if (this.sessions.delete(sessionId)) sessionsDeleted++;
       }
-      return [{ meta: { changes: turnsDeleted } }, { meta: { changes: sessionsDeleted } }];
+      if (isRetention) {
+        for (const [key, deletedAt] of this.tombstones.entries()) {
+          if (deletedAt < cutoff) { this.tombstones.delete(key); tombstonesChanged++; }
+        }
+      }
+      return deletion
+        ? [{ meta: { changes: tombstonesChanged } }, { meta: { changes: turnsDeleted } }, { meta: { changes: sessionsDeleted } }]
+        : [{ meta: { changes: turnsDeleted } }, { meta: { changes: sessionsDeleted } }, { meta: { changes: tombstonesChanged } }];
     }
     let changes = 0;
     if (/INSERT OR IGNORE INTO trip_sessions_v2/i.test(first.sql)) {
@@ -274,7 +290,10 @@ test("anonymous traveler can delete the V2 transcript and trip without touching 
     method: "POST", headers: { "content-type": "application/json" },
     body: JSON.stringify({ sessionId: "session-qa-0006" }),
   }), { DB: db });
-  assert.equal(restore.status, 404);
+  assert.equal(restore.status, 410);
+  const staleTab = await turn(db, "Safari", "client-turn-601", "session-qa-0006");
+  assert.equal(staleTab.status, 410);
+  assert.equal(staleTab.body.error, "session_deleted");
 });
 
 test("scheduled retention purges only sessions idle beyond the configured period", async () => {
@@ -341,7 +360,7 @@ test("health is not ready until both canonical V2 D1 tables exist", async () => 
   assert.equal((await noDb.json()).tripStateReady, false);
   const readyDb = {
     prepare: sql => ({ first: async () => {
-      if (!/trip_sessions_v2|trip_turns_v2/.test(sql)) throw Error("unexpected health query");
+      if (!/trip_sessions_v2|trip_turns_v2|trip_deleted_sessions_v2/.test(sql)) throw Error("unexpected health query");
       return null;
     } }),
   };

@@ -745,7 +745,7 @@ export default function App() {
           {!hasResponse && <div className="warm-brand-whisper" aria-hidden="true">PHÚ QUỐC · NHIỀU HƠN MỘT CHUYẾN ĐI</div>}
         </section>
 
-        {result && (
+        {(result || busy || turns.length > 0) && (
           <section className="workspace">
             <div className="conversation-thread">
               {turns.map((turn) =>
@@ -776,11 +776,12 @@ export default function App() {
                 </div>
               )}
 
-              <div className="conversation-language" aria-label="Ngôn ngữ hội thoại">
+              {result && <div className="conversation-language" aria-label="Ngôn ngữ hội thoại">
                 {languageNames[result.parsed.language] || result.parsed.language}
-              </div>
+              </div>}
             </div>
 
+            {result && (<>
             <TripPulse
               summary={summaryBits}
               aiSignals={(result.aiSignals || []).map((signal) => ({
@@ -1030,6 +1031,7 @@ export default function App() {
                 )}
               </section>
             )}
+            </>)}
           </section>
         )}
       </div>

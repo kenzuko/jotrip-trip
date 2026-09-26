@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 12
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
       EXPECTED_D1_ID: "17372bb5-7626-4238-8a95-fc0cf31ad18e"
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
         shell: bash
         run: |
           if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
-            echo "::error::Cloudflare credentials are not available as GitHub Actions secrets. No remote D1 request was made."
+            echo "::error::Cloudflare API token or account ID is unavailable in jotrip-trip Actions secrets/variables. No remote D1 request was made."
             exit 2
           fi
           echo "Cloudflare credentials are available; no secret values will be printed."

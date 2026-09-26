@@ -140,6 +140,24 @@ try {
       assert.equal(await page.getByRole("button", { name: "Giọng nói tắt" }).count(), 0);
       await viewportCheck();
       await page.screenshot({ path: `qa-output/${item.engine}-text-only.png`, animations: "disabled" });
+
+      // V2 discovery is a real conversational entry, not a decorative card.
+      const parseBeforeStory = requests.parse;
+      const planBeforeStory = requests.plan;
+      await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
+      await page.locator(".living-story").first().waitFor();
+      assert.equal(await page.locator(".living-story").count(), 3);
+      await page.locator(".living-story").nth(1).click();
+      await page.locator(".conversation-thread .message--assistant").first().waitFor({ timeout: 8000 });
+      assert.equal(requests.parse, parseBeforeStory + 1);
+      assert.equal(requests.plan, planBeforeStory + 1);
+      assert.equal(await page.locator(".trip-pulse-option").count(), 2);
+      await page.locator(".trip-pulse-option").first().click();
+      assert.equal(await page.locator(".trip-pulse-option").first().getAttribute("aria-pressed"), "true");
+      assert.equal(await page.locator(".decision-card--active").count(), 1);
+      assert.equal(requests.voice, 0);
+      await viewportCheck();
+      await page.screenshot({ path: `qa-output/${item.engine}-living-canvas.png`, animations: "disabled" });
       assert.deepEqual(errors, []);
       results.push({ engine: item.engine, width: item.width, height: item.height, result: "PASS", requests });
       console.log("PASS " + item.engine + " " + item.width + "x" + item.height + " six mobile states");

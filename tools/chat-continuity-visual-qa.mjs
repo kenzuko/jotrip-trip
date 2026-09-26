@@ -78,7 +78,7 @@ try {
         deviceScaleFactor: 3, isMobile: true, hasTouch: true, reducedMotion: "reduce",
       });
       const errors = [];
-      const requests = { parse: 0, plan: 0, voice: 0, deleted: 0 };
+      const requests = { parse: 0, plan: 0, voice: 0, deleted: 0, bookingLead: 0 };
       page.on("pageerror", e => errors.push(String(e)));
       await page.route("**/api/trip/turn", async route => {
         requests.parse++;
@@ -110,6 +110,17 @@ try {
         } else {
           await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ ok: false, error: "trip_session_not_found" }) });
         }
+      });
+      await page.route("**/api/booking/lead", async route => {
+        requests.bookingLead++;
+        const body = route.request().postDataJSON();
+        assert.equal(body.consent, true);
+        assert.equal(body.contact, "guest@example.com");
+        assert.equal(Object.hasOwn(body, "tripContext"), false, "raw trip context leaked to booking lead");
+        await route.fulfill({
+          status: 200, contentType: "application/json",
+          body: JSON.stringify({ ok: true, status: "NEW", id: "qa-booking-lead" }),
+        });
       });
       await page.route("**/api/trip/build", async route => {
         requests.plan++;
@@ -180,6 +191,24 @@ try {
       await viewportCheck();
       await page.screenshot({ path: `qa-output/${item.engine}-saved-dates.png`, animations: "disabled" });
 
+      // Handoff is separately consented and must never include the raw plan.
+      await page.getByRole("button", { name: "Tôi muốn JoTrip kiểm tra" }).click();
+      const leadForm = page.locator(".handoff-form");
+      await leadForm.getByRole("textbox", { name: "Thông tin liên hệ" }).fill("guest@example.com");
+      const sendLead = leadForm.getByRole("button", { name: "Gửi cho JoTrip" });
+      assert.equal(await sendLead.isDisabled(), true, "contact submitted without separate consent");
+      await leadForm.locator('input[type="checkbox"]').check();
+      await page.locator(".trip-controls input[type=date]").first().fill("2030-01-11");
+      assert.equal(await sendLead.isDisabled(), true, "unsaved travel date leaked into booking handoff");
+      await page.locator(".trip-controls input[type=date]").first().fill("2030-01-10");
+      assert.equal(await sendLead.isEnabled(), true);
+      await viewportCheck();
+      await page.screenshot({ path: `qa-output/${item.engine}-booking-consent.png`, animations: "disabled" });
+      await sendLead.click();
+      await leadForm.locator(".lead-success").waitFor();
+      assert.equal(requests.bookingLead, 1);
+      await viewportCheck();
+
       await page.getByRole("button", { name: "Xóa lịch sử" }).click();
       await page.getByRole("button", { name: "Xóa chuyến này" }).click();
       await page.locator(".living-story").first().waitFor();
@@ -206,7 +235,7 @@ try {
       await page.screenshot({ path: `qa-output/${item.engine}-living-canvas.png`, animations: "disabled" });
       assert.deepEqual(errors, []);
       results.push({ engine: item.engine, width: item.width, height: item.height, result: "PASS", requests });
-      console.log("PASS " + item.engine + " " + item.width + "x" + item.height + " seven mobile states + saved dates and deletion");
+      console.log("PASS " + item.engine + " " + item.width + "x" + item.height + " eight mobile states + booking consent, saved dates and deletion");
     } catch (error) {
       results.push({ engine: item.engine, width: item.width, height: item.height, result: "FAIL", error: String(error) });
       console.error("FAIL " + item.engine + ": " + error);

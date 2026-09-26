@@ -1,9 +1,17 @@
 # Living Trip V2 - remote D1 read-only preflight and backup runbook
 
-Status: **not executed**. Requires an authenticated Cloudflare account and explicit deployment approval for any remote mutation. No Cloudflare credential is stored in GitHub or this document. The GitHub CI workflows run local D1 only.
+Status: **remote D1 not inspected**. The dedicated read-only GitHub Actions preflight ran on 26 September 2026 but stopped before its first Cloudflare request because `jotrip-trip` did not have an available API token/account ID. The regular CI runs local D1 only. Remote mutations require a separate backup, review and deployment approval.
 
 Official command reference: https://developers.cloudflare.com/d1/wrangler-commands/
 Official export reference: https://developers.cloudflare.com/d1/best-practices/import-export-data/
+
+## Credential handoff for this repository only
+
+The correct GitHub repository is `kenzuko/jotrip-trip`, Worker `jotrip-trip`, D1 binding `DB`, database `jotrip-trip-db`, and reviewed config UUID `17372bb5-7626-4238-8a95-fc0cf31ad18e`. Do not substitute JoTrip Quote's database.
+
+The GitHub Actions workflow `Cloudflare D1 read-only preflight` already exists on `feat/living-trip-v2-20260926`. It accepts a repository Actions secret named `CLOUDFLARE_API_TOKEN` (or `CF_API_TOKEN`) and either an Actions secret `CLOUDFLARE_ACCOUNT_ID` (or `CF_ACCOUNT_ID`) or a nonsecret repository variable `CLOUDFLARE_ACCOUNT_ID`. GitHub does not automatically share the similarly named secrets from `jotrip-home` or `Jotrip-Lab`.
+
+The token needs only the Cloudflare permissions required for read-only D1 metadata, migration history and schema export. Do not paste a token into chat, commit it, or attach it as a workflow artifact. After these repository-level credentials are available, run `Actions > Cloudflare D1 read-only preflight > Run workflow` on the V2 branch. This workflow is read-only and does not back up customer data, apply migrations or deploy.
 
 ## A. Read-only inspection (no mutation)
 
@@ -16,7 +24,15 @@ npx wrangler d1 execute jotrip-trip-db --remote --command "SELECT name, sql FROM
 npx wrangler d1 export jotrip-trip-db --remote --no-data --output=./jotrip-trip-schema-preflight.sql
 ```
 
-Analyze the schema-only export **locally** before deciding on any migration:\n\n```sh\nnode tools/d1-schema-preflight.mjs ./jotrip-trip-schema-preflight.sql\n```\n\nThe analyzer returns `SCHEMA_COLUMNS_PRESENT` only when all six V2/booking tables expose the required columns. `MIGRATIONS_PENDING_REVIEW` means the tables are absent and the remote migration history still needs manual inspection. `STOP_SCHEMA_DRIFT` blocks migration or deployment until an existing partial/incompatible schema is reconciled. Even a green column check is **not** a migration approval: verify constraints, indexes, actual table definitions, applied migration history and Worker compatibility. This analyzer never connects to Cloudflare or prints database rows.\n\nInspect the output **locally**. A legacy runtime-created `booking_leads` table may already exist even when migration 0010 has not been applied. Do not assume `d1 migrations list` accurately represents the complete schema if older tables were created outside migrations. Do not commit the schema export without reviewing it for sensitive information.
+Analyze the schema-only export **locally** before deciding on any migration:
+
+```sh
+node tools/d1-schema-preflight.mjs ./jotrip-trip-schema-preflight.sql
+```
+
+The analyzer returns `SCHEMA_COLUMNS_PRESENT` only when all six V2/booking tables expose the required columns. `MIGRATIONS_PENDING_REVIEW` means the tables are absent and the remote migration history still needs manual inspection. `STOP_SCHEMA_DRIFT` blocks migration or deployment until an existing partial/incompatible schema is reconciled. Even a green column check is **not** a migration approval: verify constraints, indexes, actual table definitions, applied migration history and Worker compatibility. This analyzer never connects to Cloudflare or prints database rows.
+
+Inspect the output **locally**. A legacy runtime-created `booking_leads` table may already exist even when migration 0010 has not been applied. Do not assume `d1 migrations list` accurately represents the complete schema if older tables were created outside migrations. Do not commit the schema export without reviewing it for sensitive information.
 
 ## B. Full backup before any migration
 

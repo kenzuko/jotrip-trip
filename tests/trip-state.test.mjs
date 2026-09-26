@@ -50,3 +50,13 @@ test("simple food follow-up retains duration and party size", () => {
   assert.equal(next.parsed.adults, 2);
   assert.deepEqual(next.parsed.interests, ["Safari", "Ăn uống"]);
 });
+
+test("a revised duration clears saved dates rather than showing stale priced results", () => {
+  const first = state.resolveTripTurn(null, "3 ngày 2 đêm, 2 người lớn, Safari");
+  const dated = { ...first.parsed, checkin: "2030-01-10", checkout: "2030-01-12" };
+  const revised = state.resolveTripTurn(dated, "đổi thành 4 ngày 3 đêm");
+  assert.equal(revised.parsed.days, 4);
+  assert.equal(revised.parsed.nights, 3);
+  assert.equal(revised.parsed.checkin, undefined);
+  assert.ok(revised.nextNeeded.includes("travel_dates"));
+});

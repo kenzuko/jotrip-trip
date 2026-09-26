@@ -967,14 +967,9 @@ export default function App() {
                 </div>
               )}
 
-              {summaryBits.length > 0 && (
-                <div className="conversation-context">
-                  <span className="language-pill">
-                    {languageNames[result.parsed.language] || result.parsed.language}
-                  </span>
-                  {summaryBits.map((bit) => <span key={bit}>{bit}</span>)}
-                </div>
-              )}
+              <div className="conversation-language" aria-label="Ngôn ngữ hội thoại">
+                {languageNames[result.parsed.language] || result.parsed.language}
+              </div>
             </div>
 
             <TripPulse

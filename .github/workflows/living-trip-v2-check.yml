@@ -51,5 +51,55 @@ jobs:
           npx wrangler d1 execute jotrip-trip-db --local --persist-to /tmp/jotrip-v2-legacy --file tests/fixtures/v2-booking-lead-smoke.sql
       - name: Build production assets
         run: npm run build
+      - name: Local Worker HTTP end-to-end (local D1 only; never remote)
+        shell: bash
+        run: |
+          set -euo pipefail
+          persist_dir="$(mktemp -d)"
+          worker_log="/tmp/jotrip-local-worker-${GITHUB_RUN_ID}.log"
+          dev_vars="$GITHUB_WORKSPACE/.dev.vars"
+          if [[ -e "$dev_vars" ]]; then
+            echo "::error::.dev.vars already exists on the clean runner."
+            exit 2
+          fi
+          printf 'LEAD_ADMIN_TOKEN=local-e2e-only\n' > "$dev_vars"
+          chmod 600 "$dev_vars"
+          worker_pid=""
+          cleanup() {
+            if [[ -n "$worker_pid" ]]; then
+              kill "$worker_pid" 2>/dev/null || true
+              wait "$worker_pid" 2>/dev/null || true
+            fi
+            rm -f "$dev_vars" "$worker_log"
+            rm -rf "$persist_dir"
+          }
+          trap cleanup EXIT
+          for migration in 0000_bootstrap_all.sql 0005_pricing_guardrails.sql 0006_hotel_rate_rules.sql 0007_watch_notifications.sql 0008_destination_context.sql 0009_trip_turn_state.sql 0010_booking_lead_privacy.sql; do
+            if ! npx wrangler d1 execute jotrip-trip-db --local --persist-to "$persist_dir" --file="migrations/$migration" > "$persist_dir/migration.log" 2>&1; then
+              echo "::error::Local D1 migration failed: $migration"
+              cat "$persist_dir/migration.log"
+              exit 3
+            fi
+          done
+          npx wrangler dev --local --ip 127.0.0.1 --port 8787 --persist-to "$persist_dir" > "$worker_log" 2>&1 &
+          worker_pid=$!
+          ready=false
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail --max-time 2 http://127.0.0.1:8787/api/health > "$persist_dir/health.json" 2>/dev/null &&
+              node -e 'const h=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));process.exit(h.ok?0:1)' "$persist_dir/health.json"; then
+              ready=true
+              break
+            fi
+            if ! kill -0 "$worker_pid" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          if [[ "$ready" != true ]]; then
+            echo "::error::Local Worker did not become healthy."
+            tail -n 60 "$worker_log"
+            exit 4
+          fi
+          node tests/worker-http-e2e.mjs
       - name: Wrangler validation only (never deploy)
         run: npx wrangler deploy --dry-run

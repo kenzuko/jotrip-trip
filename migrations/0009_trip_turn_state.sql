@@ -27,3 +27,11 @@ CREATE INDEX IF NOT EXISTS idx_trip_turns_v2_trip
 
 CREATE INDEX IF NOT EXISTS idx_trip_sessions_v2_updated_at
   ON trip_sessions_v2(updated_at);
+
+-- A deleted session cannot be recreated by an old browser tab.
+CREATE TABLE IF NOT EXISTS trip_deleted_sessions_v2 (
+  session_id TEXT PRIMARY KEY,
+  deleted_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_trip_deleted_sessions_v2_deleted_at
+  ON trip_deleted_sessions_v2(deleted_at);

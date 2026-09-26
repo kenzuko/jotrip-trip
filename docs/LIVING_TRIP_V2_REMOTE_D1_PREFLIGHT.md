@@ -16,7 +16,7 @@ npx wrangler d1 execute jotrip-trip-db --remote --command "SELECT name, sql FROM
 npx wrangler d1 export jotrip-trip-db --remote --no-data --output=./jotrip-trip-schema-preflight.sql
 ```
 
-Inspect the output **locally**. A legacy runtime-created `booking_leads` table may already exist even when migration 0010 has not been applied. Do not assume `d1 migrations list` accurately represents the complete schema if older tables were created outside migrations. Do not commit the schema export without reviewing it for sensitive information.
+Analyze the schema-only export **locally** before deciding on any migration:\n\n```sh\nnode tools/d1-schema-preflight.mjs ./jotrip-trip-schema-preflight.sql\n```\n\nThe analyzer returns `SCHEMA_COLUMNS_PRESENT` only when all six V2/booking tables expose the required columns. `MIGRATIONS_PENDING_REVIEW` means the tables are absent and the remote migration history still needs manual inspection. `STOP_SCHEMA_DRIFT` blocks migration or deployment until an existing partial/incompatible schema is reconciled. Even a green column check is **not** a migration approval: verify constraints, indexes, actual table definitions, applied migration history and Worker compatibility. This analyzer never connects to Cloudflare or prints database rows.\n\nInspect the output **locally**. A legacy runtime-created `booking_leads` table may already exist even when migration 0010 has not been applied. Do not assume `d1 migrations list` accurately represents the complete schema if older tables were created outside migrations. Do not commit the schema export without reviewing it for sensitive information.
 
 ## B. Full backup before any migration
 

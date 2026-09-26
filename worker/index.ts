@@ -145,6 +145,7 @@ export default {
         try {
           await env.DB.prepare("SELECT 1 FROM trip_sessions_v2 LIMIT 1").first();
           await env.DB.prepare("SELECT 1 FROM trip_turns_v2 LIMIT 1").first();
+          await env.DB.prepare("SELECT 1 FROM trip_deleted_sessions_v2 LIMIT 1").first();
           tripStateReady = true;
         } catch {
           tripStateReady = false;

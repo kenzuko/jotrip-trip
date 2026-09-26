@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   inspect:
-    # Never execute from a fork or PR. This job cannot mutate remote D1.
+    # Never execute from a fork or PR. Read-only table inspection, never customer rows.
     if: github.repository == 'kenzuko/jotrip-trip' && github.ref == 'refs/heads/feat/living-trip-v2-20260926'
     runs-on: ubuntu-latest
     timeout-minutes: 12

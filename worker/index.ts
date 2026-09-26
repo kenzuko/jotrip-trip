@@ -140,25 +140,26 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === "/api/health") {
-      let schemaReady = false;
+      let tripStateReady = false;
       if (env.DB) {
         try {
-          await env.DB.prepare("SELECT 1 FROM chat_sessions LIMIT 1").first();
-          schemaReady = true;
+          await env.DB.prepare("SELECT 1 FROM trip_sessions_v2 LIMIT 1").first();
+          await env.DB.prepare("SELECT 1 FROM trip_turns_v2 LIMIT 1").first();
+          tripStateReady = true;
         } catch {
-          schemaReady = false;
+          tripStateReady = false;
         }
       }
-
       return json({
-        ok: true,
+        ok: tripStateReady,
         service: "jotrip-trip",
         dbBound: Boolean(env.DB),
-        schemaReady,
-        chatLoggingReady: Boolean(env.DB) && schemaReady,
+        schemaReady: tripStateReady,
+        tripStateReady,
+        chatLoggingReady: tripStateReady,
         naturalVoiceReady: false,
         time: new Date().toISOString(),
-      });
+      }, tripStateReady ? 200 : 503);
     }
 
     if (url.pathname === "/api/trip/session" && request.method === "POST") {
@@ -174,6 +175,7 @@ export default {
     if (url.pathname === "/api/trip/turn" && request.method === "POST") {
       const body = await request.json<{
         text?: string; sessionId?: string; clientTurnId?: string;
+        checkin?: string; checkout?: string;
       }>().catch(() => ({}));
       return processTripTurn(env, body, assistantTextFor);
     }

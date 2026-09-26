@@ -1,6 +1,6 @@
 import { buildParseResponse, parseTripText, type TripLanguage } from "./scenario";
 
-export type TripContext = ReturnType<typeof parseTripText>;
+export type TripContext = ReturnType<typeof parseTripText> & { checkin?: string; checkout?: string };
 export type ResolvedTripTurn = {
   action: "acknowledgement" | "request" | "new_trip";
   parsed: TripContext;
@@ -65,12 +65,18 @@ export function resolveTripTurn(previous: TripContext | null, text: string): Res
       ? previous.language as TripLanguage : incoming.language,
     raw: incoming.raw,
   };
+  // A revised duration cannot silently retain dates from the earlier trip.
+  if (previous && !fresh && incoming.nights !== undefined &&
+      previous.nights !== undefined && incoming.nights !== previous.nights) {
+    delete parsed.checkin;
+    delete parsed.checkout;
+  }
 
   const nextNeeded: string[] = [];
   if (parsed.mode === "trip_plan") {
     if (!parsed.days || parsed.nights === undefined) nextNeeded.push("duration");
     if (!parsed.interests.length && !parsed.stayPreferences.length) nextNeeded.push("interests");
-    nextNeeded.push("travel_dates");
+    if (!parsed.checkin || !parsed.checkout) nextNeeded.push("travel_dates");
   }
   return {
     action: fresh ? "new_trip" : "request",

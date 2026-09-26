@@ -80,10 +80,21 @@ try {
       const errors = [];
       const requests = { parse: 0, plan: 0, voice: 0 };
       page.on("pageerror", e => errors.push(String(e)));
-      await page.route("**/api/trip/parse", async route => {
+      await page.route("**/api/trip/turn", async route => {
         requests.parse++;
         const body = route.request().postDataJSON();
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(parseResponse(body.text)) });
+        const parsed = parseResponse(body.text);
+        const ack = parsed.conversationAction === "acknowledgement";
+        if (!ack) requests.plan++;
+        await new Promise(resolve => setTimeout(resolve, 450));
+        await route.fulfill({
+          status: 200, contentType: "application/json",
+          body: JSON.stringify({
+            ...parsed, action: ack ? "acknowledgement" : "request",
+            tripId: "qa-trip-1", clientTurnId: body.clientTurnId,
+            version: requests.parse, plan: ack ? null : plan, advisor: null,
+          }),
+        });
       });
       await page.route("**/api/trip/build", async route => {
         requests.plan++;

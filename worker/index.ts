@@ -12,7 +12,7 @@ import { importDestinationVenues } from "./destinationImport";
 import { answerAdvisor } from "./advisor";
 import { saveBookingLead } from "./bookingLead";
 import { interpretTravelNeeds, type AiBinding } from "./aiIntent";
-import { processTripTurn } from "./tripTurn";
+import { getTripSession, processTripTurn } from "./tripTurn";
 
 type Env = {
   DB?: D1Database;
@@ -221,6 +221,10 @@ export default {
         naturalVoiceReady: false,
         time: new Date().toISOString(),
       });
+    }
+
+    if (url.pathname === "/api/trip/session" && request.method === "GET") {
+      return getTripSession(env, url.searchParams.get("sessionId") || "");
     }
 
     if (url.pathname === "/api/trip/turn" && request.method === "POST") {

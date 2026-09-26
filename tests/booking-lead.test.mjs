@@ -184,7 +184,7 @@ test("lost-response retry creates only one lead and rejects changed contact", as
   const changed = await worker.fetch(post("/api/booking/lead", {
     ...payload, contact: "another@example.com",
   }), { DB: db });
-  assert.equal(changed.status, 409);
+  assert.equal(changed.status, 409, JSON.stringify(await changed.clone().json()));
   assert.equal((await changed.json()).error, "lead_id_conflict");
   assert.equal(db.leads.size, 1);
 });

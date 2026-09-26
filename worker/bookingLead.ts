@@ -83,7 +83,7 @@ export async function saveBookingLead(env: Env, payload: BookingLeadPayload) {
   }
   const contact = String(payload.contact || "").trim();
   if (contact.length < 5 || contact.length > 160 ||
-      /[<>\\r\\n]/.test(contact)) return { ok: false, error: "contact_invalid" };
+      /[<>\r\n]/.test(contact)) return { ok: false, error: "contact_invalid" };
   const channel = payload.contactChannel === "phone" ||
     payload.contactChannel === "email" || payload.contactChannel === "whatsapp"
     ? payload.contactChannel : "other";

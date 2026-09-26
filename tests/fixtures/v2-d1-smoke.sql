@@ -37,9 +37,16 @@ INSERT INTO qa_v2_assert(valid)
   SELECT CASE WHEN COUNT(*)=1 THEN 1 ELSE 0 END
   FROM trip_sessions_v2, json_each(trip_sessions_v2.state_json,'$.interests')
   WHERE value='Safari' AND session_id='qa-session-0001';
+INSERT OR IGNORE INTO trip_deleted_sessions_v2(session_id, deleted_at)
+  SELECT session_id, '2030-01-01T00:00:00.000Z' FROM trip_sessions_v2
+  WHERE session_id='qa-session-0001';
+INSERT INTO qa_v2_assert(valid)
+  SELECT CASE WHEN COUNT(*)=1 THEN 1 ELSE 0 END FROM trip_deleted_sessions_v2
+  WHERE session_id='qa-session-0001';
 DELETE FROM trip_turns_v2 WHERE session_id='qa-session-0001';
 DELETE FROM trip_sessions_v2 WHERE session_id='qa-session-0001';
 INSERT INTO qa_v2_assert(valid)
   SELECT CASE WHEN COUNT(*)=0 THEN 1 ELSE 0 END
   FROM trip_sessions_v2 WHERE session_id='qa-session-0001';
+DELETE FROM trip_deleted_sessions_v2 WHERE session_id='qa-session-0001';
 DROP TABLE qa_v2_assert;

@@ -368,3 +368,22 @@ test("health is not ready until both canonical V2 D1 tables exist", async () => 
   assert.equal(ready.status, 200);
   assert.equal((await ready.json()).tripStateReady, true);
 });
+
+test("structured date click does not switch an English traveler's language to Vietnamese", async () => {
+  const db = new D1Fixture();
+  const first = await turn(db, "3 days 2 nights, 2 adults, Safari", "client-turn-900", "session-qa-0010");
+  assert.equal(first.status, 200);
+  assert.equal(first.body.parsed.language, "en");
+  const selected = await worker.fetch(new Request("https://trip.test/api/trip/turn", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      text: "Tính chuyến từ 2030-01-10 đến 2030-01-12",
+      sessionId: "session-qa-0010", clientTurnId: "client-turn-901",
+      checkin: "2030-01-10", checkout: "2030-01-12",
+    }),
+  }), { DB: db });
+  assert.equal(selected.status, 200);
+  const body = await selected.json();
+  assert.equal(body.parsed.language, "en");
+  assert.equal(body.parsed.checkin, "2030-01-10");
+});

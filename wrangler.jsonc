@@ -4,6 +4,7 @@
   "compatibility_date": "2026-09-22",
   "main": "./worker/index.ts",
   "workers_dev": true,
+  "preview_urls": false,
   "triggers": { "crons": ["0 20 * * *"] },
   "vars": { "TRIP_RETENTION_DAYS": "90" },
   "build": {
@@ -16,9 +17,9 @@
   },
   "observability": {
     "enabled": true
-  }
+  },
 
-  ,"d1_databases": [{
+  "d1_databases": [{
     "binding": "DB",
     "database_name": "jotrip-trip-db",
     "database_id": "17372bb5-7626-4238-8a95-fc0cf31ad18e"

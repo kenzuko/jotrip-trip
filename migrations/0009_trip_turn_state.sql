@@ -24,3 +24,6 @@ CREATE TABLE IF NOT EXISTS trip_turns_v2 (
 
 CREATE INDEX IF NOT EXISTS idx_trip_turns_v2_trip
   ON trip_turns_v2(trip_id, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_trip_sessions_v2_updated_at
+  ON trip_sessions_v2(updated_at);

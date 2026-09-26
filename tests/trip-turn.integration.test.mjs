@@ -88,9 +88,7 @@ test("single authoritative turn preserves context and returns identical duplicat
 
   const add = await turn(db, "thêm Hòn Thơm", "client-turn-003");
   assert.equal(add.status, 200, JSON.stringify(add.body));
-  assert.deepEqual(add.body.parsed.interests, ["VinWonders", "Safari", "Hòn Thơm"].sort(
-    (a, b) => ["Safari", "VinWonders", "Hòn Thơm"].indexOf(a) - ["Safari", "VinWonders", "Hòn Thơm"].indexOf(b)
-  ));
+  assert.deepEqual(add.body.parsed.interests, ["VinWonders", "Safari", "Hòn Thơm"]);
   assert.equal(add.body.parsed.days, 3);
   assert.equal(add.body.tripId, first.body.tripId);
   assert.equal(add.body.version, 3);

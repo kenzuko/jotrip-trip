@@ -155,7 +155,7 @@ export function TripPulse({
           </div>
         </div>
       )}
-      <p className="trip-pulse-disclaimer">Đây là phương án đang khám phá. Giá, giờ hoạt động và lịch di chuyển chỉ được xác nhận khi có dữ liệu phù hợp ngày đi.</p>
+      <p className="trip-pulse-disclaimer">Đây là các hướng để cùng cân nhắc, chưa phải xác nhận đặt chỗ. Giá, giờ hoạt động và lịch di chuyển cần được kiểm tra theo ngày đi.</p>
     </section>
   );
 }

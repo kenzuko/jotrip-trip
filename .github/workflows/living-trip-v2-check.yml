@@ -26,9 +26,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: npm
-      - name: Install locked dependencies
-        run: npm ci
+      - name: Install dependencies (repository has no lockfile yet)
+        run: npm install --no-audit --no-fund
       - name: Typecheck
         run: npx tsc --noEmit
       - name: Unit and integration tests

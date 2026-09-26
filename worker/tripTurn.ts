@@ -72,6 +72,10 @@ export async function processTripTurn(
   const db = env.DB;
 
   try {
+    const tombstone = await db.prepare(
+      "SELECT 1 AS blocked FROM trip_deleted_sessions_v2 WHERE session_id=?",
+    ).bind(sessionId).first();
+    if (tombstone) return resultError("session_deleted", 410);
     const duplicate = await db.prepare(
       "SELECT input_text, response_json FROM trip_turns_v2 WHERE session_id=? AND client_turn_id=?",
     ).bind(sessionId, turnId).first<StoredTurn>();
@@ -209,6 +213,10 @@ export async function getTripSession(env: Env, sessionId: string): Promise<Respo
   if (!VALID_ID.test(sessionId)) return resultError("invalid_session_id", 400);
   if (!env.DB) return resultError("trip_state_unavailable", 503);
   try {
+    const tombstone = await env.DB.prepare(
+      "SELECT 1 AS blocked FROM trip_deleted_sessions_v2 WHERE session_id=?",
+    ).bind(sessionId).first();
+    if (tombstone) return resultError("session_deleted", 410);
     const row = await env.DB.prepare(
       "SELECT state_json, trip_id, version FROM trip_sessions_v2 WHERE session_id=?",
     ).bind(sessionId).first<SessionRow>();
@@ -275,12 +283,17 @@ export async function deleteTripSession(env: Env, sessionId: string): Promise<Re
   if (!VALID_ID.test(sessionId)) return resultError("invalid_session_id", 400);
   if (!env.DB) return resultError("trip_state_unavailable", 503);
   try {
-    const [turns, session] = await env.DB.batch([
+    const now = new Date().toISOString();
+    const [marked, turns, session] = await env.DB.batch([
+      env.DB.prepare(
+        "INSERT OR IGNORE INTO trip_deleted_sessions_v2 (session_id, deleted_at) SELECT session_id, ? FROM trip_sessions_v2 WHERE session_id=?",
+      ).bind(now, sessionId),
       env.DB.prepare("DELETE FROM trip_turns_v2 WHERE session_id=?").bind(sessionId),
       env.DB.prepare("DELETE FROM trip_sessions_v2 WHERE session_id=?").bind(sessionId),
     ]);
     return Response.json({
       ok: true, deleted: session.meta.changes > 0,
+      tombstoneCreated: marked.meta.changes > 0,
       turnsDeleted: turns.meta.changes,
       bookingLeadsAffected: false,
     }, { headers: { "cache-control": "no-store" } });
@@ -296,13 +309,17 @@ export async function purgeExpiredTripSessions(env: Env, days = 90) {
   const retention = Math.max(7, Math.min(365, Math.floor(days)));
   const cutoff = new Date(Date.now() - retention * 86_400_000).toISOString();
   try {
-    const [turns, sessions] = await env.DB.batch([
+    const [turns, sessions, tombstones] = await env.DB.batch([
       env.DB.prepare(
         "DELETE FROM trip_turns_v2 WHERE session_id IN (SELECT session_id FROM trip_sessions_v2 WHERE updated_at < ?)",
       ).bind(cutoff),
       env.DB.prepare("DELETE FROM trip_sessions_v2 WHERE updated_at < ?").bind(cutoff),
+      env.DB.prepare("DELETE FROM trip_deleted_sessions_v2 WHERE deleted_at < ?").bind(cutoff),
     ]);
-    return { ok: true, sessionsDeleted: sessions.meta.changes, turnsDeleted: turns.meta.changes };
+    return {
+      ok: true, sessionsDeleted: sessions.meta.changes,
+      turnsDeleted: turns.meta.changes, tombstonesDeleted: tombstones.meta.changes,
+    };
   } catch (error) {
     console.error("trip_session_purge_failed", error);
     return { ok: false, error: "trip_session_purge_unavailable" };

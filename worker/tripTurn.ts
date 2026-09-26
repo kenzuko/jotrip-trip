@@ -155,3 +155,46 @@ export async function processTripTurn(
     return resultError("trip_turn_unavailable", 503);
   }
 }
+
+export async function getTripSession(env: Env, sessionId: string): Promise<Response> {
+  if (!VALID_ID.test(sessionId)) return resultError("invalid_session_id", 400);
+  if (!env.DB) return resultError("trip_state_unavailable", 503);
+  try {
+    const row = await env.DB.prepare(
+      "SELECT state_json, trip_id, version FROM trip_sessions_v2 WHERE session_id=?",
+    ).bind(sessionId).first<SessionRow>();
+    if (!row) return resultError("trip_session_not_found", 404);
+    const latest = await env.DB.prepare(
+      `SELECT client_turn_id, input_text, response_json FROM trip_turns_v2
+       WHERE session_id=? AND trip_id=? ORDER BY created_at DESC LIMIT 6`,
+    ).bind(sessionId, row.trip_id).all<{ client_turn_id: string; input_text: string; response_json: string }>();
+    const recent = (latest.results || []).reverse();
+    const history = recent.flatMap(item => {
+      const reply = JSON.parse(item.response_json) as { assistantText?: string; parsed?: { language?: string } };
+      return [
+        { id: item.client_turn_id, role: "user" as const, text: item.input_text },
+        { id: item.client_turn_id + ":assistant", role: "assistant" as const,
+          text: reply.assistantText || "", language: reply.parsed?.language || "vi" },
+      ];
+    });
+    const planRow = await env.DB.prepare(
+      `SELECT response_json FROM trip_turns_v2
+       WHERE session_id=? AND trip_id=? AND json_extract(response_json, '$.plan') IS NOT NULL
+       ORDER BY created_at DESC LIMIT 1`,
+    ).bind(sessionId, row.trip_id).first<{ response_json: string }>();
+    const advisorRow = await env.DB.prepare(
+      `SELECT response_json FROM trip_turns_v2
+       WHERE session_id=? AND trip_id=? AND json_extract(response_json, '$.advisor') IS NOT NULL
+       ORDER BY created_at DESC LIMIT 1`,
+    ).bind(sessionId, row.trip_id).first<{ response_json: string }>();
+    const plan = planRow ? (JSON.parse(planRow.response_json) as { plan: unknown }).plan : null;
+    const advisor = advisorRow ? (JSON.parse(advisorRow.response_json) as { advisor: unknown }).advisor : null;
+    return Response.json({
+      ok: true, tripId: row.trip_id, version: row.version,
+      parsed: JSON.parse(row.state_json), plan, advisor, history,
+    }, { headers: { "cache-control": "no-store" } });
+  } catch (error) {
+    console.error("trip_session_restore_failed", error);
+    return resultError("trip_session_unavailable", 503);
+  }
+}

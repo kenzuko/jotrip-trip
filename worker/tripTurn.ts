@@ -215,7 +215,8 @@ export async function getTripSession(env: Env, sessionId: string): Promise<Respo
     if (!row) return resultError("trip_session_not_found", 404);
     const latest = await env.DB.prepare(
       `SELECT client_turn_id, input_text, response_json FROM trip_turns_v2
-       WHERE session_id=? AND trip_id=? ORDER BY created_at DESC LIMIT 6`,
+       WHERE session_id=? AND trip_id=?
+       ORDER BY CAST(json_extract(response_json, '$.version') AS INTEGER) DESC LIMIT 6`,
     ).bind(sessionId, row.trip_id).all<{ client_turn_id: string; input_text: string; response_json: string }>();
     const recent = (latest.results || []).reverse();
     const history = recent.flatMap(item => {
@@ -226,18 +227,37 @@ export async function getTripSession(env: Env, sessionId: string): Promise<Respo
           text: reply.assistantText || "", language: reply.parsed?.language || "vi" },
       ];
     });
-    const planRow = await env.DB.prepare(
+    // The last substantive action determines the visible canvas. Do not
+    // resurrect a priced plan after a food question simply because an older
+    // turn had a non-null plan. Compare/contact deliberately retain the prior.
+    const latestSubstantive = await env.DB.prepare(
       `SELECT response_json FROM trip_turns_v2
-       WHERE session_id=? AND trip_id=? AND json_extract(response_json, '$.plan') IS NOT NULL
-       ORDER BY created_at DESC LIMIT 1`,
+       WHERE session_id=? AND trip_id=?
+         AND json_extract(response_json, '$.action') != 'acknowledgement'
+       ORDER BY CAST(json_extract(response_json, '$.version') AS INTEGER) DESC LIMIT 1`,
     ).bind(sessionId, row.trip_id).first<{ response_json: string }>();
-    const advisorRow = await env.DB.prepare(
-      `SELECT response_json FROM trip_turns_v2
-       WHERE session_id=? AND trip_id=? AND json_extract(response_json, '$.advisor') IS NOT NULL
-       ORDER BY created_at DESC LIMIT 1`,
-    ).bind(sessionId, row.trip_id).first<{ response_json: string }>();
-    const plan = planRow ? (JSON.parse(planRow.response_json) as { plan: unknown }).plan : null;
-    const advisor = advisorRow ? (JSON.parse(advisorRow.response_json) as { advisor: unknown }).advisor : null;
+    const last = latestSubstantive
+      ? JSON.parse(latestSubstantive.response_json) as {
+          plan?: unknown; advisor?: unknown; parsed?: { mode?: string };
+        }
+      : null;
+    const retainsPrevious = last?.parsed?.mode === "compare" || last?.parsed?.mode === "contact";
+    let plan = last?.plan || null;
+    let advisor = last?.advisor || null;
+    if (retainsPrevious) {
+      const planRow = await env.DB.prepare(
+        `SELECT response_json FROM trip_turns_v2
+         WHERE session_id=? AND trip_id=? AND json_extract(response_json, '$.plan') IS NOT NULL
+         ORDER BY CAST(json_extract(response_json, '$.version') AS INTEGER) DESC LIMIT 1`,
+      ).bind(sessionId, row.trip_id).first<{ response_json: string }>();
+      const advisorRow = await env.DB.prepare(
+        `SELECT response_json FROM trip_turns_v2
+         WHERE session_id=? AND trip_id=? AND json_extract(response_json, '$.advisor') IS NOT NULL
+         ORDER BY CAST(json_extract(response_json, '$.version') AS INTEGER) DESC LIMIT 1`,
+      ).bind(sessionId, row.trip_id).first<{ response_json: string }>();
+      plan ||= planRow ? (JSON.parse(planRow.response_json) as { plan: unknown }).plan : null;
+      advisor ||= advisorRow ? (JSON.parse(advisorRow.response_json) as { advisor: unknown }).advisor : null;
+    }
     return Response.json({
       ok: true, tripId: row.trip_id, version: row.version,
       parsed: JSON.parse(row.state_json), plan, advisor, history,

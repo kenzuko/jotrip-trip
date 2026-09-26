@@ -12,11 +12,14 @@ import { importDestinationVenues } from "./destinationImport";
 import { answerAdvisor } from "./advisor";
 import { saveBookingLead } from "./bookingLead";
 import { createNaturalSpeech } from "./voice";
+import { interpretTravelNeeds, type AiBinding } from "./aiIntent";
 
 type Env = {
   DB?: D1Database;
   INTERNAL_API_TOKEN?: string;
   OPENAI_API_KEY?: string;
+  AI?: AiBinding;
+  AI_INTERPRET_ENABLED?: string;
 };
 
 type ParsedShape = ReturnType<typeof buildParseResponse>["parsed"];
@@ -232,6 +235,9 @@ export default {
 
       const result = buildParseResponse(body.text);
       const assistantText = assistantTextFor(result);
+      const aiSignals = result.conversationAction === "acknowledgement"
+        ? []
+        : await interpretTravelNeeds(env.AI, body.text, env.AI_INTERPRET_ENABLED === "true");
 
       try {
         await logConversationTurn(
@@ -245,7 +251,7 @@ export default {
         console.error("chat_log_failed", error);
       }
 
-      return json({ ...result, assistantText });
+      return json({ ...result, assistantText, aiSignals });
     }
 
     if (url.pathname === "/api/voice" && request.method === "POST") {

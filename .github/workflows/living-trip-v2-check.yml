@@ -1,0 +1,39 @@
+name: Living Trip V2 checks
+
+on:
+  push:
+    branches:
+      - feat/living-trip-v2-20260926
+  pull_request:
+    paths:
+      - "src/**"
+      - "worker/**"
+      - "tests/**"
+      - "wrangler.jsonc"
+      - "package.json"
+      - ".github/workflows/living-trip-v2-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Unit and integration tests
+        run: npm test
+      - name: Build production assets
+        run: npm run build
+      - name: Wrangler validation only (never deploy)
+        run: npx wrangler deploy --dry-run

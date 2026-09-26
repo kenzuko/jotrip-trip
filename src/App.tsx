@@ -831,7 +831,7 @@ export default function App() {
           )}
         </a>
 
-        <div className="top-actions"><span className="language-line">VI · EN · KO · RU · 中文</span></div>
+        <div className="top-actions"><span className="topbar-promise">Lên kế hoạch theo cách của bạn</span></div>
       </header>
 
       <div className="page-shell">
@@ -1006,7 +1006,7 @@ export default function App() {
                   </p>
                 </div>
 
-                <div className="decision-hint">Chạm từng hướng - JoTrip sẽ nói phần được và phần đổi lại.</div>
+                <div className="decision-hint">Chạm từng hướng để xem phần được và phần cần cân nhắc.</div>
 
                 <div className="decision-cards">
                   {compareDirections.map((item) => {
@@ -1029,7 +1029,7 @@ export default function App() {
                       >
                         <div className="decision-card-top">
                           <span>{areaDisplay(item.hotel.area_code)}</span>
-                          <small>{isActive ? "JoTrip đang nói về hướng này" : "Chạm để nghe"}</small>
+                          <small>{isActive ? "Đang xem hướng này" : "Xem hướng này"}</small>
                         </div>
                         <h3>{item.hotel.canonical_name}</h3>
                         <p>{item.stayContext.summary}</p>

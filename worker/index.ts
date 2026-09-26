@@ -11,14 +11,12 @@ import { buildDestinationContext } from "./destinationContext";
 import { importDestinationVenues } from "./destinationImport";
 import { answerAdvisor } from "./advisor";
 import { saveBookingLead } from "./bookingLead";
-import { createNaturalSpeech } from "./voice";
 import { interpretTravelNeeds, type AiBinding } from "./aiIntent";
 import { processTripTurn } from "./tripTurn";
 
 type Env = {
   DB?: D1Database;
   INTERNAL_API_TOKEN?: string;
-  OPENAI_API_KEY?: string;
   AI?: AiBinding;
   AI_INTERPRET_ENABLED?: string;
 };
@@ -220,7 +218,7 @@ export default {
         dbBound: Boolean(env.DB),
         schemaReady,
         chatLoggingReady: Boolean(env.DB) && schemaReady,
-        naturalVoiceReady: Boolean(env.OPENAI_API_KEY),
+        naturalVoiceReady: false,
         time: new Date().toISOString(),
       });
     }
@@ -260,13 +258,6 @@ export default {
       }
 
       return json({ ...result, assistantText, aiSignals });
-    }
-
-    if (url.pathname === "/api/voice" && request.method === "POST") {
-      const body = await request
-        .json<{ text?: string; language?: string }>()
-        .catch(() => ({}));
-      return createNaturalSpeech(env,String(body.text||""),String(body.language||"vi"));
     }
 
     if (url.pathname === "/api/booking/lead" && request.method === "POST") {

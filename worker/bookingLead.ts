@@ -78,7 +78,7 @@ export async function saveBookingLead(env: Env, payload: BookingLeadPayload) {
   const expectedTripId = payload.expectedTripId || "";
   const expectedVersion = payload.expectedVersion;
   if (!expectedTripId || expectedTripId.length > 100 ||
-      !Number.isSafeInteger(expectedVersion) || (expectedVersion || 0) < 1) {
+      typeof expectedVersion !== "number" || !Number.isSafeInteger(expectedVersion) || expectedVersion < 1) {
     return { ok: false, error: "invalid_trip_identity" };
   }
   const contact = String(payload.contact || "").trim();

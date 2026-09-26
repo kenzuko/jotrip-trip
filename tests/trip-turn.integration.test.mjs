@@ -120,3 +120,19 @@ test("missing D1 never pretends the trip has been saved", async () => {
   assert.equal(res.status, 503);
   assert.equal((await res.json()).error, "trip_state_unavailable");
 });
+
+test("session context can be restored after refresh", async () => {
+  const db = new D1Fixture();
+  const first = await turn(db, "3 ngày 2 đêm, 2 người lớn, Safari", "client-turn-300", "session-qa-0003");
+  assert.equal(first.status, 200);
+  const res = await worker.fetch(
+    new Request("https://trip.test/api/trip/session?sessionId=session-qa-0003"),
+    { DB: db },
+  );
+  assert.equal(res.status, 200);
+  const snapshot = await res.json();
+  assert.equal(snapshot.parsed.days, 3);
+  assert.equal(snapshot.parsed.adults, 2);
+  assert.equal(snapshot.tripId, first.body.tripId);
+  assert.equal(snapshot.version, 1);
+});

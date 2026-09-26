@@ -5,6 +5,7 @@ import type {
   PlanningHotel,
   TripBuildResponse,
   TripParseResponse,
+  TripTurnResponse,
 } from "./types";
 import { directGuide } from "./guideDirector";
 import { LivingWelcome, TripPulse } from "./LivingCanvas";
@@ -84,50 +85,6 @@ type LocalTurn = {
   text: string;
   language?: string;
 };
-
-function planningReply(result: TripParseResponse, plan: TripBuildResponse) {
-  const lang = result.parsed.language;
-  const top = plan.planningHotels?.[0];
-  if (!top) return result.assistantText || "";
-
-  const area = top.hotel.area_code;
-  const areaNames: Record<string, Record<string, string>> = {
-    north: { vi: "Bắc đảo", en: "the north", ko: "북부", ru: "север острова", zh: "北岛" },
-    south: { vi: "Nam đảo", en: "the south", ko: "남부", ru: "юг острова", zh: "南岛" },
-    duong_dong: { vi: "Dương Đông", en: "Duong Dong", ko: "즈엉동", ru: "Зыонгдонг", zh: "阳东" },
-    long_beach: { vi: "Bãi Trường", en: "Long Beach", ko: "롱비치", ru: "Лонг-Бич", zh: "长滩" },
-    north_central: { vi: "Ông Lang", en: "Ong Lang", ko: "옹랑", ru: "Онг Ланг", zh: "翁朗" },
-  };
-  const label = areaNames[area]?.[lang] || area;
-
-  if (lang === "en") return "I’d look at " + label + " first for this trip. I’ll compare what you gain there with the extra travel or evening convenience before we get into room prices.";
-  if (lang === "ko") return "이 일정은 우선 " + label + " 쪽부터 볼게요. 객실 가격보다 먼저, 그 지역에서 편해지는 점과 이동·저녁 활동에서 생기는 차이를 같이 볼게요.";
-  if (lang === "ru") return "Для этой поездки я бы сначала посмотрел " + label + ". Сначала сравню, что этот район упрощает и чем за это приходится платить во времени или вечерней мобильности.";
-  if (lang === "zh") return "这趟行程我会先看" + label + "。我先比较住这里能省下什么，以及交通和晚上活动会多出什么，再看房价。";
-
-  const p = result.parsed;
-  const hasNorth = p.interests.includes("VinWonders") || p.interests.includes("Safari");
-  const hasSouth = p.interests.includes("Hòn Thơm") || p.interests.includes("Sunset Town");
-  const likesEvening =
-    p.stayPreferences.includes("evening") ||
-    p.stayPreferences.includes("walkable") ||
-    p.stayPreferences.includes("food") ||
-    p.stayPreferences.includes("cafe");
-
-  if (area === "north" && hasNorth && likesEvening) {
-    return "Nếu VinWonders với Safari là hai điểm chính thì mình hơi nghiêng về phía Bắc hơn, đi ban ngày sẽ nhẹ cho cả nhà. Nhưng nếu tối nhà mình hay ra ngoài ăn uống, cafe hay đi dạo thì Dương Đông dễ hơn; ở phía Bắc mà tối chạy xuống trung tâm thì tiền xe với thời gian cũng nên tính vào. Mình đặt hai hướng cạnh nhau cho bạn dễ chọn nha.";
-  }
-
-  if (area === "north" && hasNorth) {
-    return "Nếu VinWonders với Safari là phần chính của chuyến đi thì mình hơi nghiêng về phía Bắc hơn. Đi lại ban ngày nhẹ hơn khá nhiều. Mình vẫn sẽ để ý phần buổi tối với tiền xe trước khi nói nhà mình nên chọn khu nào.";
-  }
-
-  if (area === "south" && hasSouth && likesEvening) {
-    return "Nếu Hòn Thơm với Sunset Town là phần chính thì mình hơi nghiêng về phía Nam hơn. Ban ngày đỡ chạy xe, buổi tối cũng có nhiều thứ để làm quanh khu này. Mình sẽ đặt thêm một lựa chọn khác cạnh bên để nhà mình nhìn rõ được - mất gì trước khi chọn.";
-  }
-
-  return "Với chuyến này mình hơi nghiêng về " + label + " trước. Mình muốn nhìn cả cách đi, buổi tối quanh chỗ ở và tiền xe chứ chưa chọn theo giá phòng ngay. Tuỳ nhà mình thích kiểu nào hơn, mình đặt các hướng cạnh nhau cho dễ nhìn nha.";
-}
 
 function compactBubbleText(text: string) {
   const value = text.replace(/\s+/g, " ").trim();
@@ -402,6 +359,7 @@ export default function App() {
   const [activeDecisionArea, setActiveDecisionArea] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const inFlightRef = useRef(false);
+  const retryTurnRef = useRef<{ text: string; id: string } | null>(null);
   const voiceRequestRef = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -566,170 +524,69 @@ export default function App() {
     const previousResult = result;
     const previousPlan = plan;
     const previousAdvisor = advisor;
+    const pending = retryTurnRef.current?.text === value
+      ? retryTurnRef.current
+      : { text: value, id: crypto.randomUUID() };
+    retryTurnRef.current = pending;
 
     setBusy(true);
     setHandoffOpen(false);
     setLeadStatus("idle");
     setActiveDecisionArea(null);
     setTurns((items) => [
-      ...items,
-      { id: crypto.randomUUID(), role: "user", text: value },
+      ...items.filter((item) => item.id !== pending.id),
+      { id: pending.id, role: "user", text: value },
     ].slice(-12));
 
     try {
-      const res = await fetch("/api/trip/parse", {
+      const res = await fetch("/api/trip/turn", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           text: value,
           sessionId: sessionIdRef.current,
+          clientTurnId: pending.id,
         }),
       });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(error.error || "turn_failed");
+      }
+      const json = (await res.json()) as TripTurnResponse;
+      if (!json.ok) throw new Error("turn_failed");
+      retryTurnRef.current = null;
 
-      if (!res.ok) throw new Error("parse_failed");
-      const json = (await res.json()) as TripParseResponse;
-      if (!json.ok) throw new Error("parse_failed");
-
-      if (json.conversationAction === "acknowledgement") {
-        // A short "a"/"ừ"/"ok" is a continuation, not a fresh planning request.
-        // Keep the existing result, compared options and context exactly as they were.
-        if (!previousResult) setResult(json);
-        const reply = json.assistantText || "Ừ, mình đang nghe. Bạn cứ nói tiếp nha.";
-        setReplyText(reply);
-        setTurns((items) => [...items, {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          text: reply,
-          language: previousResult?.parsed.language || json.parsed.language,
-        }].slice(-12));
-        if (voiceOn) void speakResponse(reply, previousResult?.parsed.language || json.parsed.language);
-        return;
+      if (json.action === "new_trip") {
+        setCheckin("");
+        setCheckout("");
+      }
+      if (json.action !== "acknowledgement") {
+        setResult(json);
+        setPlan(json.plan || (json.action === "new_trip" ? null :
+          json.parsed.mode === "compare" || json.parsed.mode === "contact" ? previousPlan : null));
+        setAdvisor(json.advisor || (json.action === "new_trip" ? null :
+          json.parsed.mode === "compare" || json.parsed.mode === "contact" ? previousAdvisor : null));
+        setHandoffOpen(json.parsed.mode === "contact");
+      } else if (!previousResult) {
+        setResult(json);
       }
 
-      // The upcoming response must not sit beside a stale plan from the prior turn.
-      setPlan(null);
-      setAdvisor(null);
-      const isFreshTrip = Boolean(json.parsed.days || json.parsed.nights);
-      const inheritedInterests =
-        previousResult && !isFreshTrip
-          ? Array.from(new Set([
-              ...previousResult.parsed.interests,
-              ...json.parsed.interests,
-            ]))
-          : json.parsed.interests;
-      const inheritedPreferences =
-        previousResult && !isFreshTrip
-          ? Array.from(new Set([
-              ...previousResult.parsed.stayPreferences,
-              ...json.parsed.stayPreferences,
-            ]))
-          : json.parsed.stayPreferences;
-      const inheritedZone =
-        json.parsed.mentionedZone ||
-        previousPlan?.planningHotels?.[0]?.hotel.area_code ||
-        previousAdvisor?.hotels?.[0]?.hotel.area_code ||
-        previousAdvisor?.context?.zoneCode ||
-        previousResult?.parsed.mentionedZone ||
-        undefined;
-
-      const contextualResult: TripParseResponse =
-        previousResult && !isFreshTrip
-          ? {
-              ...json,
-              aiSignals: Array.from(new Set([...(previousResult.aiSignals || []), ...(json.aiSignals || [])])),
-              parsed: {
-                ...previousResult.parsed,
-                ...json.parsed,
-                days: json.parsed.days ?? previousResult.parsed.days,
-                nights: json.parsed.nights ?? previousResult.parsed.nights,
-                adults: json.parsed.adults ?? previousResult.parsed.adults,
-                children: json.parsed.children ?? previousResult.parsed.children,
-                budgetVnd: json.parsed.budgetVnd ?? previousResult.parsed.budgetVnd,
-                interests: inheritedInterests,
-                stayPreferences: inheritedPreferences,
-                mentionedZone: inheritedZone,
-                raw: json.parsed.raw,
-                language: json.parsed.language,
-                mode: json.parsed.mode,
-              },
-            }
-          : json;
-
-      setResult(contextualResult);
-
-      let spoken = json.assistantText || "";
-
-      if (json.ok && json.parsed.mode === "trip_plan") {
-        setAdvisor(null);
-        const planRes = await fetch("/api/trip/build", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            adults: contextualResult.parsed.adults,
-            children: contextualResult.parsed.children,
-            interests: inheritedInterests,
-            stayPreferences: inheritedPreferences,
-            language: contextualResult.parsed.language,
-            days: contextualResult.parsed.days,
-            nights: contextualResult.parsed.nights,
-            budgetVnd: contextualResult.parsed.budgetVnd,
-          }),
-        });
-        if (!planRes.ok) throw new Error("build_failed");
-        const nextPlan = (await planRes.json()) as TripBuildResponse;
-        if (!nextPlan.ok) throw new Error("build_failed");
-        setPlan(nextPlan);
-        spoken = planningReply(contextualResult, nextPlan) || spoken;
-      } else if (json.ok) {
-        const advisorRes = await fetch("/api/advisor/answer", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            rawText: json.parsed.raw,
-            language: json.parsed.language,
-            mode: json.parsed.mode,
-            interests: inheritedInterests,
-            stayPreferences: inheritedPreferences,
-            mentionedZone: inheritedZone,
-          }),
-        });
-        if (!advisorRes.ok) throw new Error("advisor_failed");
-        const nextAdvisor = (await advisorRes.json()) as AdvisorResponse;
-        if (!nextAdvisor.ok) throw new Error("advisor_failed");
-
-        if (json.parsed.mode === "contact") {
-          setHandoffOpen(true);
-          spoken = nextAdvisor.answerText || spoken;
-        } else if (json.parsed.mode === "compare") {
-          spoken =
-            json.parsed.language === "vi" && previousPlan?.insights?.[0]?.body
-              ? previousPlan.insights[0].body
-              : nextAdvisor.answerText || spoken;
-        } else {
-          setAdvisor(nextAdvisor);
-          spoken = nextAdvisor.answerText || spoken;
-        }
-      }
-
-      setReplyText(spoken);
-      if (spoken) {
-        setTurns((items) => [
-          ...items,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            text: spoken,
-            language: json.parsed.language,
-          },
-        ].slice(-12));
-      }
-
-      if (voiceOn && json.ok && spoken) {
-        void speakResponse(spoken, contextualResult.parsed.language);
-      }
-    } catch {
-      // Network failures are UI status, not fabricated assistant transcript entries.
-      setApiError("Kết nối đang gián đoạn. Bạn gửi lại câu vừa rồi giúp mình nhé.");
+      const reply = json.assistantText || "Mình đang theo chuyến này cùng bạn.";
+      setReplyText(reply);
+      setTurns((items) => [...items, {
+        id: json.clientTurnId + ":assistant",
+        role: "assistant",
+        text: reply,
+        language: json.parsed.language,
+      }].slice(-12));
+      if (voiceOn) void speakResponse(reply, json.parsed.language);
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "";
+      setApiError(code === "trip_state_unavailable" || code === "trip_turn_unavailable"
+        ? "Phần lưu chuyến đi đang gián đoạn. Mình chưa ghi nhận tin này, bạn thử lại sau nha."
+        : code === "concurrent_turn_retry"
+          ? "Có hai tin gửi sát nhau. Bạn thử gửi lại tin vừa rồi nha."
+          : "Kết nối đang gián đoạn. Bạn gửi lại câu vừa rồi giúp mình nhé.");
       setInput((current) => current || value);
     } finally {
       inFlightRef.current = false;

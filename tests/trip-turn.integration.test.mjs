@@ -354,19 +354,31 @@ test("restoration does not resurrect a stale plan after switching to food advice
   assert.equal(snapshot.history.length, 4);
 });
 
-test("health is not ready until both canonical V2 D1 tables exist", async () => {
+test("health requires canonical trip and separately consented booking lead schemas", async () => {
   const noDb = await worker.fetch(new Request("https://trip.test/api/health"), {});
   assert.equal(noDb.status, 503);
   assert.equal((await noDb.json()).tripStateReady, false);
   const readyDb = {
     prepare: sql => ({ first: async () => {
-      if (!/trip_sessions_v2|trip_turns_v2|trip_deleted_sessions_v2/.test(sql)) throw Error("unexpected health query");
+      if (!/trip_sessions_v2|trip_turns_v2|trip_deleted_sessions_v2|booking_leads|booking_lead_consents_v2|booking_lead_erasure_audit/.test(sql)) throw Error("unexpected health query");
       return null;
     } }),
   };
   const ready = await worker.fetch(new Request("https://trip.test/api/health"), { DB: readyDb });
   assert.equal(ready.status, 200);
-  assert.equal((await ready.json()).tripStateReady, true);
+  const readyBody = await ready.json();
+  assert.equal(readyBody.tripStateReady, true);
+  assert.equal(readyBody.bookingLeadReady, true);
+  const missingLead = await worker.fetch(new Request("https://trip.test/api/health"), {
+    DB: { prepare: sql => ({ first: async () => {
+      if (/booking_lead_consents_v2/.test(sql)) throw Error("missing migration 0010");
+      return null;
+    } }) },
+  });
+  assert.equal(missingLead.status, 503);
+  const degraded = await missingLead.json();
+  assert.equal(degraded.tripStateReady, true);
+  assert.equal(degraded.bookingLeadReady, false);
 });
 
 test("structured date click does not switch an English traveler's language to Vietnamese", async () => {

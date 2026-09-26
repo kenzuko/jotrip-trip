@@ -610,7 +610,9 @@ export default function App() {
 
   async function sendLead(event: FormEvent) {
     event.preventDefault();
-    if (!result || !leadContact.trim() || !leadConsent) return;
+    if (!result || !leadContact.trim() || !leadConsent ||
+      checkin !== (result.parsed.checkin || "") ||
+      checkout !== (result.parsed.checkout || "")) return;
 
     setLeadStatus("sending");
     try {
@@ -622,14 +624,6 @@ export default function App() {
           contact: leadContact.trim(),
           language: result.parsed.language,
           consent: leadConsent,
-          tripContext: {
-            query: result.parsed.raw,
-            parsed: result.parsed,
-            checkin,
-            checkout,
-            plan,
-            advisorMode: advisor?.mode,
-          },
         }),
       });
       const json = await res.json() as { ok?: boolean };
@@ -643,6 +637,9 @@ export default function App() {
   const isPhoneWelcome = typeof window !== "undefined" &&
     window.matchMedia("(max-width: 560px)").matches;
   const hasResponse = Boolean(result);
+  const datesPending = Boolean(result &&
+    (checkin !== (result.parsed.checkin || "") ||
+     checkout !== (result.parsed.checkout || "")));
   const canHandoff = Boolean(
     result &&
       (plan?.planningHotels?.length ||
@@ -1043,16 +1040,19 @@ export default function App() {
                         checked={leadConsent}
                         onChange={(event) => setLeadConsent(event.target.checked)}
                       />
-                      <span>Tôi đồng ý để JoTrip liên hệ về chuyến đi này.</span>
+                      <span>Tôi đồng ý để JoTrip lưu thông tin liên hệ và tóm tắt chuyến đi, nhằm kiểm tra dịch vụ và liên hệ với tôi. Yêu cầu này được lưu riêng với lịch sử chat.</span>
                     </label>
                     <button
                       type="submit"
-                      disabled={!leadContact.trim() || !leadConsent || leadStatus === "sending"}
+                      disabled={!leadContact.trim() || !leadConsent || datesPending ||
+                        leadStatus === "sending" || leadStatus === "sent"}
                     >
                       {leadStatus === "sending" ? "Đang gửi..." : "Gửi cho JoTrip"}
                     </button>
+                    {datesPending && <p className="lead-error">Bạn cập nhật ngày đi ở phía trên trước khi gửi để JoTrip nhận đúng chuyến nha.</p>}
+                    <p className="lead-privacy-note">Bạn có thể yêu cầu JoTrip xoá thông tin liên hệ qua kênh đã trao đổi. Xoá lịch sử chat không tự xoá yêu cầu này.</p>
                     {leadStatus === "sent" && (
-                      <p className="lead-success">Đã nhận. JoTrip sẽ dùng đúng phương án bạn vừa xem để kiểm tra lại.</p>
+                      <p className="lead-success">JoTrip đã nhận thông tin liên hệ và tóm tắt chuyến đi. Nhân viên sẽ kiểm tra dịch vụ trước khi xác nhận với bạn.</p>
                     )}
                     {leadStatus === "error" && (
                       <p className="lead-error">Chưa gửi được. Thử lại sau một chút.</p>

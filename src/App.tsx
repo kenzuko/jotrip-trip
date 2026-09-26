@@ -420,14 +420,6 @@ export default function App() {
       p.stayPreferences.length
         ? p.stayPreferences.map(preferenceLabel).join(" + ")
         : "",
-      ...(result.aiSignals || []).map((signal) => ({
-        slow_pace: "Ưu tiên ít di chuyển",
-        family_focus: "Ưu tiên gia đình",
-        food_focus: "Quan tâm ăn uống",
-        beach_focus: "Thích biển",
-        evening_focus: "Thích hoạt động buổi tối",
-        quiet_focus: "Thích không gian yên tĩnh",
-      })[signal]),
     ].filter(Boolean);
   }, [result]);
 
@@ -974,6 +966,14 @@ export default function App() {
 
             <TripPulse
               summary={summaryBits}
+              aiSignals={(result.aiSignals || []).map((signal) => ({
+                slow_pace: "Muốn ít di chuyển",
+                family_focus: "Ưu tiên gia đình",
+                food_focus: "Quan tâm ăn uống",
+                beach_focus: "Thích biển",
+                evening_focus: "Thích hoạt động buổi tối",
+                quiet_focus: "Thích không gian yên tĩnh",
+              })[signal])}
               hotels={plan?.planningHotels || []}
               selectedArea={activeDecisionArea}
               onSelectArea={setActiveDecisionArea}

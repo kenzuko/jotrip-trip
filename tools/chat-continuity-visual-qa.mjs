@@ -123,7 +123,7 @@ try {
       await page.screenshot({ path: `qa-output/${item.engine}-question.png`, animations: "disabled" });
       await page.locator("form.prompt button[type=submit]").click();
       await page.locator(".message--pending").waitFor({ timeout: 8000 });
-      assert.equal(await page.locator(".composer-mascot").getAttribute("data-state"), "thinking");
+      assert.equal(await page.locator(".mascot-shell").getAttribute("data-mascot-state"), "thinking");
       await page.screenshot({ path: `qa-output/${item.engine}-thinking.png`, animations: "disabled" });
       await page.locator(".message--pending").waitFor({ state: "detached", timeout: 8000 });
       assert.equal(await page.locator(".conversation-hero--active .assistant-bubble").count(), 0);

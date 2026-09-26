@@ -16,6 +16,10 @@ Text-first conversational trip planning with a responsive Living Canvas. The con
 - Workers AI can extract at most three allowlisted qualitative signals for a sufficiently detailed natural-language message. It cannot change days, dates, people, price, availability, route or booking consent. Contact-like messages are excluded; malformed output and model errors fall back to the deterministic parser.
 - Existing modular-monolith React + Worker + D1 design preserved. No migrations or external product changes.
 
+## Current legacy type debt
+
+A full `npx tsc --noEmit` on the pre-recovery branch currently fails on existing React turn-array inference, `Response.json().catch(() => ({}))` union typing and multiple legacy Worker request bodies. Adding Cloudflare Worker/Vite ambient types exposed this existing debt. The V2 CI therefore performs strict scoped typecheck on new `LivingCanvas.tsx` and `aiIntent.ts`, plus the full repository test suite, Vite build and Wrangler dry-run. This is NOT a claim that the entire old source typechecks. Reconcile and fix the legacy type debt when the original recovery branch arrives.
+
 ## Blocking recovery work
 
 The earlier Work session reported recovery commits 3eead1c and 8400ae4633362b4e6c6ca10ceebdcb88f93db609 on recovery/trip-engine-worktree-20260924. That branch is not available remotely as of this work. Missing worker/tripTurn.ts and migrations 0009-0015 prevent safe end-to-end session restoration, idempotent turns, itinerary persistence and production deploy.

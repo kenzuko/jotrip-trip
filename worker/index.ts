@@ -10,12 +10,13 @@ import { importTravelMatrix } from "./travelMatrixImport";
 import { buildDestinationContext } from "./destinationContext";
 import { importDestinationVenues } from "./destinationImport";
 import { answerAdvisor } from "./advisor";
-import { saveBookingLead } from "./bookingLead";
+import { eraseBookingLead, saveBookingLead } from "./bookingLead";
 import { deleteTripSession, getTripSession, processTripTurn, purgeExpiredTripSessions } from "./tripTurn";
 
 type Env = {
   DB?: D1Database;
   INTERNAL_API_TOKEN?: string;
+  LEAD_ADMIN_TOKEN?: string;
   TRIP_RETENTION_DAYS?: string;
 };
 
@@ -181,6 +182,28 @@ export default {
       return processTripTurn(env, body, assistantTextFor);
     }
 
+    if (url.pathname === "/api/internal/booking-lead/erase" && request.method === "POST") {
+      // Separate secret from analytics; never permit deletion with an
+      // anonymous trip session ID or a read-only analytics token.
+      if (!env.LEAD_ADMIN_TOKEN ||
+          request.headers.get("authorization") !== `Bearer ${env.LEAD_ADMIN_TOKEN}`) {
+        return json({ ok: false, error: "unauthorized" }, 401);
+      }
+      const body = await request.json<{
+        leadId?: string; reason?: "verified_customer_request" | "operational_cleanup";
+      }>().catch(() => ({}));
+      if (body.reason !== "verified_customer_request" &&
+          body.reason !== "operational_cleanup") {
+        return json({ ok: false, error: "invalid_reason" }, 400);
+      }
+      try {
+        const result = await eraseBookingLead(env, body.leadId || "", body.reason);
+        return json(result, result.ok ? 200 : result.error === "db_not_bound" ? 503 : 400);
+      } catch {
+        return json({ ok: false, error: "lead_erasure_unavailable" }, 503);
+      }
+    }
+
     if (url.pathname === "/api/booking/lead" && request.method === "POST") {
       const body = await request
         .json<{
@@ -196,22 +219,26 @@ export default {
         .catch(() => ({}));
 
       try {
-        return json(await saveBookingLead(env,{
-          sessionId:body.sessionId,
-          contact:String(body.contact||""),
-          contactChannel:body.contactChannel,
-          language:body.language,
-          note:body.note,
-          tripContext:body.tripContext,
-          consent:body.consent,
-          website:body.website,
-        }));
+        const result = await saveBookingLead(env, {
+          sessionId: body.sessionId,
+          contact: String(body.contact || ""),
+          contactChannel: body.contactChannel,
+          note: body.note,
+          consent: body.consent,
+          website: body.website,
+          // Client-provided tripContext is intentionally never trusted.
+        });
+        const status = result.ok ? 200 :
+          result.error === "session_deleted" ? 410 :
+          result.error === "trip_session_not_found" ? 404 :
+          result.error === "db_not_bound" ? 503 : 400;
+        return json(result, status);
       } catch (error) {
         console.error("booking_lead_failed", error);
         return json({
           ok:false,
           error:"booking_lead_failed",
-          message:error instanceof Error?error.message:String(error),
+          // Never expose database errors or customer information to the browser.
         },500);
       }
     }

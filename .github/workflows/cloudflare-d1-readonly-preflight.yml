@@ -49,8 +49,10 @@ jobs:
             [[ -z "$token" ]] && continue
             if curl --fail --silent --show-error --max-time 15 -H "Authorization: Bearer $token" https://api.cloudflare.com/client/v4/user/tokens/verify > "/tmp/trip-verify-$label.json" 2>/dev/null; then
               LABEL="$label" node --input-type=module -e 'import fs from "node:fs"; import crypto from "node:crypto";const x=JSON.parse(fs.readFileSync("/tmp/trip-verify-"+process.env.LABEL+".json","utf8"));if(!x.success||!x.result?.id)process.exit(2);console.log(process.env.LABEL+" token active: "+x.result.status+"; token ID comparison hash: "+crypto.createHash("sha256").update(x.result.id).digest("hex").slice(0,16));'
+            elif curl --fail --silent --show-error --max-time 15 -H "Authorization: Bearer $token" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/tokens/verify" > "/tmp/trip-verify-$label.json" 2>/dev/null; then
+              LABEL="$label" node --input-type=module -e 'import fs from "node:fs";import crypto from "node:crypto";const x=JSON.parse(fs.readFileSync("/tmp/trip-verify-"+process.env.LABEL+".json","utf8"));if(!x.success||!x.result?.id)process.exit(2);console.log(process.env.LABEL+" ACCOUNT-scoped token active: "+x.result.status+"; token ID comparison hash: "+crypto.createHash("sha256").update(x.result.id).digest("hex").slice(0,16));'
             else
-              echo "$label token verification endpoint unavailable (not proof of invalid token)."
+              echo "$label token verification endpoints unavailable (not proof of invalid token)."
             fi
             rm -f "/tmp/trip-verify-$label.json"
           done
@@ -68,7 +70,8 @@ jobs:
             exit 3
           fi
           echo "Remote D1 identity matches reviewed UUID."
-      - name: Verify remote D1 schema export with configured tokens (no customer data)
+      - name: Verify remote D1 schema export with configured tokens (manual only, no customer data)
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         env:
           PRIMARY_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

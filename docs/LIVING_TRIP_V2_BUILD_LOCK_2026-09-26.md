@@ -9,7 +9,7 @@ Text-first conversational trip planning with a responsive Living Canvas. The con
 ## Implemented in this isolated V2 foundation
 
 - Interactive welcome story cards: family, island exploration, relaxed stay. Each starts the existing conversation pipeline; custom text remains available.
-- Contextual Trip Pulse: displays the trip facts and, when available, two real planning directions from the existing engine. Tapping an area selects the existing decision card; it does not invent routes or book anything.
+- Unified contextual Trip Pulse: displays trip facts and, when available, two distinct real planning directions from the existing engine. Tapping one expands inline tradeoffs and available verified route facts. The older duplicate decision-card section has been removed to keep mobile reading focused.
 - Responsive CSS illustrations only, explicitly decorative and not geographic maps. No third-party stock image hotlinks, no new asset licensing risk, no heavy animation or dependencies.
 - Voice switch hidden in V2; no voice API call unless legacy voice is explicitly re-enabled in a later phase.
 - Optional Workers AI binding with the active @cf/meta/llama-3.1-8b-instruct-fast model. Inference is OFF by default via AI_INTERPRET_ENABLED=false.

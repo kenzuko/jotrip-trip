@@ -13,7 +13,7 @@ Status: engineering handoff, **not a published privacy notice or legal review**.
 
 ## Minimal lead handoff
 
-The browser sends `sessionId`, contact and an explicit consent flag. The Worker reads the authoritative session and creates a short allowlisted summary: trip ID, language, adults/children, duration, saved dates, recognized interests and area. It never accepts the browser's raw transcript, hotel quotes, private supplier rates or full plan object as booking context. An optional note is capped at 300 characters. The summary is **not** a confirmed booking or supplier availability.
+The browser sends `sessionId`, a stable client-generated lead UUID, the trip ID/version currently displayed, contact and an explicit consent flag. A stale tab receives HTTP 409 instead of silently sending the newest trip from another tab. A lost-response retry reuses the same lead UUID, so it cannot create a duplicate request. The Worker reads the authoritative session and creates a short allowlisted summary: trip ID, language, adults/children, duration, saved dates, recognized interests and area. The D1 insert rechecks the trip ID/version atomically and records that version in the minimal handoff. It never accepts the browser's raw transcript, hotel quotes, private supplier rates or full plan object as booking context. An optional note is capped at 300 characters. The summary is **not** a confirmed booking or supplier availability.
 
 `booking_lead_consents_v2` records the consent version `booking_contact_v2_2026-09-26` and timestamp in the same D1 transaction as the lead. The lead itself stays in the existing `booking_leads` schema for compatibility.
 
@@ -21,7 +21,7 @@ The browser sends `sessionId`, contact and an explicit consent flag. The Worker 
 
 `POST /api/internal/booking-lead/erase` requires a separate server-only `LEAD_ADMIN_TOKEN`, a lead UUID and a reason (`verified_customer_request` or `operational_cleanup`). It deletes the lead and its consent record, then keeps an audit containing only the erased lead ID, reason and time. It does not expose the contact in its response and cannot be called with the read-only analytics token or an anonymous session ID.
 
-The staff workflow must verify identity through the customer's existing channel **before** invoking erasure. There is intentionally no anonymous delete-by-contact endpoint, since it would permit other people to erase someone else's request. The audit itself needs a separately reviewed retention policy.
+The staff workflow must verify identity through the customer's existing channel **before** invoking erasure. There is intentionally no anonymous delete-by-contact endpoint, since it would permit other people to erase someone else's request. The audit also prevents a delayed retry from recreating an erased lead. The audit itself needs a separately reviewed retention policy.
 
 ## Unresolved decisions before public launch
 
@@ -34,4 +34,4 @@ The staff workflow must verify identity through the customer's existing channel 
 
 ## Test scope
 
-`tests/booking-lead.test.mjs` covers explicit consent, server-owned data minimization, deleted/unknown sessions and separate staff authorization. The CI workflow exercises migrations 0009 and 0010 and SQL lead/consent/erasure lifecycle against **local D1 only**. A second local D1 run checks compatibility with the old runtime-created table. Neither test validates the real remote D1 schema or backups.
+`tests/booking-lead.test.mjs` covers explicit consent, server-owned data minimization, stale-tab races, duplicate network retries, erased-lead replay, deleted/unknown sessions and separate staff authorization. The CI workflow exercises migrations 0009 and 0010, a real D1 version-locked insert and SQL lead/consent/erasure lifecycle against **local D1 only**. A second local D1 run checks compatibility with the old runtime-created table. Neither test validates the real remote D1 schema or backups.

@@ -1,6 +1,6 @@
 # Living Trip V2 - remote D1 read-only preflight and backup runbook
 
-Status: **remote D1 not inspected**. The dedicated read-only GitHub Actions preflight ran on 26 September 2026 but stopped before its first Cloudflare request because `jotrip-trip` did not have an available API token/account ID. The regular CI runs local D1 only. Remote mutations require a separate backup, review and deployment approval.
+Status: **remote read-only preflight completed 26 September 2026** via GitHub Actions run [36240762361](https://github.com/kenzuko/jotrip-trip/actions/runs/36240762361). The connected Cloudflare account and `jotrip-trip-db` UUID match `wrangler.jsonc`. Wrangler lists all migrations 0000-0010 as pending. A read-only `sqlite_master` query confirmed that all six V2/booking tables are absent; no partial V2 schema or incompatible `booking_leads` table was found among those six. This is **not** proof that the entire database is empty or that the legacy migration sequence is safe to apply. Full remote SQL export/backup returned Cloudflare authentication error 10000, so backup, migration, preview deployment and production deployment remain **blocked** until the token has the necessary D1 export/write permissions and a tested backup exists. No remote mutation has been made.
 
 Official command reference: https://developers.cloudflare.com/d1/wrangler-commands/
 Official export reference: https://developers.cloudflare.com/d1/best-practices/import-export-data/
@@ -11,7 +11,7 @@ The correct GitHub repository is `kenzuko/jotrip-trip`, Worker `jotrip-trip`, D1
 
 The GitHub Actions workflow `Cloudflare D1 read-only preflight` already exists on `feat/living-trip-v2-20260926`. It accepts a repository Actions secret named `CLOUDFLARE_API_TOKEN` (or `CF_API_TOKEN`) and either an Actions secret `CLOUDFLARE_ACCOUNT_ID` (or `CF_ACCOUNT_ID`) or a nonsecret repository variable `CLOUDFLARE_ACCOUNT_ID`. GitHub does not automatically share the similarly named secrets from `jotrip-home` or `Jotrip-Lab`.
 
-The token needs only the Cloudflare permissions required for read-only D1 metadata, migration history and schema export. Do not paste a token into chat, commit it, or attach it as a workflow artifact. After these repository-level credentials are available, run `Actions > Cloudflare D1 read-only preflight > Run workflow` on the V2 branch. This workflow is read-only and does not back up customer data, apply migrations or deploy.
+The token needs only the Cloudflare permissions required for read-only D1 metadata, migration history and schema export. Do not paste a token into chat, commit it, or attach it as a workflow artifact. The credentials are now present and support D1 metadata, migration listing and read-only queries. The export endpoint still rejects the token; arrange an appropriately scoped token before backup or migration. After credential changes, run `Actions > Cloudflare D1 read-only preflight > Run workflow` on the V2 branch. This workflow is read-only and does not back up customer data, apply migrations or deploy.
 
 ## A. Read-only inspection (no mutation)
 

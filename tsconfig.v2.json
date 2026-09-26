@@ -6,6 +6,7 @@
     "src/types.ts",
     "worker/aiIntent.ts",
     "worker/tripState.ts",
-    "worker/tripTurn.ts"
+    "worker/tripTurn.ts",
+    "worker/bookingLead.ts"
   ]
 }

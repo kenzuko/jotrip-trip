@@ -1,43 +1,41 @@
-# JoTrip Living Trip V2 - implementation lock (26/09/2026)
+# JoTrip Living Trip V2 - clean rebuild lock (26/09/2026)
 
-Status: isolated preview branch. NOT production-ready. Do not merge or deploy until the original recovery branch is available and reconciled.
+Status: isolated draft PR #6. The owner has authorized deleting or renaming obsolete code; there is no important user data to migrate. This is **not** authorization to drop the remote D1 database, change production DNS or deploy an untested build.
 
-## Product direction locked with owner
+## Product contract
 
-Text-first conversational trip planning with a responsive Living Canvas. The conversation is the control surface for trip discovery, evidence-backed comparisons, an editable itinerary and eventual human booking handoff. Voice is deliberately deferred. Reuse approved JoTrip logo and eight HD mascot assets; do not redraw. Use real licensed, geographically accurate Phu Quoc photography when approved assets are available.
+Text-first, natural conversations that directly update a responsive visual planning canvas. One traveler message is one server-authoritative turn. The Trip Engine uses verified route and commercial data; it never invents hotel prices, operating times, availability or route durations. Voice and paid AI inference are postponed. Keep the original JoTrip logo and eight approved mascot assets.
 
-## Implemented in this isolated V2 foundation
+## Keep and reuse
 
-- Interactive welcome story cards: family, island exploration, relaxed stay. Each starts the existing conversation pipeline; custom text remains available.
-- Unified contextual Trip Pulse: displays trip facts and, when available, two distinct real planning directions from the existing engine. Tapping one expands inline tradeoffs and available verified route facts. The older duplicate decision-card section has been removed to keep mobile reading focused.
-- Responsive CSS illustrations only, explicitly decorative and not geographic maps. No third-party stock image hotlinks, no new asset licensing risk, no heavy animation or dependencies.
-- Voice switch hidden in V2; no voice API call unless legacy voice is explicitly re-enabled in a later phase.
-- Optional Workers AI binding with the active @cf/meta/llama-3.1-8b-instruct-fast model. Inference is OFF by default via AI_INTERPRET_ENABLED=false.
-- Workers AI can extract at most three allowlisted qualitative signals for a sufficiently detailed natural-language message. It cannot change days, dates, people, price, availability, route or booking consent. Contact-like messages are excluded; malformed output and model errors fall back to the deterministic parser.
-- Existing modular-monolith React + Worker + D1 design preserved. No migrations or external product changes.
+- React/Vite + Cloudflare Worker + D1 modular monolith.
+- Existing deterministic parser, trip builder, destination knowledge, route matrix, private hotel pricing firewall and booking lead consent flow.
+- Existing public attraction catalog, source adapters, approved logo/mascot, and legacy D1 migrations 0000-0008 to preserve schema compatibility.
+- Current V2 welcome story cards and one unified Trip Pulse. Clicking a direction expands its real tradeoffs and available route evidence without repeating a second comparison section.
 
-## Current legacy type debt
+## Rebuilt
 
-A full `npx tsc --noEmit` on the pre-recovery branch currently fails on existing React turn-array inference, `Response.json().catch(() => ({}))` union typing and multiple legacy Worker request bodies. Adding Cloudflare Worker/Vite ambient types exposed this existing debt. The V2 CI therefore performs strict scoped typecheck on new `LivingCanvas.tsx` and `aiIntent.ts`, plus the full repository test suite, Vite build and Wrangler dry-run. This is NOT a claim that the entire old source typechecks. Reconcile and fix the legacy type debt when the original recovery branch arrives.
+- `worker/tripState.ts`: merge follow-up facts without resetting on a new duration, support explicit new trip, add/remove attractions and short acknowledgements.
+- `worker/tripTurn.ts`: `POST /api/trip/turn` builds the final response and visual plan in the Worker. The same clientTurnId returns the exact stored response; different text with the same ID is rejected. Version-checked D1 session writes reject concurrent stale turns.
+- `GET /api/trip/session`: restore the last trip, recent conversation and most recent plan after a refresh.
+- `migrations/0009_trip_turn_state.sql`: additive session/turn tables, not a remote reset. The `response_json` is the exact final reply returned to the browser.
+- Frontend now consumes one turn endpoint instead of independently parsing, merging, building and replacing its own transcript. A failed network request keeps the clientTurnId for safe retry.
 
-## Blocking recovery work
+## Removed from active runtime
 
-The earlier Work session reported recovery commits 3eead1c and 8400ae4633362b4e6c6ca10ceebdcb88f93db609 on recovery/trip-engine-worktree-20260924. That branch is not available remotely as of this work. Missing worker/tripTurn.ts and migrations 0009-0015 prevent safe end-to-end session restoration, idempotent turns, itinerary persistence and production deploy.
+- Legacy `POST /api/trip/parse` and its initial-reply logging, which did not match the final answer the user saw.
+- Obsolete parse-route integration test, replaced by state and real Worker-turn integration tests.
+- Unreachable paid voice UI, public `/api/voice` route and unused `worker/voice.ts`. Voice remains a future product phase; approved speaking mascot art is untouched.
+- Unused Workers AI binding in the launch config. `worker/aiIntent.ts` is retained as dormant research code but is not imported by the Worker. There is **no model call** in the new turn path.
 
-The current older /api/trip/parse logs the initial deterministic assistant reply, while the browser may display a later advisor/build reply. This mismatch must be resolved by the restored server-authoritative tripTurn path before production.
+## Remaining gates
 
-## Next engineering gates
+1. Inspect the actual remote D1 migration history and make a backup. Apply additive migration 0009 only after verifying the active database and Cloudflare permissions.
+2. Real D1 smoke test: first request, short acknowledgement, follow-up, explicit new trip, same-ID retry, concurrent writes, refresh, and booking lead consent.
+3. Persist check-in/check-out selections in server state. Current date-specific repricing still calls the existing separate builder and has not been converted to an authoritative saved itinerary.
+4. Connect internal analytics to the new `trip_turns_v2` table. The old `chat_messages` dashboard does not automatically include new V2 turns.
+5. Complete privacy notice, session deletion and retention controls before public launch.
+6. Use real photos only after checking photographer rights, guest consent and precise geographic identity; optimize to WebP and lazy-load.
+7. Review current CI, inspect the mobile Chromium/WebKit screenshots and verify a real device. Then consider preview deployment of `jotrip-trip` only, with rollback. No CMS, Weather, Airport or Transit changes.
 
-1. Obtain original recovery branch without force-push, reconcile and port V2 changes. Preserve approved mascot/logo and source.
-2. Server-authoritative single trip turn with clientTurnId idempotency, correction semantics, exactly-once persisted displayed reply and reload/cross-device recovery.
-3. Connect Living Canvas to the server's canonical trip state. Only then allow structured remove/change actions, saved itinerary and undo. Do not fake a save in local state.
-4. Add real licensed destination photos and a geographically accurate map. Only show route minutes with evidence, date/freshness and uncertainty.
-5. AI evaluation: 30-50 natural conversations across target languages. Require a production rate limiter, daily inference budget, data processing disclosure and abuse controls before enabling AI_INTERPRET_ENABLED.
-6. Browser QA on mobile 390x844 and desktop, keyboard/safe-area/reduced-motion, chat-to-visual synchronization, empty/no-DB and AI-quota fallbacks.
-7. Inspect remote D1 migrations, Cloudflare Worker and domain routing with authenticated access; deploy only jotrip-trip after rollback preparation. Do not change CMS, Weather, Airport or other workers.
-
-## Safety and cost
-
-No AI is required for clicking, opening cards, comparing existing choices or viewing an itinerary. AI is opt-in and disabled in config; when enabled it only extracts bounded qualitative travel signals. The Cloudflare Workers AI binding and model identifier follow Cloudflare documentation, including its May 2026 model deprecation notice: use the -fast variant, not deprecated @cf/meta/llama-3.1-8b-instruct. Free-tier limits are shared across the account and are not a promise of zero cost at arbitrary traffic.
-
-No production data, D1 migrations, DNS or Worker deploy is authorized by this branch alone. This branch is an incremental preview implementation, not a claim that all eight approved mockup screens are finished.
+The previously requested recovery ZIP is **optional**, not a deployment blocker. If it becomes available, compare it selectively for reusable tests or business logic; do not merge the old session architecture wholesale.

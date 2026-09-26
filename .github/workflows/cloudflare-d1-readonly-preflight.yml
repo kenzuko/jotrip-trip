@@ -66,6 +66,13 @@ jobs:
           node tools/d1-schema-from-wrangler.mjs /tmp/jotrip-d1-table-definitions.json /tmp/jotrip-d1-schema.sql
           node tools/d1-schema-preflight.mjs /tmp/jotrip-d1-schema.sql
           rm -f /tmp/jotrip-d1-table-definitions.json /tmp/jotrip-d1-schema.sql /tmp/jotrip-d1-info.json
+      - name: Verify remote D1 schema export permission (no customer data)
+        shell: bash
+        run: |
+          umask 077
+          trap 'rm -f /tmp/jotrip-d1-schema-export.sql' EXIT
+          npx wrangler d1 export jotrip-trip-db --remote --no-data --output=/tmp/jotrip-d1-schema-export.sql
+          node tools/d1-schema-preflight.mjs /tmp/jotrip-d1-schema-export.sql
       - name: Safety statement
         run: |
           echo "Read-only table inspection complete. Full D1 export/backup remains a separate permission gate. No migration, Worker deploy, DNS change or remote mutation occurred."

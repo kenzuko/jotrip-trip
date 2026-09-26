@@ -117,6 +117,24 @@
 .trip-pulse-option-copy > span { font-size: 11px; color: #6b7f74; line-height: 1.4;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
 }
+.trip-pulse-detail { display: grid; gap: 12px; padding: 16px; border: 1px solid #cddfc4;
+  border-radius: 17px; background: #fff; box-shadow: 0 9px 24px rgba(33,62,40,.045); }
+.trip-pulse-detail-heading { display: grid; gap: 4px; }
+.trip-pulse-detail-heading > span { color: #66884e; font-size: 10px; font-weight: 850; letter-spacing: .09em; }
+.trip-pulse-detail-heading h3 { margin: 0; color: #203b32; font-size: 20px; line-height: 1.3; }
+.trip-pulse-detail-heading p { margin: 0; color: #667e70; font-size: 13px; line-height: 1.5; }
+.trip-pulse-tradeoffs { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
+.trip-pulse-tradeoffs > div { display: grid; align-content: start; gap: 5px; padding: 12px;
+  border-radius: 12px; background: #f2f7ee; }
+.trip-pulse-tradeoffs > div + div { background: #fff6eb; }
+.trip-pulse-tradeoffs span { color: #5c8050; font-size: 11px; font-weight: 850; }
+.trip-pulse-tradeoffs > div + div span { color: #a67a4a; }
+.trip-pulse-tradeoffs strong { color: #304639; font-size: 13px; line-height: 1.5; }
+.trip-pulse-routes { display: grid; gap: 8px; border-top: 1px solid #e4e9e0; padding-top: 11px; }
+.trip-pulse-routes > div { display: flex; align-items: start; justify-content: space-between; gap: 12px;
+  color: #637b70; font-size: 12px; }
+.trip-pulse-routes strong { color: #315e55; text-align: right; }
+.trip-pulse-route-note { margin: 0; color: #859188; font-size: 11px; }
 .trip-pulse-disclaimer { margin: 0; color: #819189; font-size: 11px; line-height: 1.5; }
 .conversation-hero--fresh { min-height: 0; padding: 16px 0 24px; align-content: start; }
 .conversation-hero--fresh .assistant-stage { margin: 0 auto; }
@@ -129,6 +147,7 @@
   .living-story-copy > span { font-size: 12px; }
   .trip-pulse { padding: 15px; }
   .trip-pulse-options { grid-template-columns: 1fr; }
+  .trip-pulse-tradeoffs { grid-template-columns: 1fr; }
   .trip-pulse-heading { flex-wrap: wrap; }
 }
 @media (prefers-reduced-motion: reduce) {

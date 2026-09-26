@@ -1,8 +1,11 @@
 {
   "extends": "./tsconfig.json",
   "include": [
+    "src/App.tsx",
     "src/LivingCanvas.tsx",
     "src/types.ts",
-    "worker/aiIntent.ts"
+    "worker/aiIntent.ts",
+    "worker/tripState.ts",
+    "worker/tripTurn.ts"
   ]
 }

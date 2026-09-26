@@ -31,6 +31,22 @@ class D1Fixture {
   }
   async batch(statements) {
     const [first, second] = statements;
+    if (/^DELETE FROM trip_turns_v2/i.test(first.sql)) {
+      const id = first.params[0];
+      const isRetention = /SELECT session_id/i.test(first.sql);
+      const cutoff = isRetention ? id : null;
+      const ids = isRetention
+        ? [...this.sessions.entries()].filter(([, row]) => row.updated_at < cutoff).map(([key]) => key)
+        : [id];
+      let turnsDeleted = 0, sessionsDeleted = 0;
+      for (const sessionId of ids) {
+        for (const key of [...this.turns.keys()]) {
+          if (key.startsWith(sessionId + ":")) { this.turns.delete(key); turnsDeleted++; }
+        }
+        if (this.sessions.delete(sessionId)) sessionsDeleted++;
+      }
+      return [{ meta: { changes: turnsDeleted } }, { meta: { changes: sessionsDeleted } }];
+    }
     let changes = 0;
     if (/INSERT OR IGNORE INTO trip_sessions_v2/i.test(first.sql)) {
       const [id, trip_id, state_json, last_turn_id, updated_at] = first.params;
@@ -126,7 +142,10 @@ test("session context can be restored after refresh", async () => {
   const first = await turn(db, "3 ngày 2 đêm, 2 người lớn, Safari", "client-turn-300", "session-qa-0003");
   assert.equal(first.status, 200);
   const res = await worker.fetch(
-    new Request("https://trip.test/api/trip/session?sessionId=session-qa-0003"),
+    new Request("https://trip.test/api/trip/session", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sessionId: "session-qa-0003" }),
+    }),
     { DB: db },
   );
   assert.equal(res.status, 200);
@@ -211,4 +230,65 @@ test("invalid or conflicting date selections do not change the saved trip", asyn
   assert.equal(changedDates.status, 409);
   assert.equal((await changedDates.json()).error, "turn_id_reused_with_different_dates");
   assert.equal(db.turns.size, 1);
+});
+
+test("anonymous traveler can delete the V2 transcript and trip without touching leads", async () => {
+  const db = new D1Fixture();
+  const first = await turn(db, "3 ngày 2 đêm, Safari", "client-turn-600", "session-qa-0006");
+  assert.equal(first.status, 200);
+  const res = await worker.fetch(new Request("https://trip.test/api/trip/session", {
+    method: "DELETE", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ sessionId: "session-qa-0006" }),
+  }), { DB: db });
+  assert.equal(res.status, 200);
+  const deleted = await res.json();
+  assert.equal(deleted.deleted, true);
+  assert.equal(deleted.bookingLeadsAffected, false);
+  assert.equal(db.turns.size, 0);
+  assert.equal(db.sessions.size, 0);
+  const restore = await worker.fetch(new Request("https://trip.test/api/trip/session", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ sessionId: "session-qa-0006" }),
+  }), { DB: db });
+  assert.equal(restore.status, 404);
+});
+
+test("scheduled retention purges only sessions idle beyond the configured period", async () => {
+  const db = new D1Fixture();
+  await turn(db, "Safari", "client-turn-700", "session-qa-0007");
+  await turn(db, "Hòn Thơm", "client-turn-701", "session-qa-0008");
+  db.sessions.get("session-qa-0007").updated_at = "2000-01-01T00:00:00.000Z";
+  await worker.scheduled({ cron: "0 20 * * *" }, { DB: db, TRIP_RETENTION_DAYS: "90" });
+  assert.equal(db.sessions.has("session-qa-0007"), false);
+  assert.equal(db.sessions.has("session-qa-0008"), true);
+});
+
+test("V2 analytics requires internal authorization and returns only aggregates", async () => {
+  const unauthorized = await worker.fetch(
+    new Request("https://trip.test/api/internal/analytics/trip-v2"),
+    { INTERNAL_API_TOKEN: "server-only-secret" },
+  );
+  assert.equal(unauthorized.status, 401);
+  const db = {
+    batch: async () => [
+      { results: [{ count: 2 }] }, { results: [{ count: 5 }] },
+      { results: [{ count: 1 }] }, { results: [{ days: 3, nights: 2, count: 2 }] },
+      { results: [{ adults: 2, children: 1, count: 1 }] },
+      { results: [{ interest: "Safari", count: 1 }] },
+      { results: [{ action: "request", count: 5 }] },
+      { results: [{ day: "2030-01-10", turns: 5 }] },
+    ],
+    prepare: sql => ({ sql }),
+  };
+  const authorized = await worker.fetch(new Request(
+    "https://trip.test/api/internal/analytics/trip-v2",
+    { headers: { authorization: "Bearer server-only-secret" } },
+  ), { DB: db, INTERNAL_API_TOKEN: "server-only-secret" });
+  assert.equal(authorized.status, 200);
+  const body = await authorized.json();
+  assert.equal(body.schema, "trip_v2");
+  assert.equal(body.sessions, 2);
+  assert.equal(body.sessionsWithDates, 1);
+  assert.equal(JSON.stringify(body).includes("session-qa"), false);
+  assert.equal(Object.hasOwn(body, "recent"), false);
 });

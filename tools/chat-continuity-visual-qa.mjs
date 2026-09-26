@@ -128,7 +128,7 @@ try {
       assert.equal(requests.parse, 2);
       assert.match(await page.locator(".conversation-thread .message--assistant").nth(1).innerText(), /muốn xem tiếp phần nào/);
       assert.ok(Number.parseFloat(await activeInput.evaluate(el => getComputedStyle(el).fontSize)) >= 16);
-      await page.locator(".decision-card").first().click();
+      await page.locator(".trip-pulse-option").first().click();
       assert.equal(await page.locator(".composer-mascot").getAttribute("data-state"), "compare");
       await page.screenshot({ path: `qa-output/${item.engine}-compare.png`, animations: "disabled" });
 
@@ -154,7 +154,7 @@ try {
       assert.equal(await page.locator(".trip-pulse-option").count(), 2);
       await page.locator(".trip-pulse-option").first().click();
       assert.equal(await page.locator(".trip-pulse-option").first().getAttribute("aria-pressed"), "true");
-      assert.equal(await page.locator(".decision-card--active").count(), 1);
+      assert.equal(await page.locator(".trip-pulse-detail").count(), 1);
       assert.equal(requests.voice, 0);
       await viewportCheck();
       await page.screenshot({ path: `qa-output/${item.engine}-living-canvas.png`, animations: "disabled" });

@@ -47,6 +47,12 @@ jobs:
           echo "Remote D1 identity matches reviewed UUID."
       - name: Inspect remote migration history (read-only)
         run: npx wrangler d1 migrations list jotrip-trip-db --remote
+      - name: Inventory remote table names only (no data or schema dump)
+        shell: bash
+        run: |
+          npx wrangler d1 execute jotrip-trip-db --remote --json --command "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name" > /tmp/jotrip-d1-tables.json
+          node --input-type=module -e 'import fs from "node:fs"; const a=JSON.parse(fs.readFileSync("/tmp/jotrip-d1-tables.json","utf8")); const rows=(Array.isArray(a)?a:[a]).flatMap(x=>x.results??[]); if(!rows.every(x=>typeof x.name==="string"))process.exit(2); console.log("Remote table inventory:",JSON.stringify(rows.map(x=>x.name)));'
+          rm -f /tmp/jotrip-d1-tables.json
       - name: Inspect allowlisted remote table definitions (read-only, no customer rows)
         shell: bash
         run: |

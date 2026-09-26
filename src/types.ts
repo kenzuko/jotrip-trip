@@ -23,6 +23,15 @@ export type TripParseResponse = {
   aiSignals?: Array<"slow_pace" | "family_focus" | "food_focus" | "beach_focus" | "evening_focus" | "quiet_focus">;
 };
 
+export type TripTurnResponse = TripParseResponse & {
+  action: "request" | "acknowledgement" | "new_trip";
+  tripId: string;
+  clientTurnId: string;
+  version: number;
+  plan: TripBuildResponse | null;
+  advisor: AdvisorResponse | null;
+};
+
 export type StayContextSignal = {
   key: string;
   level: "strong" | "moderate" | "limited";

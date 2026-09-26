@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type {
   AdvisorResponse,
   DestinationContext,
@@ -356,7 +356,39 @@ export default function App() {
   const [activeDecisionArea, setActiveDecisionArea] = useState<string | null>(null);
   const inFlightRef = useRef(false);
   const retryTurnRef = useRef<{ text: string; id: string } | null>(null);
+  const hasSentRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const sessionId = sessionIdRef.current;
+    if (!sessionId) return;
+    void fetch("/api/trip/session?sessionId=" + encodeURIComponent(sessionId))
+      .then(async response => {
+        if (!response.ok) return null;
+        return response.json() as Promise<{
+          ok: boolean; parsed: TripParseResponse["parsed"];
+          plan: TripBuildResponse | null; advisor: AdvisorResponse | null;
+          history: LocalTurn[];
+        }>;
+      })
+      .then(snapshot => {
+        if (!snapshot?.ok || cancelled || hasSentRef.current) return;
+        const lastReply = [...snapshot.history].reverse().find(item => item.role === "assistant")?.text || "";
+        setResult({
+          ok: true, parsed: snapshot.parsed, assumptions: [], nextNeeded: [],
+          assistantText: lastReply,
+        });
+        setPlan(snapshot.plan);
+        setAdvisor(snapshot.advisor);
+        setReplyText(lastReply);
+        setTurns(snapshot.history.slice(-12));
+      })
+      .catch(() => {
+        // New visitor or temporary offline state: do not fabricate a recovered trip.
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const guideCue = useMemo(() => directGuide(result, plan), [result, plan]);
   const firstGreeting =
@@ -447,6 +479,7 @@ export default function App() {
     const value = text.trim();
     if (!value || inFlightRef.current) return;
     inFlightRef.current = true;
+    hasSentRef.current = true;
     setApiError("");
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";

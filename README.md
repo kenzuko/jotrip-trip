@@ -10,12 +10,12 @@ Implementation principle:
 
 ## V2 development status - 26/09/2026 (draft, not deployed)
 
-Base Cloudflare Worker deployment is green.
+The existing baseline Worker was previously reported operational; this V2 branch has **not** been deployed or tested against remote D1.
 
 Implemented foundation:
 
 - conversational homepage built around “Tri thức Phú Quốc biết trò chuyện”
-- server-authoritative multi-turn context with idempotent clientTurnId and refresh restoration (requires additive D1 migration 0009)
+- server-authoritative multi-turn context with idempotent clientTurnId and refresh restoration (requires additive D1 migrations 0009 and 0010 for full chat + booking readiness)
 - multilingual search/intent parsing: VI / EN / KO / RU / 中文
 - pre-read human advice before detail surfaces
 - animated JoTrip Guide states: idle / thinking / talking / pointing
@@ -59,17 +59,17 @@ Current Git deployment can keep:
 - Build command: `None`
 - Deploy command: `npx wrangler deploy`
 
-Before V2 preview deployment: verify the existing `jotrip-trip-db` binding, back up the remote database, inspect migration history and apply additive migration 0009. The database ID is present in Wrangler config; runtime secrets must never be committed.
+Before V2 preview deployment: verify the existing `jotrip-trip-db` binding, back up the remote database, inspect migration history and apply additive migrations 0009 and 0010 only after schema reconciliation and approval. The database ID is present in Wrangler config; runtime secrets must never be committed.
 
 Workers AI is **not required for V0**.
 
 ### Current conversational endpoint
 
-The V2 client uses `POST /api/trip/turn` for parsing, server-side planning and the final reply. `POST /api/trip/session` restores the latest trip, selected dates and recent conversation; `DELETE /api/trip/session` clears the anonymous V2 history. The internal `/api/internal/analytics/trip-v2` endpoint exposes only bearer-protected aggregates. The old stateless `/api/trip/parse` endpoint and public paid voice route are retired in this development branch.
+The V2 client uses `POST /api/trip/turn` for parsing, server-side planning and the final reply. `POST /api/trip/session` restores the latest trip, selected dates and recent conversation; `DELETE /api/trip/session` clears the anonymous V2 history. The internal `/api/internal/analytics/trip-v2` endpoint exposes only bearer-protected aggregates. Booking handoff records separate consent and only a minimal server-derived trip summary. Staff-only lead erasure uses a separate secret, and `/api/health` reports degraded readiness if either required migration is missing. The old stateless `/api/trip/parse` endpoint and public paid voice route are retired in this development branch.
 
 Voice and optional AI interpretation can be evaluated later, after budget limits, consent and abuse controls are in place. No paid model is called in the V2 turn path.
 
-See `docs/LIVING_TRIP_V2_BUILD_LOCK_2026-09-26.md` and `docs/CHAT_DATA.md`. PR #6 remains draft; no remote D1 migration, DNS change or production deploy has been made by this branch.
+See `docs/LIVING_TRIP_V2_BUILD_LOCK_2026-09-26.md`, `docs/CHAT_DATA.md`, `docs/BOOKING_DATA_PRIVACY_V2.md` and `docs/LIVING_TRIP_V2_REMOTE_D1_PREFLIGHT.md`. PR #6 remains draft; no remote D1 migration, DNS change or production deploy has been made by this branch.
 
 ## Never commit
 

@@ -127,17 +127,17 @@ try {
       await page.screenshot({ path: `qa-output/${item.engine}-thinking.png`, animations: "disabled" });
       await page.locator(".message--pending").waitFor({ state: "detached", timeout: 8000 });
       assert.equal(await page.locator(".conversation-hero--active .assistant-bubble").count(), 0);
-      assert.equal(await page.locator(".conversation-thread .message--assistant").count(), 1);
+      assert.equal(await page.locator(".conversation-thread .message--assistant:not(.message--pending)").count(), 1);
       assert.equal(requests.plan, 1);
       await page.screenshot({ path: `qa-output/${item.engine}-advice.png`, animations: "disabled" });
 
       const activeInput = page.locator("form.prompt textarea");
       await activeInput.fill("a");
       await page.locator("form.prompt button[type=submit]").click();
-      await page.locator(".conversation-thread .message--assistant").nth(1).waitFor();
+      await page.locator(".conversation-thread .message--assistant:not(.message--pending)").nth(1).waitFor();
       assert.equal(requests.plan, 1, "acknowledgement unexpectedly rebuilt the plan");
       assert.equal(requests.parse, 2);
-      assert.match(await page.locator(".conversation-thread .message--assistant").nth(1).innerText(), /muốn xem tiếp phần nào/);
+      assert.match(await page.locator(".conversation-thread .message--assistant:not(.message--pending)").nth(1).innerText(), /muốn xem tiếp phần nào/);
       assert.ok(Number.parseFloat(await activeInput.evaluate(el => getComputedStyle(el).fontSize)) >= 16);
       await page.locator(".trip-pulse-option").first().click();
       assert.equal(await page.locator(".composer-mascot").getAttribute("data-state"), "compare");
@@ -146,7 +146,7 @@ try {
       // V2 is text-first: a short follow-up must not call paid voice.
       await activeInput.fill("ok");
       await page.locator("form.prompt button[type=submit]").click();
-      await page.locator(".conversation-thread .message--assistant").nth(2).waitFor();
+      await page.locator(".conversation-thread .message--assistant:not(.message--pending)").nth(2).waitFor();
       assert.equal(requests.voice, 0);
       assert.equal(await page.getByRole("button", { name: "Giọng nói tắt" }).count(), 0);
       await viewportCheck();

@@ -116,6 +116,9 @@ try {
         const body = route.request().postDataJSON();
         assert.equal(body.consent, true);
         assert.equal(body.contact, "guest@example.com");
+        assert.equal(body.expectedTripId, "qa-trip-1");
+        assert.equal(body.expectedVersion, 4);
+        assert.match(body.clientLeadId, /^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i);
         assert.equal(Object.hasOwn(body, "tripContext"), false, "raw trip context leaked to booking lead");
         await route.fulfill({
           status: 200, contentType: "application/json",

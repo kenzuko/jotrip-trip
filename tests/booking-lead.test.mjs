@@ -12,7 +12,7 @@ const worker = (await import("data:text/javascript;base64," +
 class BookingDB {
   sessions = new Map([
     ["session-booking-0001", {
-      trip_id: "trip-0001",
+      trip_id: "trip-0001", version: 7,
       state_json: JSON.stringify({
         adults: 2, children: 1, days: 3, nights: 2,
         checkin: "2030-01-10", checkout: "2030-01-12",
@@ -26,12 +26,19 @@ class BookingDB {
   leads = new Map();
   consents = new Map();
   audit = new Map();
+  beforeBatch = null;
   prepare(sql) {
     return {
       sql,
       bind: (...params) => ({
         sql, params,
         first: async () => {
+          if (/FROM booking_lead_erasure_audit/i.test(sql))
+            return this.audit.has(params[0]) ? { erased: 1 } : null;
+          if (/FROM booking_leads/i.test(sql)) {
+            const lead = this.leads.get(params[0]);
+            return lead ? { session_id: lead.sessionId, contact: lead.contact, trip_context_json: lead.context } : null;
+          }
           if (/FROM trip_deleted_sessions_v2/i.test(sql))
             return this.tombstones.has(params[0]) ? { blocked: 1 } : null;
           if (/FROM trip_sessions_v2/i.test(sql))
@@ -42,13 +49,24 @@ class BookingDB {
     };
   }
   async batch(statements) {
-    if (/INSERT INTO booking_leads/i.test(statements[0].sql)) {
-      const [id, sessionId, contact, channel, language, note, context] = statements[0].params;
-      const [consentId, version] = statements[1].params;
+    if (/INSERT OR IGNORE INTO booking_leads/i.test(statements[0].sql)) {
+      this.beforeBatch?.();
+      const [id, sessionId, contact, channel, language, note, context,
+        guardedSession, guardedTrip, guardedVersion] = statements[0].params;
+      const [consentVersion, consentId, consentSession, consentContact, consentVersionNumber] =
+        statements[1].params;
       assert.equal(id, consentId);
-      this.leads.set(id, { sessionId, contact, channel, language, note, context });
-      this.consents.set(id, version);
-      return [{ meta: { changes: 1 } }, { meta: { changes: 1 } }];
+      const session = this.sessions.get(guardedSession);
+      const insert = !this.leads.has(id) && !this.audit.has(id) &&
+        !this.tombstones.has(sessionId) && session &&
+        session.trip_id === guardedTrip && session.version === guardedVersion;
+      if (insert) this.leads.set(id, { sessionId, contact, channel, language, note, context });
+      const lead = this.leads.get(consentId);
+      const consent = lead && !this.consents.has(consentId) &&
+        lead.sessionId === consentSession && lead.contact === consentContact &&
+        JSON.parse(lead.context).tripVersion === consentVersionNumber;
+      if (consent) this.consents.set(consentId, consentVersion);
+      return [{ meta: { changes: insert ? 1 : 0 } }, { meta: { changes: consent ? 1 : 0 } }];
     }
     if (/INSERT OR IGNORE INTO booking_lead_erasure_audit/i.test(statements[0].sql)) {
       const [reason, id] = statements[0].params;
@@ -66,6 +84,7 @@ class BookingDB {
   }
 }
 const endpoint = "https://trip.test";
+const leadIdentity = { clientLeadId: "11111111-1111-4111-8111-111111111111", expectedTripId: "trip-0001", expectedVersion: 7 };
 function post(path, payload, token) {
   return new Request(endpoint + path, {
     method: "POST",
@@ -79,7 +98,7 @@ function post(path, payload, token) {
 
 test("booking handoff requires explicit separate consent and canonical session", async () => {
   const db = new BookingDB();
-  const base = { sessionId: "session-booking-0001", contact: "guest@example.com" };
+  const base = { ...leadIdentity, sessionId: "session-booking-0001", contact: "guest@example.com" };
   const denied = await worker.fetch(post("/api/booking/lead", base), { DB: db });
   assert.equal(denied.status, 400);
   assert.equal((await denied.json()).error, "consent_required");
@@ -99,7 +118,7 @@ test("booking handoff requires explicit separate consent and canonical session",
 test("booking lead saves only allowlisted server state, not client raw text or plan", async () => {
   const db = new BookingDB();
   const response = await worker.fetch(post("/api/booking/lead", {
-    sessionId: "session-booking-0001",
+    sessionId: "session-booking-0001", ...leadIdentity,
     contact: "guest@example.com", consent: true,
     tripContext: { raw: "client-injected secret", plan: { privateRates: [999] } },
     language: "vi",
@@ -112,6 +131,7 @@ test("booking lead saves only allowlisted server state, not client raw text or p
   const summary = JSON.parse(lead.context);
   assert.equal(summary.schema, "booking_handoff_v2");
   assert.equal(summary.tripId, "trip-0001");
+  assert.equal(summary.tripVersion, 7);
   assert.equal(summary.language, "en");
   assert.deepEqual(summary.interests, ["Safari", "Hòn Thơm"]);
   assert.equal(summary.checkin, "2030-01-10");
@@ -125,7 +145,7 @@ test("booking lead saves only allowlisted server state, not client raw text or p
 test("staff erasure uses a separate secret, leaves no contact and records reason", async () => {
   const db = new BookingDB();
   const lead = await worker.fetch(post("/api/booking/lead", {
-    sessionId: "session-booking-0001",
+    sessionId: "session-booking-0001", ...leadIdentity,
     contact: "guest@example.com", consent: true,
   }), { DB: db });
   const { id } = await lead.json();

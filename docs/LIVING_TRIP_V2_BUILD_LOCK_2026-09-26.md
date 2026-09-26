@@ -34,13 +34,15 @@ Text-first, natural conversations that directly update a responsive visual plann
 - Internal `GET /api/internal/analytics/trip-v2` uses a server-only bearer token and returns session-level aggregate counts without raw text, contacts or session IDs. The legacy dashboard remains separate.
 - `POST /api/trip/session` restores the trip without putting the bearer session ID in the URL. `DELETE /api/trip/session` deletes V2 trip context and transcript after two-step UI confirmation.
 - A 90-day inactivity retention job is configured for 03:00 Vietnam time. Separately consented booking leads are not deleted by chat deletion or this job and need their own policy.
+- Booking leads now use a **minimal allowlisted summary read from canonical server state**, not client-submitted raw chat or a full plan. Additive migration 0010 formalizes the old runtime-created lead table and stores explicit consent version/time. A separately authenticated staff erasure endpoint removes a verified lead and keeps a contact-free audit. Automatic lead retention remains deliberately **disabled pending an operator-approved policy**.
+- See `docs/BOOKING_DATA_PRIVACY_V2.md` and `docs/LIVING_TRIP_V2_REMOTE_D1_PREFLIGHT.md` for the distinct lead lifecycle and the unexecuted remote inspection/backup steps.
 - CI includes an actual local D1 schema and lifecycle smoke fixture in addition to mocked Worker tests. CI never touches remote D1.
 
 ## Remaining gates
 
-1. Inspect and back up the actual remote D1 database. Apply additive migration 0009 only after schema review and explicit deployment approval.
+1. Inspect and back up the actual remote D1 database. Apply additive migrations 0009 and 0010 only after schema review and explicit deployment approval.
 2. Run real D1 smoke tests for simultaneous writes, retries, restoration and deletion. Local D1 checks do not prove remote readiness.
-3. Confirm booking-lead retention, publish a reviewed privacy notice and establish a deletion contact for separately submitted booking requests. The current inline disclosure is not a complete legal privacy notice.
+3. Confirm booking-lead retention, publish a reviewed privacy notice and establish a public deletion contact for separately submitted booking requests. The staff-only erasure endpoint exists but does not verify customer identity on its own. The current inline disclosure is not a complete legal privacy notice.
 4. Review real photo rights/guest consent and precise geography; optimize authorized images and lazy-load.
 5. Inspect mobile Chromium/WebKit screenshots, test on a real iPhone and consider preview deployment only after the above gates. No CMS, Weather, Airport or Transit changes.
 

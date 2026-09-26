@@ -28,14 +28,20 @@ Text-first, natural conversations that directly update a responsive visual plann
 - Unreachable paid voice UI, public `/api/voice` route and unused `worker/voice.ts`. Voice remains a future product phase; approved speaking mascot art is untouched.
 - Unused Workers AI binding in the launch config. `worker/aiIntent.ts` is retained as dormant research code but is not imported by the Worker. There is **no model call** in the new turn path.
 
+## Completed since the initial V2 foundation
+
+- Date selection now uses the same idempotent turn endpoint. Dates are validated, saved in canonical state, restored after refresh and passed to the verified-rate engine. Changing the number of nights invalidates old dates.
+- Internal `GET /api/internal/analytics/trip-v2` uses a server-only bearer token and returns session-level aggregate counts without raw text, contacts or session IDs. The legacy dashboard remains separate.
+- `POST /api/trip/session` restores the trip without putting the bearer session ID in the URL. `DELETE /api/trip/session` deletes V2 trip context and transcript after two-step UI confirmation.
+- A 90-day inactivity retention job is configured for 03:00 Vietnam time. Separately consented booking leads are not deleted by chat deletion or this job and need their own policy.
+- CI includes an actual local D1 schema and lifecycle smoke fixture in addition to mocked Worker tests. CI never touches remote D1.
+
 ## Remaining gates
 
-1. Inspect the actual remote D1 migration history and make a backup. Apply additive migration 0009 only after verifying the active database and Cloudflare permissions.
-2. Real D1 smoke test: first request, short acknowledgement, follow-up, explicit new trip, same-ID retry, concurrent writes, refresh, and booking lead consent.
-3. Persist check-in/check-out selections in server state. Current date-specific repricing still calls the existing separate builder and has not been converted to an authoritative saved itinerary.
-4. Connect internal analytics to the new `trip_turns_v2` table. The old `chat_messages` dashboard does not automatically include new V2 turns.
-5. Complete privacy notice, session deletion and retention controls before public launch.
-6. Use real photos only after checking photographer rights, guest consent and precise geographic identity; optimize to WebP and lazy-load.
-7. Review current CI, inspect the mobile Chromium/WebKit screenshots and verify a real device. Then consider preview deployment of `jotrip-trip` only, with rollback. No CMS, Weather, Airport or Transit changes.
+1. Inspect and back up the actual remote D1 database. Apply additive migration 0009 only after schema review and explicit deployment approval.
+2. Run real D1 smoke tests for simultaneous writes, retries, restoration and deletion. Local D1 checks do not prove remote readiness.
+3. Confirm booking-lead retention, publish a reviewed privacy notice and establish a deletion contact for separately submitted booking requests. The current inline disclosure is not a complete legal privacy notice.
+4. Review real photo rights/guest consent and precise geography; optimize authorized images and lazy-load.
+5. Inspect mobile Chromium/WebKit screenshots, test on a real iPhone and consider preview deployment only after the above gates. No CMS, Weather, Airport or Transit changes.
 
 The previously requested recovery ZIP is **optional**, not a deployment blocker. If it becomes available, compare it selectively for reusable tests or business logic; do not merge the old session architecture wholesale.

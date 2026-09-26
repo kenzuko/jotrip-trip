@@ -97,7 +97,8 @@ try {
       await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
       await page.locator(".conversation-hero--fresh .assistant-bubble").waitFor();
       assert.equal(await page.locator(".assistant-bubble").count(), 1);
-      assert.equal(await page.locator(".quiet").first().innerText(), "Giọng nói tắt");
+      assert.equal(await page.locator(".living-story").count(), 3);
+      assert.equal(await page.getByRole("button", { name: "Giọng nói tắt" }).count(), 0);
       const viewportCheck = async () => {
         const data = await page.evaluate(() => ({ width: innerWidth, scrollWidth: document.documentElement.scrollWidth }));
         assert.ok(data.scrollWidth <= data.width + 2, "horizontal overflow: " + JSON.stringify(data));
@@ -131,14 +132,14 @@ try {
       assert.equal(await page.locator(".composer-mascot").getAttribute("data-state"), "compare");
       await page.screenshot({ path: `qa-output/${item.engine}-compare.png`, animations: "disabled" });
 
-      await page.getByRole("button", { name: "Giọng nói tắt" }).click();
+      // V2 is text-first: a short follow-up must not call paid voice.
       await activeInput.fill("ok");
       await page.locator("form.prompt button[type=submit]").click();
-      await page.locator(".composer-error").waitFor({ timeout: 8000 });
-      assert.equal(requests.voice, 1);
-      assert.equal(await page.getByRole("button", { name: "Giọng nói tắt" }).count(), 1);
+      await page.locator(".conversation-thread .message--assistant").nth(2).waitFor();
+      assert.equal(requests.voice, 0);
+      assert.equal(await page.getByRole("button", { name: "Giọng nói tắt" }).count(), 0);
       await viewportCheck();
-      await page.screenshot({ path: `qa-output/${item.engine}-voice.png`, animations: "disabled" });
+      await page.screenshot({ path: `qa-output/${item.engine}-text-only.png`, animations: "disabled" });
       assert.deepEqual(errors, []);
       results.push({ engine: item.engine, width: item.width, height: item.height, result: "PASS", requests });
       console.log("PASS " + item.engine + " " + item.width + "x" + item.height + " six mobile states");

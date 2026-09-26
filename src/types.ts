@@ -4,6 +4,8 @@ export type ParsedTrip = {
   adults?: number;
   children?: number;
   budgetVnd?: number;
+  checkin?: string;
+  checkout?: string;
   interests: string[];
   stayPreferences: string[];
   language: "vi" | "en" | "ko" | "ru" | "zh";
@@ -24,7 +26,7 @@ export type TripParseResponse = {
 };
 
 export type TripTurnResponse = TripParseResponse & {
-  action: "request" | "acknowledgement" | "new_trip";
+  action: "request" | "acknowledgement" | "new_trip" | "set_dates";
   tripId: string;
   clientTurnId: string;
   version: number;

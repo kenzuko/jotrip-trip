@@ -1,6 +1,6 @@
 import { buildParseResponse } from "./scenario";
 import { estimateSevenSeatPrice } from "./rules/mobility";
-import { chatAnalyticsOverview, isInternalAuthorized } from "./internal";
+import { chatAnalyticsOverview, isInternalAuthorized, tripV2AnalyticsOverview } from "./internal";
 import { quotePublicActivity } from "./publicCatalog";
 import { buildTripScenarios } from "./engine/buildTrip";
 import { importPrivateHotelRates } from "./privateHotelImport";
@@ -425,6 +425,11 @@ export default {
         estimatedPriceVnd: estimateSevenSeatPrice(body.distanceKm),
         status: "temporary_rule",
       });
+    }
+
+    if (url.pathname === "/api/internal/analytics/trip-v2" && request.method === "GET") {
+      if (!isInternalAuthorized(request, env)) return json({ ok: false, error: "unauthorized" }, 401);
+      return json(await tripV2AnalyticsOverview(env));
     }
 
     if (

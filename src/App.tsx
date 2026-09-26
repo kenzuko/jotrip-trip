@@ -7,13 +7,8 @@ import type {
   TripParseResponse,
 } from "./types";
 import { directGuide } from "./guideDirector";
+import { LivingWelcome, TripPulse } from "./LivingCanvas";
 import { resolveMascotState, runtimeMascotPath } from "./mascotState";
-
-const examples = [
-  { label: "Gợi ý", text: "3 ngày 2 đêm, nhà mình có bé, muốn chơi Vin và Safari thì ở đâu hợp?", mobileText: "Có bé, đi Vin và Safari, ở đâu tiện?" },
-  { label: "Gợi ý", text: "Ở Sunset Town thì buổi tối ăn gì, cafe ở đâu, còn gì để chơi?", mobileText: "Tối ở Sunset Town ăn gì, chơi gì?" },
-  { label: "EN", text: "Where should we stay for Safari, coffee and quiet evenings?", mobileText: "Ask JoTrip in English" },
-];
 
 const languageNames: Record<string, string> = {
   vi: "VI",
@@ -835,28 +830,7 @@ export default function App() {
           )}
         </a>
 
-        <div className="top-actions">
-          <span className="language-line">VI · EN · KO · RU · 中文</span>
-          <button
-            className={voiceOn ? "quiet active" : "quiet"}
-            onClick={() =>
-              setVoiceOn((value) => {
-                const next = !value;
-                if (!next) {
-                  voiceRequestRef.current += 1;
-                  audioRef.current?.pause();
-                  audioRef.current = null;
-                  setSpeaking(false);
-                }
-                setVoiceError("");
-                return next;
-              })
-            }
-            type="button"
-          >
-            {voiceOn ? "Giọng nói bật" : "Giọng nói tắt"}
-          </button>
-        </div>
+        <div className="top-actions"><span className="language-line">VI · EN · KO · RU · 中文</span></div>
       </header>
 
       <div className="page-shell">
@@ -933,24 +907,13 @@ export default function App() {
           {apiError && <p className="composer-error" role="alert">{apiError}</p>}
           {voiceError && <p className="composer-error" role="status">{voiceError}</p>}
 
-          {!hasResponse && <p className="fresh-examples-title">Hoặc bắt đầu bằng một câu này</p>}
-          <div className="example-chips" aria-label="Câu hỏi gợi ý">
-            {examples.map((example) => (
-              <button
-                key={example.text}
-                aria-label={example.text}
-                type="button"
-                onClick={() => {
-                  setInput(example.text);
-                  void submit(example.text);
-                }}
-              >
-                <b>{example.label}</b>
-                <span className="full-example">{example.text}</span>
-                <span className="mobile-example" aria-hidden="true">{example.mobileText}</span>
-              </button>
-            ))}
-          </div>
+          {!hasResponse && (
+            <LivingWelcome
+              onExplore={(prompt) => void submit(prompt)}
+              onWrite={() => textareaRef.current?.focus()}
+              disabled={busy}
+            />
+          )}
 
           <div className="prompt-note">
             Bạn không cần điền form. Cứ nói như đang hỏi một người ở đảo.
@@ -1004,6 +967,13 @@ export default function App() {
                 </div>
               )}
             </div>
+
+            <TripPulse
+              summary={summaryBits}
+              hotels={plan?.planningHotels || []}
+              selectedArea={activeDecisionArea}
+              onSelectArea={setActiveDecisionArea}
+            />
 
             {preAdvice.length > 0 && (
               <section className="pre-advice">

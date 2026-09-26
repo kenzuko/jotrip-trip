@@ -11,14 +11,6 @@ import { directGuide } from "./guideDirector";
 import { LivingWelcome, TripPulse } from "./LivingCanvas";
 import { resolveMascotState, runtimeMascotPath } from "./mascotState";
 
-const languageNames: Record<string, string> = {
-  vi: "VI",
-  en: "EN",
-  ko: "KO",
-  ru: "RU",
-  zh: "中文",
-};
-
 function getSessionId() {
   const key = "jotrip_trip_session_id";
   const existing = localStorage.getItem(key);
@@ -816,9 +808,6 @@ export default function App() {
                 </div>
               )}
 
-              {result && <div className="conversation-language" aria-label="Ngôn ngữ hội thoại">
-                {languageNames[result.parsed.language] || result.parsed.language}
-              </div>}
             </div>
 
             {result && (<>
@@ -900,11 +889,11 @@ export default function App() {
             {result.parsed.mode === "trip_plan" && (
               <section className="trip-controls">
                 <div className="trip-controls-copy">
-                  <span className="label">NẾU MUỐN TÍNH TIẾP</span>
-                  <h2>Cho mình ngày đi nha.</h2>
-                  <p>
-                    Có ngày cụ thể thì mình mới kiểm tra tiếp phần phòng, vé và tổng chi phí cho đúng chuyến của nhà mình.
-                  </p>
+                  <span className="label">{result.parsed.checkin && result.parsed.checkout ? "NGÀY ĐI ĐÃ LƯU" : "NẾU MUỐN TÍNH TIẾP"}</span>
+                  <h2>{result.parsed.checkin && result.parsed.checkout ? "Ngày đi của nhà mình" : "Cho mình ngày đi nha."}</h2>
+                  <p>{result.parsed.checkin && result.parsed.checkout
+                    ? "Mình đã lưu khoảng ngày này vào chuyến đi. Nếu đổi ngày, mình sẽ tính lại theo dữ liệu đang có, không tự nhận là đã giữ phòng hay vé."
+                    : "Có ngày cụ thể thì mình mới kiểm tra tiếp phần phòng, vé và tổng chi phí cho đúng chuyến của nhà mình."}</p>
                 </div>
 
                 <div className="date-row">
@@ -925,11 +914,12 @@ export default function App() {
                     />
                   </label>
                   <button
-                    disabled={!checkin || !checkout || busy}
+                    disabled={!checkin || !checkout || busy ||
+                      (checkin === result.parsed.checkin && checkout === result.parsed.checkout)}
                     onClick={() => void repriceWithDates()}
                     type="button"
                   >
-                    Tính theo ngày này
+                    {result.parsed.checkin && result.parsed.checkout ? "Cập nhật ngày đi" : "Tính theo ngày này"}
                   </button>
                 </div>
               </section>

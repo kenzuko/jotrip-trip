@@ -13,6 +13,7 @@ import { answerAdvisor } from "./advisor";
 import { saveBookingLead } from "./bookingLead";
 import { createNaturalSpeech } from "./voice";
 import { interpretTravelNeeds, type AiBinding } from "./aiIntent";
+import { processTripTurn } from "./tripTurn";
 
 type Env = {
   DB?: D1Database;
@@ -222,6 +223,13 @@ export default {
         naturalVoiceReady: Boolean(env.OPENAI_API_KEY),
         time: new Date().toISOString(),
       });
+    }
+
+    if (url.pathname === "/api/trip/turn" && request.method === "POST") {
+      const body = await request.json<{
+        text?: string; sessionId?: string; clientTurnId?: string;
+      }>().catch(() => ({}));
+      return processTripTurn(env, body, assistantTextFor);
     }
 
     if (url.pathname === "/api/trip/parse" && request.method === "POST") {

@@ -342,7 +342,8 @@ export default function App() {
   const [handoffOpen, setHandoffOpen] = useState(false);
   const [leadContact, setLeadContact] = useState("");
   const [leadConsent, setLeadConsent] = useState(false);
-  const [leadStatus, setLeadStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [tripIdentity, setTripIdentity] = useState<{ tripId: string; version: number } | null>(null);
+  const [leadStatus, setLeadStatus] = useState<"idle" | "sending" | "sent" | "error" | "stale">("idle");
   const [replyText, setReplyText] = useState("");
   const [turns, setTurns] = useState<LocalTurn[]>([]);
   const [inputFocused, setInputFocused] = useState(false);
@@ -350,6 +351,7 @@ export default function App() {
   const inFlightRef = useRef(false);
   const retryTurnRef = useRef<{ text: string; id: string; dates?: { checkin: string; checkout: string } } | null>(null);
   const hasSentRef = useRef(false);
+  const leadRetryRef = useRef<{ id: string; contact: string; tripId: string; version: number } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
@@ -368,7 +370,8 @@ export default function App() {
         }
         if (!response.ok) return null;
         return response.json() as Promise<{
-          ok: boolean; parsed: TripParseResponse["parsed"];
+          ok: boolean; tripId: string; version: number;
+          parsed: TripParseResponse["parsed"];
           plan: TripBuildResponse | null; advisor: AdvisorResponse | null;
           history: LocalTurn[];
         }>;
@@ -380,6 +383,7 @@ export default function App() {
           ok: true, parsed: snapshot.parsed, assumptions: [], nextNeeded: [],
           assistantText: lastReply,
         });
+        setTripIdentity({ tripId: snapshot.tripId, version: snapshot.version });
         setPlan(snapshot.plan);
         setAdvisor(snapshot.advisor);
         setCheckin(snapshot.parsed.checkin || "");
@@ -524,6 +528,8 @@ export default function App() {
       const json = (await res.json()) as TripTurnResponse;
       if (!json.ok) throw new Error("turn_failed");
       retryTurnRef.current = null;
+      leadRetryRef.current = null;
+      setTripIdentity({ tripId: json.tripId, version: json.version });
 
       setCheckin(json.parsed.checkin || "");
       setCheckout(json.parsed.checkout || "");
@@ -552,6 +558,8 @@ export default function App() {
         localStorage.removeItem("jotrip_trip_session_id");
         sessionIdRef.current = getSessionId();
         retryTurnRef.current = null;
+        leadRetryRef.current = null;
+        setTripIdentity(null);
         setResult(null); setPlan(null); setAdvisor(null); setTurns([]);
         setReplyText(""); setCheckin(""); setCheckout("");
         setInput(value);
@@ -597,6 +605,8 @@ export default function App() {
       sessionIdRef.current = getSessionId();
       hasSentRef.current = false;
       retryTurnRef.current = null;
+      leadRetryRef.current = null;
+      setTripIdentity(null);
       setResult(null); setPlan(null); setAdvisor(null); setTurns([]);
       setReplyText(""); setInput(""); setCheckin(""); setCheckout("");
       setLeadContact(""); setLeadConsent(false); setLeadStatus("idle");
@@ -610,10 +620,19 @@ export default function App() {
 
   async function sendLead(event: FormEvent) {
     event.preventDefault();
-    if (!result || !leadContact.trim() || !leadConsent ||
+    if (!result || !tripIdentity || !leadContact.trim() || !leadConsent ||
+      leadStatus === "sending" || leadStatus === "sent" ||
       checkin !== (result.parsed.checkin || "") ||
       checkout !== (result.parsed.checkout || "")) return;
 
+    const contact = leadContact.trim();
+    const pending = leadRetryRef.current?.contact === contact &&
+      leadRetryRef.current.tripId === tripIdentity.tripId &&
+      leadRetryRef.current.version === tripIdentity.version
+      ? leadRetryRef.current
+      : { id: crypto.randomUUID(), contact,
+          tripId: tripIdentity.tripId, version: tripIdentity.version };
+    leadRetryRef.current = pending;
     setLeadStatus("sending");
     try {
       const res = await fetch("/api/booking/lead", {
@@ -621,14 +640,26 @@ export default function App() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           sessionId: sessionIdRef.current,
-          contact: leadContact.trim(),
-          language: result.parsed.language,
+          clientLeadId: pending.id,
+          expectedTripId: pending.tripId,
+          expectedVersion: pending.version,
+          contact,
           consent: leadConsent,
         }),
       });
-      const json = await res.json() as { ok?: boolean };
-      setLeadStatus(json.ok ? "sent" : "error");
+      const json = await res.json() as { ok?: boolean; error?: string; status?: string };
+      if (res.status === 409 && json.error === "stale_trip_refresh_required") {
+        leadRetryRef.current = null;
+        setLeadStatus("stale");
+      } else if (res.ok && json.ok && json.status !== "ignored") {
+        setLeadStatus("sent");
+        leadRetryRef.current = null;
+      } else {
+        setLeadStatus("error");
+      }
     } catch {
+      // A network failure may occur after the server has committed. Retain
+      // clientLeadId so a retry cannot create a second booking request.
       setLeadStatus("error");
     }
   }
@@ -1030,7 +1061,7 @@ export default function App() {
                   <form className="handoff-form" onSubmit={sendLead}>
                     <input
                       value={leadContact}
-                      onChange={(event) => setLeadContact(event.target.value)}
+                      onChange={(event) => { setLeadContact(event.target.value); leadRetryRef.current = null; setLeadStatus("idle"); }}
                       placeholder="Số điện thoại, email hoặc WhatsApp"
                       aria-label="Thông tin liên hệ"
                     />
@@ -1044,7 +1075,7 @@ export default function App() {
                     </label>
                     <button
                       type="submit"
-                      disabled={!leadContact.trim() || !leadConsent || datesPending ||
+                      disabled={!tripIdentity || !leadContact.trim() || !leadConsent || datesPending ||
                         leadStatus === "sending" || leadStatus === "sent"}
                     >
                       {leadStatus === "sending" ? "Đang gửi..." : "Gửi cho JoTrip"}
@@ -1053,6 +1084,9 @@ export default function App() {
                     <p className="lead-privacy-note">Bạn có thể yêu cầu JoTrip xoá thông tin liên hệ qua kênh đã trao đổi. Xoá lịch sử chat không tự xoá yêu cầu này.</p>
                     {leadStatus === "sent" && (
                       <p className="lead-success">JoTrip đã nhận thông tin liên hệ và tóm tắt chuyến đi. Nhân viên sẽ kiểm tra dịch vụ trước khi xác nhận với bạn.</p>
+                    )}
+                    {leadStatus === "stale" && (
+                      <p className="lead-error">Chuyến đi đã thay đổi ở tab khác. Bạn tải lại chuyến để kiểm tra trước khi gửi nha. <button type="button" onClick={() => window.location.reload()}>Tải lại chuyến</button></p>
                     )}
                     {leadStatus === "error" && (
                       <p className="lead-error">Chưa gửi được. Thử lại sau một chút.</p>

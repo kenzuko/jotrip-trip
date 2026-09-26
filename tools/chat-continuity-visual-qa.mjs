@@ -148,7 +148,7 @@ try {
       await page.locator(".living-story").first().waitFor();
       assert.equal(await page.locator(".living-story").count(), 3);
       await page.locator(".living-story").nth(1).click();
-      await page.locator(".conversation-thread .message--assistant").first().waitFor({ timeout: 8000 });
+      await page.locator(".trip-pulse-option").first().waitFor({ timeout: 8000 });
       assert.equal(requests.parse, parseBeforeStory + 1);
       assert.equal(requests.plan, planBeforeStory + 1);
       assert.equal(await page.locator(".trip-pulse-option").count(), 2);

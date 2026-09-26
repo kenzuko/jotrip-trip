@@ -23,3 +23,11 @@ CREATE TABLE IF NOT EXISTS booking_lead_erasure_audit (
   erased_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   reason TEXT NOT NULL CHECK (reason IN ('verified_customer_request', 'operational_cleanup'))
 );
+
+-- Store the specific consent version separately so legacy lead columns stay intact.
+CREATE TABLE IF NOT EXISTS booking_lead_consents_v2 (
+  lead_id TEXT PRIMARY KEY,
+  consent_version TEXT NOT NULL,
+  consent_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (lead_id) REFERENCES booking_leads(id) ON DELETE CASCADE
+);

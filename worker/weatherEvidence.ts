@@ -1,6 +1,7 @@
 import type { TripLanguage } from "./scenario";
 
 type ForecastRow = {
+  time?: string;
   time_iso?: string;
   temperature_c?: number | null;
   wind_kmh?: number | null;
@@ -154,13 +155,15 @@ function forecastLine(
   language: TripLanguage,
 ): string {
   const row = rows.find((item) => {
-    if (!item.time_iso) return false;
-    const stamp = Date.parse(item.time_iso);
+    const time = item.time_iso || item.time;
+    if (!time) return false;
+    const stamp = Date.parse(time);
     if (!Number.isFinite(stamp) || localDateKey(stamp) !== window.date) return false;
     const minutes = localMinute(stamp);
     return minutes >= window.start && minutes < window.end;
   });
-  if (!row?.time_iso) return "";
+  const forecastTime = row?.time_iso || row?.time;
+  if (!row || !forecastTime) return "";
   const details: string[] = [];
   if (typeof row.temperature_c === "number") details.push(number(row.temperature_c, language) + "°C");
   if (typeof row.wind_kmh === "number") details.push(
@@ -172,7 +175,7 @@ function forecastLine(
   if (typeof row.gust_kmh === "number") details.push(
     (language === "vi" ? "gió giật " : "gusts ") + number(row.gust_kmh, language) + " km/h",
   );
-  return pointNames[pointId] + " " + localClock(row.time_iso) + ": " + details.join(", ");
+  return pointNames[pointId] + " " + localClock(forecastTime) + ": " + details.join(", ");
 }
 
 function localNowLine(

@@ -39,12 +39,12 @@ const weatherBundle = {
   model_72h: {
     points: {
       duong_dong: [{
-        time_iso: "2026-09-27T09:00:00+00:00",
+        time: "2026-09-27T16:00:00+07:00",
         temperature_c: 28.7, wind_kmh: 12, gust_kmh: 29,
         rain_3h_mm: 0.5, data_class: "MODEL_ONLY",
       }],
       an_thoi: [{
-        time_iso: "2026-09-27T16:00:00+07:00",
+        time: "2026-09-27T16:00:00+07:00",
         temperature_c: 27.6, wind_kmh: 23.2, gust_kmh: 31.4,
         rain_3h_mm: 1.35, data_class: "MODEL_ONLY",
       }],

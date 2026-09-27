@@ -133,16 +133,32 @@ test("weather questions use fresh Weather Lab observations and forecast with pro
   });
 });
 
+test("Weather Lab data stays usable through one scheduled 30-minute cycle plus delay margin", async () => {
+  const delayed = structuredClone(weatherBundle);
+  delayed.generated_at = "2026-09-27T05:35:00+00:00";
+  delayed.groundtruth.atmosphere.vvpq.observed_at = "2026-09-27T05:25:00+00:00";
+  await withFeed(delayed, async () => {
+    const result = await advisor.answerAdvisor({}, {
+      rawText: "Thời tiết Phú Quốc chiều nay thế nào?",
+      language: "vi",
+      mode: "weather",
+    });
+    assert.doesNotMatch(result.answerText, /còn mới trong 40 phút/i);
+    assert.match(result.answerText, /Weather Lab cập nhật lúc 27\/09 12:35/);
+    assert.match(result.answerText, /Dự báo mô hình/);
+  });
+});
+
 test("stale Weather Lab snapshots fail closed instead of being presented as current", async () => {
   const stale = structuredClone(weatherBundle);
-  stale.generated_at = "2026-09-27T05:40:00+00:00";
+  stale.generated_at = "2026-09-27T05:25:00+00:00";
   await withFeed(stale, async () => {
     const result = await advisor.answerAdvisor({}, {
       rawText: "Thời tiết Phú Quốc chiều nay thế nào?",
       language: "vi",
       mode: "weather",
     });
-    assert.match(result.answerText, /chưa lấy được gói thời tiết Weather Lab còn mới trong 15 phút/i);
+    assert.match(result.answerText, /chưa lấy được gói thời tiết Weather Lab còn mới trong 40 phút/i);
     assert.doesNotMatch(result.answerText, /28,7°C/);
   });
 });

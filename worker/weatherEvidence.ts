@@ -44,7 +44,7 @@ type WeatherBundle = {
 
 const WEATHER_URL =
   "https://raw.githubusercontent.com/kenzuko/Jotrip-Lab/data-weather/data/weather-current/latest.json";
-const MAX_AGE_MS = 15 * 60 * 1000;
+const MAX_AGE_MS = 40 * 60 * 1000;
 const TZ = "Asia/Ho_Chi_Minh";
 
 function part(value: number, key: string, options: Intl.DateTimeFormatOptions): string {
@@ -87,11 +87,11 @@ function number(value: unknown, language: TripLanguage, maximumFractionDigits = 
 
 function unavailable(language: TripLanguage): string {
   const copy: Record<TripLanguage, string> = {
-    vi: "Mình chưa lấy được gói thời tiết Weather Lab còn mới trong 15 phút, nên chưa thể kết luận chiều nay. Mình không dùng nội dung chuyến đi cũ để đoán thời tiết.",
-    en: "I could not retrieve a Weather Lab update from the last 15 minutes, so I cannot verify this afternoon's conditions. I will not use old trip details to guess the weather.",
-    ko: "최근 15분 이내의 Weather Lab 데이터를 가져오지 못해 오늘 오후 날씨를 확인할 수 없어요. 이전 여행 내용으로 날씨를 추측하지 않을게요.",
-    ru: "Не удалось получить Weather Lab за последние 15 минут, поэтому я не могу подтвердить погоду на сегодня. Я не буду угадывать по старым данным поездки.",
-    zh: "未能取得最近15分钟内的 Weather Lab 数据，因此无法确认今天下午的天气。我不会用旧行程内容来猜天气。",
+    vi: "Mình chưa lấy được gói thời tiết Weather Lab còn mới trong 40 phút, nên chưa thể kết luận chiều nay. Mình không dùng nội dung chuyến đi cũ để đoán thời tiết.",
+    en: "I could not retrieve a Weather Lab update from the last 40 minutes, so I cannot verify this afternoon's conditions. I will not use old trip details to guess the weather.",
+    ko: "최근 40분 이내의 Weather Lab 데이터를 가져오지 못해 오늘 오후 날씨를 확인할 수 없어요. 이전 여행 내용으로 날씨를 추측하지 않을게요.",
+    ru: "Не удалось получить Weather Lab за последние 40 минут, поэтому я не могу подтвердить погоду на сегодня. Я не буду угадывать по старым данным поездки.",
+    zh: "未能取得最近40分钟内的 Weather Lab 数据，因此无法确认今天下午的天气。我不会用旧行程内容来猜天气。",
   };
   return copy[language];
 }

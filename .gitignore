@@ -9,3 +9,7 @@ dist/
 .DS_Store
 private-data/
 imports/private/
+
+# Never commit remote D1 exports or customer-bearing backups.
+jotrip-trip-schema-preflight.sql
+jotrip-trip-backup-*.sql

@@ -1,0 +1,134 @@
+name: JoTrip isolated Cloudflare preview
+
+on:
+  push:
+    branches:
+      - feat/living-trip-v2-20260926
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jotrip-trip-v2-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy-preview:
+    if: github.repository == 'kenzuko/jotrip-trip' && github.ref == 'refs/heads/feat/living-trip-v2-20260926'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+      EXPECTED_PREVIEW_D1_ID: ac9aec13-a732-42e9-918f-6a401982bdd2
+      PRODUCTION_D1_ID: 17372bb5-7626-4238-8a95-fc0cf31ad18e
+      PREVIEW_D1_NAME: jotrip-trip-v2-preview-20260926
+      PREVIEW_NAME: jotrip-trip-qa-20260927
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify scoped Cloudflare credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
+            echo "::error::Cloudflare credentials are unavailable. No D1 or Worker request was made."
+            exit 2
+          fi
+          echo "Cloudflare credentials are available; secret values are not printed."
+      - name: Install project dependencies
+        run: npm install --no-audit --no-fund
+      - name: Test and build
+        run: |
+          npm test
+          npm run build
+      - name: Verify isolated Preview and migration targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, re
+          source = open("wrangler.jsonc", encoding="utf-8").read()
+          source = re.sub(r"(?m)^\s*//.*$", "", source)
+          config = json.loads(source)
+          production_id = config["d1_databases"][0]["database_id"]
+          preview = config["previews"]["d1_databases"][0]
+          assert config["name"] == "jotrip-trip"
+          assert production_id == os.environ["PRODUCTION_D1_ID"]
+          assert preview["database_id"] == os.environ["EXPECTED_PREVIEW_D1_ID"]
+          assert preview["database_id"] != production_id
+          assert preview["database_name"] == os.environ["PREVIEW_D1_NAME"]
+          print("Preview and production bindings are separate; the preview points to the expected synthetic D1.")
+          PY
+          mkdir -p .preview-migrations
+          cp migrations/0011_booking_lead_retention.sql .preview-migrations/0011_booking_lead_retention.sql
+          cat > wrangler.preview-migrations.json <<'JSON'
+          {
+            "$schema": "./node_modules/wrangler/config-schema.json",
+            "name": "jotrip-trip-preview-migrations",
+            "d1_databases": [{
+              "binding": "DB",
+              "database_name": "jotrip-trip-v2-preview-20260926",
+              "database_id": "ac9aec13-a732-42e9-918f-6a401982bdd2",
+              "migrations_dir": ".preview-migrations"
+            }]
+          }
+          JSON
+          npx wrangler d1 info DB --json --config wrangler.preview-migrations.json > /tmp/jotrip-preview-d1-info.json
+          if ! grep -Fq "$EXPECTED_PREVIEW_D1_ID" /tmp/jotrip-preview-d1-info.json; then
+            echo "::error::Preview D1 UUID did not match; stopping before migration or deployment."
+            exit 3
+          fi
+          if grep -Fq "$PRODUCTION_D1_ID" wrangler.preview-migrations.json; then
+            echo "::error::Production D1 UUID appeared in the migration config; stopping."
+            exit 4
+          fi
+      - name: Apply the single pending retention migration to synthetic Preview D1
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler d1 migrations list DB --remote --config wrangler.preview-migrations.json
+          npx wrangler d1 migrations apply DB --remote --config wrangler.preview-migrations.json
+          npx wrangler d1 migrations list DB --remote --config wrangler.preview-migrations.json
+      - name: Deploy isolated Worker Preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler preview --name "$PREVIEW_NAME" 2>&1 | tee /tmp/jotrip-preview-deploy.log
+          PREVIEW_URL="$(grep -Eo 'https://[A-Za-z0-9._-]+\.workers\.dev' /tmp/jotrip-preview-deploy.log | tail -n 1)"
+          if [[ -z "$PREVIEW_URL" ]]; then
+            echo "::error::Wrangler did not return a workers.dev Preview URL."
+            exit 5
+          fi
+          echo "PREVIEW_URL=$PREVIEW_URL" >> "$GITHUB_ENV"
+          echo "**JoTrip test Preview:** $PREVIEW_URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "Preview is bound to the synthetic D1 only. Production Worker, D1, domains and DNS were not changed." >> "$GITHUB_STEP_SUMMARY"
+      - name: Smoke-test Preview and D1 readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 30 "$PREVIEW_URL/" -o /tmp/jotrip-preview-index.html
+          HTTP_STATUS="000"
+          for attempt in $(seq 1 8); do
+            HTTP_STATUS="$(curl --silent --show-error --output /tmp/jotrip-preview-health.json --write-out '%{http_code}' --max-time 20 "$PREVIEW_URL/api/health" || true)"
+            if [[ "$HTTP_STATUS" == "200" ]]; then break; fi
+            sleep 3
+          done
+          if [[ "$HTTP_STATUS" != "200" ]]; then
+            cat /tmp/jotrip-preview-health.json || true
+            echo "::error::Preview /api/health returned HTTP $HTTP_STATUS."
+            exit 6
+          fi
+          python3 - <<'PY'
+          import json
+          health = json.load(open("/tmp/jotrip-preview-health.json", encoding="utf-8"))
+          assert health.get("ok") is True, health
+          assert health.get("dbBound") is True, health
+          assert health.get("tripStateReady") is True, health
+          assert health.get("bookingLeadReady") is True, health
+          print("Preview health is ready: synthetic D1 bound and both V2 schema groups available.")
+          PY
+          echo "Health check passed with HTTP 200; V2 trip and booking-lead schemas are ready." >> "$GITHUB_STEP_SUMMARY"

@@ -4,6 +4,9 @@
   "compatibility_date": "2026-09-22",
   "main": "./worker/index.ts",
   "workers_dev": true,
+  "preview_urls": false,
+  "triggers": { "crons": ["0 20 * * *"] },
+  "vars": { "TRIP_RETENTION_DAYS": "90" },
   "build": {
     "command": "npm run build"
   },
@@ -14,13 +17,21 @@
   },
   "observability": {
     "enabled": true
-  }
+  },
 
-  ,"d1_databases": [{
+  "d1_databases": [{
     "binding": "DB",
     "database_name": "jotrip-trip-db",
     "database_id": "17372bb5-7626-4238-8a95-fc0cf31ad18e"
-  }]
+  }],
+  "previews": {
+    "vars": { "TRIP_RETENTION_DAYS": "90" },
+    "d1_databases": [{
+      "binding": "DB",
+      "database_name": "jotrip-trip-v2-preview-20260926",
+      "database_id": "ac9aec13-a732-42e9-918f-6a401982bdd2"
+    }]
+  }
 
   // Add only after trip.jotrip.vn is moved away from its current GitHub/P.A Vietnam target.
   // ,"routes": [{

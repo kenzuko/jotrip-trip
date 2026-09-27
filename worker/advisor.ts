@@ -2,12 +2,16 @@ import { buildDestinationContext } from "./destinationContext";
 import { matchPlanningHotels } from "./publicHotels";
 import { buildStayContext, type StayPreference } from "./engine/stayContext";
 import type { TripLanguage } from "./scenario";
+import { loadWeatherAnswer } from "./weatherEvidence";
+import { loadFlightAnswer } from "./flightEvidence";
 import { buildAdvice } from "./advice";
 
 type Env = { DB?: D1Database };
 
 export type AdvisorMode =
   | "trip_plan"
+  | "weather"
+  | "flight_status"
   | "food"
   | "cafe"
   | "things_to_do"
@@ -152,6 +156,14 @@ export async function answerAdvisor(env:Env, req:AdvisorRequest) {
   const text=copy[language];
   const interests=req.interests||[];
   const stayPreferences=req.stayPreferences||[];
+
+  if(req.mode==="weather"){
+    return {ok:true,mode:req.mode,language,answerText:await loadWeatherAnswer(req.rawText,language)};
+  }
+
+  if(req.mode==="flight_status"){
+    return {ok:true,mode:req.mode,language,answerText:await loadFlightAnswer(req.rawText,language)};
+  }
 
   if(req.mode==="food" || req.mode==="cafe" || req.mode==="things_to_do"){
     const intent=req.mode==="food"?"eat":req.mode==="cafe"?"cafe":"do";

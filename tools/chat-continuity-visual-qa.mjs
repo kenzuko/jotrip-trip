@@ -78,12 +78,52 @@ try {
         deviceScaleFactor: 3, isMobile: true, hasTouch: true, reducedMotion: "reduce",
       });
       const errors = [];
-      const requests = { parse: 0, plan: 0, voice: 0 };
+      const requests = { parse: 0, plan: 0, voice: 0, deleted: 0, bookingLead: 0 };
       page.on("pageerror", e => errors.push(String(e)));
-      await page.route("**/api/trip/parse", async route => {
+      await page.route("**/api/trip/turn", async route => {
         requests.parse++;
         const body = route.request().postDataJSON();
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(parseResponse(body.text)) });
+        const parsed = parseResponse(body.text);
+        const ack = parsed.conversationAction === "acknowledgement";
+        const dated = Boolean(body.checkin && body.checkout);
+        if (dated) {
+          parsed.parsed.checkin = body.checkin;
+          parsed.parsed.checkout = body.checkout;
+          parsed.nextNeeded = [];
+          parsed.assistantText = "Mình đã lưu ngày đi của bạn.";
+        }
+        if (!ack) requests.plan++;
+        await new Promise(resolve => setTimeout(resolve, 450));
+        await route.fulfill({
+          status: 200, contentType: "application/json",
+          body: JSON.stringify({
+            ...parsed, action: dated ? "set_dates" : ack ? "acknowledgement" : "request",
+            tripId: "qa-trip-1", clientTurnId: body.clientTurnId,
+            version: requests.parse, plan: ack ? null : plan, advisor: null,
+          }),
+        });
+      });
+      await page.route("**/api/trip/session", async route => {
+        if (route.request().method() === "DELETE") {
+          requests.deleted++;
+          await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, deleted: true }) });
+        } else {
+          await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ ok: false, error: "trip_session_not_found" }) });
+        }
+      });
+      await page.route("**/api/booking/lead", async route => {
+        requests.bookingLead++;
+        const body = route.request().postDataJSON();
+        assert.equal(body.consent, true);
+        assert.equal(body.contact, "guest@example.com");
+        assert.equal(body.expectedTripId, "qa-trip-1");
+        assert.equal(body.expectedVersion, 4);
+        assert.match(body.clientLeadId, /^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i);
+        assert.equal(Object.hasOwn(body, "tripContext"), false, "raw trip context leaked to booking lead");
+        await route.fulfill({
+          status: 200, contentType: "application/json",
+          body: JSON.stringify({ ok: true, status: "NEW", id: "qa-booking-lead" }),
+        });
       });
       await page.route("**/api/trip/build", async route => {
         requests.plan++;
@@ -97,7 +137,8 @@ try {
       await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
       await page.locator(".conversation-hero--fresh .assistant-bubble").waitFor();
       assert.equal(await page.locator(".assistant-bubble").count(), 1);
-      assert.equal(await page.locator(".quiet").first().innerText(), "Giọng nói tắt");
+      assert.equal(await page.locator(".living-story").count(), 3);
+      assert.equal(await page.getByRole("button", { name: "Giọng nói tắt" }).count(), 0);
       const viewportCheck = async () => {
         const data = await page.evaluate(() => ({ width: innerWidth, scrollWidth: document.documentElement.scrollWidth }));
         assert.ok(data.scrollWidth <= data.width + 2, "horizontal overflow: " + JSON.stringify(data));
@@ -111,37 +152,93 @@ try {
       await page.screenshot({ path: `qa-output/${item.engine}-question.png`, animations: "disabled" });
       await page.locator("form.prompt button[type=submit]").click();
       await page.locator(".message--pending").waitFor({ timeout: 8000 });
-      assert.equal(await page.locator(".composer-mascot").getAttribute("data-state"), "thinking");
+      assert.equal(await page.locator(".mascot-shell").getAttribute("data-mascot-state"), "thinking");
       await page.screenshot({ path: `qa-output/${item.engine}-thinking.png`, animations: "disabled" });
       await page.locator(".message--pending").waitFor({ state: "detached", timeout: 8000 });
       assert.equal(await page.locator(".conversation-hero--active .assistant-bubble").count(), 0);
-      assert.equal(await page.locator(".conversation-thread .message--assistant").count(), 1);
+      assert.equal(await page.locator(".conversation-thread .message--assistant:not(.message--pending)").count(), 1);
       assert.equal(requests.plan, 1);
       await page.screenshot({ path: `qa-output/${item.engine}-advice.png`, animations: "disabled" });
 
       const activeInput = page.locator("form.prompt textarea");
       await activeInput.fill("a");
       await page.locator("form.prompt button[type=submit]").click();
-      await page.locator(".conversation-thread .message--assistant").nth(1).waitFor();
+      await page.locator(".conversation-thread .message--assistant:not(.message--pending)").nth(1).waitFor();
       assert.equal(requests.plan, 1, "acknowledgement unexpectedly rebuilt the plan");
       assert.equal(requests.parse, 2);
-      assert.match(await page.locator(".conversation-thread .message--assistant").nth(1).innerText(), /muốn xem tiếp phần nào/);
+      assert.match(await page.locator(".conversation-thread .message--assistant:not(.message--pending)").nth(1).innerText(), /muốn xem tiếp phần nào/);
       assert.ok(Number.parseFloat(await activeInput.evaluate(el => getComputedStyle(el).fontSize)) >= 16);
-      await page.locator(".decision-card").first().click();
+      await page.locator(".trip-pulse-option").first().click();
       assert.equal(await page.locator(".composer-mascot").getAttribute("data-state"), "compare");
       await page.screenshot({ path: `qa-output/${item.engine}-compare.png`, animations: "disabled" });
 
-      await page.getByRole("button", { name: "Giọng nói tắt" }).click();
+      // V2 is text-first: a short follow-up must not call paid voice.
       await activeInput.fill("ok");
       await page.locator("form.prompt button[type=submit]").click();
-      await page.locator(".composer-error").waitFor({ timeout: 8000 });
-      assert.equal(requests.voice, 1);
-      assert.equal(await page.getByRole("button", { name: "Giọng nói tắt" }).count(), 1);
+      await page.locator(".conversation-thread .message--assistant:not(.message--pending)").nth(2).waitFor();
+      assert.equal(requests.voice, 0);
+      assert.equal(await page.getByRole("button", { name: "Giọng nói tắt" }).count(), 0);
       await viewportCheck();
-      await page.screenshot({ path: `qa-output/${item.engine}-voice.png`, animations: "disabled" });
+      await page.screenshot({ path: `qa-output/${item.engine}-text-only.png`, animations: "disabled" });
+
+      // Selecting dates must use the same saved trip turn, never the legacy builder.
+      await page.locator(".trip-controls input[type=date]").first().fill("2030-01-10");
+      await page.locator(".trip-controls input[type=date]").nth(1).fill("2030-01-12");
+      await page.getByRole("button", { name: "Tính theo ngày này" }).click();
+      await page.locator(".conversation-thread .message--assistant:not(.message--pending)").nth(3).waitFor();
+      assert.equal(requests.plan, 2, "date selection did not use the canonical turn");
+      assert.equal(await page.locator(".trip-controls input[type=date]").first().inputValue(), "2030-01-10");
+      assert.equal(await page.locator(".trip-controls input[type=date]").nth(1).inputValue(), "2030-01-12");
+      await page.getByRole("heading", { name: "Ngày đi của nhà mình" }).waitFor();
+      assert.equal(await page.getByRole("button", { name: "Cập nhật ngày đi" }).isDisabled(), true);
+      await viewportCheck();
+      await page.screenshot({ path: `qa-output/${item.engine}-saved-dates.png`, animations: "disabled" });
+
+      // Handoff is separately consented and must never include the raw plan.
+      await page.getByRole("button", { name: "Tôi muốn JoTrip kiểm tra" }).click();
+      const leadForm = page.locator(".handoff-form");
+      await leadForm.getByRole("textbox", { name: "Thông tin liên hệ" }).fill("guest@example.com");
+      const sendLead = leadForm.getByRole("button", { name: "Gửi cho JoTrip" });
+      assert.equal(await sendLead.isDisabled(), true, "contact submitted without separate consent");
+      await leadForm.locator('input[type="checkbox"]').check();
+      await page.locator(".trip-controls input[type=date]").first().fill("2030-01-11");
+      assert.equal(await sendLead.isDisabled(), true, "unsaved travel date leaked into booking handoff");
+      await page.locator(".trip-controls input[type=date]").first().fill("2030-01-10");
+      assert.equal(await sendLead.isEnabled(), true);
+      await viewportCheck();
+      await page.screenshot({ path: `qa-output/${item.engine}-booking-consent.png`, animations: "disabled" });
+      await sendLead.click();
+      await leadForm.locator(".lead-success").waitFor();
+      assert.equal(requests.bookingLead, 1);
+      await viewportCheck();
+
+      await page.getByRole("button", { name: "Xóa lịch sử" }).click();
+      await page.getByRole("button", { name: "Xóa chuyến này" }).click();
+      await page.locator(".living-story").first().waitFor();
+      assert.equal(requests.deleted, 1);
+      assert.equal(await page.locator(".conversation-thread").count(), 0);
+      await viewportCheck();
+
+      // V2 discovery is a real conversational entry, not a decorative card.
+      const parseBeforeStory = requests.parse;
+      const planBeforeStory = requests.plan;
+      await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
+      await page.locator(".living-story").first().waitFor();
+      assert.equal(await page.locator(".living-story").count(), 3);
+      await page.locator(".living-story").nth(1).click();
+      await page.locator(".trip-pulse-option").first().waitFor({ timeout: 8000 });
+      assert.equal(requests.parse, parseBeforeStory + 1);
+      assert.equal(requests.plan, planBeforeStory + 1);
+      assert.equal(await page.locator(".trip-pulse-option").count(), 2);
+      await page.locator(".trip-pulse-option").first().click();
+      assert.equal(await page.locator(".trip-pulse-option").first().getAttribute("aria-pressed"), "true");
+      assert.equal(await page.locator(".trip-pulse-detail").count(), 1);
+      assert.equal(requests.voice, 0);
+      await viewportCheck();
+      await page.screenshot({ path: `qa-output/${item.engine}-living-canvas.png`, animations: "disabled" });
       assert.deepEqual(errors, []);
       results.push({ engine: item.engine, width: item.width, height: item.height, result: "PASS", requests });
-      console.log("PASS " + item.engine + " " + item.width + "x" + item.height + " six mobile states");
+      console.log("PASS " + item.engine + " " + item.width + "x" + item.height + " eight mobile states + booking consent, saved dates and deletion");
     } catch (error) {
       results.push({ engine: item.engine, width: item.width, height: item.height, result: "FAIL", error: String(error) });
       console.error("FAIL " + item.engine + ": " + error);

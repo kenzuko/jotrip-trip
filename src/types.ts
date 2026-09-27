@@ -4,10 +4,12 @@ export type ParsedTrip = {
   adults?: number;
   children?: number;
   budgetVnd?: number;
+  checkin?: string;
+  checkout?: string;
   interests: string[];
   stayPreferences: string[];
   language: "vi" | "en" | "ko" | "ru" | "zh";
-  mode: "trip_plan" | "food" | "cafe" | "things_to_do" | "where_to_stay" | "compare" | "contact";
+  mode: "trip_plan" | "weather" | "flight_status" | "food" | "cafe" | "things_to_do" | "where_to_stay" | "compare" | "contact";
   mentionedZone?: string;
   mentionedPlace?: string;
   raw: string;
@@ -20,6 +22,16 @@ export type TripParseResponse = {
   nextNeeded: string[];
   conversationAction?: "request" | "acknowledgement";
   assistantText?: string;
+  aiSignals?: Array<"slow_pace" | "family_focus" | "food_focus" | "beach_focus" | "evening_focus" | "quiet_focus">;
+};
+
+export type TripTurnResponse = TripParseResponse & {
+  action: "request" | "acknowledgement" | "new_trip" | "set_dates";
+  tripId: string;
+  clientTurnId: string;
+  version: number;
+  plan: TripBuildResponse | null;
+  advisor: AdvisorResponse | null;
 };
 
 export type StayContextSignal = {
@@ -153,7 +165,7 @@ export type TripBuildResponse = {
 
 export type AdvisorResponse = {
   ok: boolean;
-  mode: "trip_plan" | "food" | "cafe" | "things_to_do" | "where_to_stay" | "compare" | "contact";
+  mode: "trip_plan" | "weather" | "flight_status" | "food" | "cafe" | "things_to_do" | "where_to_stay" | "compare" | "contact";
   language: "vi" | "en" | "ko" | "ru" | "zh";
   answerText: string;
   advice?: string[];

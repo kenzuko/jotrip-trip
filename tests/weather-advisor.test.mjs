@@ -95,16 +95,46 @@ async function withFeed(payload, run) {
   finally { globalThis.fetch = originalFetch; Date.now = originalNow; }
 }
 
-async function withFlightFeed(payload, run) {
+const officialFlightApi = {
+  A: {
+    success: true,
+    data: [
+      { flightNo: "9G1207", cityName: "HA NOI", route: "HAN-PQC", scheduledTime: "0915", actualTime: "0900", notesVn: "ĐÃ HẠ CÁNH" },
+    ],
+  },
+  D: {
+    success: true,
+    data: [
+      { flightNo: "VN1232", cityName: "HA NOI", route: "PQC-HAN", scheduledTime: "1355", estimatedTime: "1405", notesVn: "LÀM THỦ TỤC LÚC 13:10" },
+      { flightNo: "VJ452", cityName: "HA NOI", route: "PQC-HAN", scheduledTime: "1540", notesVn: "ĐANG LÀM THỦ TỤC" },
+      { flightNo: "9G1230", cityName: "HA NOI", route: "PQC-HAN", scheduledTime: "1745", notesVn: "LÀM THỦ TỤC LÚC 15:45" },
+      { flightNo: "VJ442", cityName: "HA NOI", route: "PQC-HAN", scheduledTime: "1920", notesVn: "LÀM THỦ TỤC LÚC 17:20" },
+      { flightNo: "VN9999", cityName: "HA NOI", route: "PQC-HAN", scheduledTime: "1625", notesVn: "HỦY" },
+    ],
+  },
+};
+
+async function withFlightFeed(payload, run, directData) {
   const originalFetch = globalThis.fetch;
   const originalNow = Date.now;
   globalThis.fetch = async (input) => {
     const url = new URL(String(input));
-    assert.equal(url.hostname, "jotrip-airport-live.kenzuko.workers.dev");
-    assert.equal(url.searchParams.get("date"), vietnamToday);
-    return new Response(JSON.stringify(payload), {
-      status: 200, headers: { "content-type": "application/json" },
-    });
+    if (url.hostname === "jotrip-airport-live.kenzuko.workers.dev") {
+      assert.equal(url.searchParams.get("date"), vietnamToday);
+      return new Response(JSON.stringify(payload), {
+        status: 200, headers: { "content-type": "application/json" },
+      });
+    }
+    if (url.hostname === "sunairport.com") {
+      assert.equal(url.searchParams.get("date"), vietnamToday);
+      if (!directData) return new Response("{}", { status: 503 });
+      const type = url.searchParams.get("type");
+      assert.ok(type === "A" || type === "D");
+      return new Response(JSON.stringify(directData[type]), {
+        status: 200, headers: { "content-type": "application/json" },
+      });
+    }
+    assert.fail("Unexpected flight source " + url.hostname);
   };
   Date.now = () => NOW;
   try { return await run(); }
@@ -183,7 +213,7 @@ test("flight questions use the fresh airport board and never replay the old trip
   });
 });
 
-test("archive snapshots are never presented as a live flight board", async () => {
+test("official JSON live feed recovers when the airport Worker serves only its archive snapshot", async () => {
   const fallback = structuredClone(flightPayload);
   fallback.health.live_proxy = false;
   fallback.health.source_mode = "GITHUB_SNAPSHOT_FALLBACK";
@@ -194,9 +224,12 @@ test("archive snapshots are never presented as a live flight board", async () =>
       language: "vi",
       mode: "flight_status",
     });
-    assert.match(result.answerText, /chưa đọc được bảng bay trực tiếp đủ mới/i);
-    assert.doesNotMatch(result.answerText, /3 chuyến|14:05/);
-  });
+    assert.match(result.answerText, /3 chuyến bay.*Hà Nội/);
+    assert.match(result.answerText, /VN1232 14:05/);
+    assert.match(result.answerText, /VJ452 15:40/);
+    assert.match(result.answerText, /9G1230 17:45/);
+    assert.doesNotMatch(result.answerText, /19:20|VN9999|khách sạn|Bắc đảo/);
+  }, officialFlightApi);
 });
 
 test("stale flight boards do not produce a misleading current count", async () => {

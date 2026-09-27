@@ -43,7 +43,7 @@ export function LivingWelcome({
       <div className="example-chips">
         {stories.map((story) => (
           <button
-            className={"example-chip example-chip--" + story.id}
+            className={"living-story example-chip example-chip--" + story.id}
             key={story.id}
             type="button"
             disabled={disabled}

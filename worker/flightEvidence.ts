@@ -107,8 +107,8 @@ function vietnamTimestamp(value: number): string {
     localPart(value, "month", { month: "2-digit" }) + "-" +
     localPart(value, "day", { day: "2-digit" }) + "T" +
     localPart(value, "hour", { hour: "2-digit", hourCycle: "h23" }) + ":" +
-    localPart(value, "minute", { minute: "2-digit" }) + ":" +
-    localPart(value, "second", { second: "2-digit" }) + "+07:00";
+    localPart(value, "minute", { minute: "2-digit" }).padStart(2, "0") + ":" +
+    localPart(value, "second", { second: "2-digit" }).padStart(2, "0") + "+07:00";
 }
 
 function clockLabel(minutes: number): string {
@@ -229,7 +229,9 @@ function answerFromPayload(
 ): string {
   const latest = payload.latest;
   const collectedAt = freshnessTime(payload);
-  if (!isFreshLivePayload(payload, nowMs) || !latest) return unavailable(language);
+  if (!latest || !Array.isArray(latest.records) || !isFreshLivePayload(payload, nowMs)) {
+    return unavailable(language);
+  }
 
   const text = rawText.toLocaleLowerCase();
   const arrival = isArrivalQuestion(text);
@@ -319,7 +321,11 @@ async function fetchOfficialBoard(
   const response = await fetcher(url.toString(), {
     method: "GET",
     cache: "no-store",
-    headers: { accept: "application/json", "cache-control": "no-cache" },
+    headers: {
+      accept: "application/json",
+      "cache-control": "no-cache",
+      "user-agent": "JoTrip-Trip-Live/1.0",
+    },
     signal,
   });
   if (!response.ok) throw new Error("official_flight_api_http_" + response.status);

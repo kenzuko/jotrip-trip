@@ -1,6 +1,6 @@
 # JoTrip Living Trip V2 - clean rebuild lock (26/09/2026)
 
-Status: isolated draft PR #6. The owner has authorized deleting or renaming obsolete code; there is no important user data to migrate. This is **not** authorization to drop the remote D1 database, change production DNS or deploy an untested build.
+Status: isolated draft PR #6. The owner has authorized deleting or renaming obsolete repository code. The existing remote D1 contains legacy chat records that this branch preserves; no production migration, DNS change or untested deployment is authorized.
 
 ## Product contract
 
@@ -34,15 +34,15 @@ Text-first, natural conversations that directly update a responsive visual plann
 - Internal `GET /api/internal/analytics/trip-v2` uses a server-only bearer token and returns session-level aggregate counts without raw text, contacts or session IDs. The legacy dashboard remains separate.
 - `POST /api/trip/session` restores the trip without putting the bearer session ID in the URL. `DELETE /api/trip/session` deletes V2 trip context and transcript after two-step UI confirmation.
 - A 90-day inactivity retention job is configured for 03:00 Vietnam time. Separately consented booking leads are not deleted by chat deletion or this job and need their own policy.
-- Booking leads now use a **minimal allowlisted summary read from canonical server state**, not client-submitted raw chat or a full plan. A lead carries a client-generated idempotency UUID and the displayed trip ID/version; a second tab changing the trip triggers a 409 refresh requirement instead of silently handing off another itinerary. A lost-response retry cannot create a second lead. Additive migration 0010 formalizes the old runtime-created lead table and stores explicit consent version/time. A separately authenticated staff erasure endpoint removes a verified lead and keeps a contact-free audit. Automatic lead retention remains deliberately **disabled pending an operator-approved policy**.
-- See `docs/BOOKING_DATA_PRIVACY_V2.md` and `docs/LIVING_TRIP_V2_REMOTE_D1_PREFLIGHT.md` for the distinct lead lifecycle and the unexecuted remote inspection/backup steps.
-- CI includes an actual local D1 schema and lifecycle smoke fixture in addition to mocked Worker tests. CI never touches remote D1.
+- Booking leads now use a **minimal allowlisted summary read from canonical server state**, not client-submitted raw chat or a full plan. A lead carries a client-generated idempotency UUID and the displayed trip ID/version; a second tab changing the trip triggers a 409 refresh requirement instead of silently handing off another itinerary. A lost-response retry cannot create a second lead. Additive migration 0010 formalizes the old runtime-created lead table and stores explicit consent version/time. A separately authenticated staff erasure endpoint removes a verified lead and keeps a contact-free audit. Migration 0011 implements the approved lifecycle: open or unresponsive leads expire 90 days after last human contact, fulfilled leads expire 30 days after trip completion, and erased leads leave a contact-free ID tombstone for 180 days. A verified encrypted full backup and isolated restore were completed on 2026-09-26; rotate or delete that backup by 2026-12-25.
+- See `docs/BOOKING_DATA_PRIVACY_V2.md` for the distinct lead lifecycle and public-notice gap. The remote read-only audit and encrypted-backup/restore checkpoint are complete; reconcile the migration ledger and confirm recovery-key custody before any production mutation.
+- CI includes actual local D1 schema and lifecycle smoke fixtures for migrations 0009-0011 in addition to Worker tests. CI never touches remote D1.
 
 ## Remaining gates
 
-1. Inspect and back up the actual remote D1 database. Apply additive migrations 0009 and 0010 only after schema review and explicit deployment approval.
+1. The remote D1 read-only audit and verified encrypted backup/restore are complete. Reconcile the migration ledger against the existing schema and confirm owner custody of the recovery key; only then review the minimal migration path and apply it after explicit production approval.
 2. Run real D1 smoke tests for simultaneous writes, retries, restoration and deletion. Local D1 checks do not prove remote readiness.
-3. Confirm booking-lead retention, publish a reviewed privacy notice and establish a public deletion contact for separately submitted booking requests. The staff-only erasure endpoint exists but does not verify customer identity on its own. The current inline disclosure is not a complete legal privacy notice.
+3. Booking-lead retention is approved and implemented. Before public launch, confirm the legal entity and privacy contact, publish a reviewed privacy notice, and verify the staff identity-check workflow. The staff-only erasure endpoint does not verify customer identity on its own; the current inline disclosure is not a complete legal privacy notice.
 4. Review real photo rights/guest consent and precise geography; optimize authorized images and lazy-load.
 5. Inspect mobile Chromium/WebKit screenshots, test on a real iPhone and consider preview deployment only after the above gates. No CMS, Weather, Airport or Transit changes.
 

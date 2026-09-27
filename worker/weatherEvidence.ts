@@ -14,7 +14,8 @@ type WeatherPoint = {
   wind_kmh?: number | null;
   rain?: {
     rain_rate_mm_h?: number | null;
-    imminence?: { level?: string };
+    data_class?: string;
+    imminence?: { level?: string; not_probability?: boolean };
   };
 };
 
@@ -66,8 +67,9 @@ function localMinute(value: number): number {
 function localClock(value: string | number): string {
   const stamp = typeof value === "number" ? value : Date.parse(value);
   if (!Number.isFinite(stamp)) return "";
-  return part(stamp, "hour", { hour: "2-digit", hourCycle: "h23" }) + ":" +
-    part(stamp, "minute", { minute: "2-digit" });
+  const hour = part(stamp, "hour", { hour: "2-digit", hourCycle: "h23" });
+  const minute = part(stamp, "minute", { minute: "2-digit" });
+  return hour.padStart(2, "0") + ":" + minute.padStart(2, "0");
 }
 
 function localStamp(value: string): string {
@@ -125,8 +127,12 @@ function pointIds(rawText: string): string[] {
   const text = rawText.toLocaleLowerCase();
   if (/dương\s*đông|duong\s*dong/iu.test(text)) return ["duong_dong"];
   if (/an\s*thới|an\s*thoi|nam\s*đảo|nam\s*dao|hòn\s*thơm|hon\s*thom/iu.test(text)) return ["an_thoi"];
-  if (/gành\s*dầu|ganh\s*dau|bắc\s*đảo|bac\s*dao|bãi\s*thơm|bai\s*thom/iu.test(text)) return ["ganh_dau"];
+  if (/gành\s*dầu|ganh\s*dau|bắc\s*đảo|bac\s*dao/iu.test(text)) return ["ganh_dau"];
+  if (/cửa\s*cạn|cua\s*can/iu.test(text)) return ["cua_can"];
+  if (/bãi\s*thơm|bai\s*thom/iu.test(text)) return ["bai_thom"];
+  if (/bãi\s*sao|bai\s*sao/iu.test(text)) return ["bai_sao"];
   if (/hàm\s*ninh|ham\s*ninh/iu.test(text)) return ["ham_ninh"];
+  if (/rạch\s*giá|rach\s*gia/iu.test(text)) return ["rach_gia"];
   return ["duong_dong", "an_thoi", "ganh_dau"];
 }
 
@@ -134,7 +140,11 @@ const pointNames: Record<string, string> = {
   duong_dong: "Dương Đông",
   an_thoi: "An Thới",
   ganh_dau: "Gành Dầu",
+  cua_can: "Cửa Cạn",
+  bai_thom: "Bãi Thơm",
+  bai_sao: "Bãi Sao",
   ham_ninh: "Hàm Ninh",
+  rach_gia: "Rạch Giá",
 };
 
 function forecastLine(
@@ -165,6 +175,38 @@ function forecastLine(
   return pointNames[pointId] + " " + localClock(row.time_iso) + ": " + details.join(", ");
 }
 
+function localNowLine(
+  pointId: string,
+  point: WeatherPoint | undefined,
+  language: TripLanguage,
+): string {
+  if (!point) return "";
+  const details: string[] = [];
+  if (typeof point.temperature_c === "number") details.push(number(point.temperature_c, language) + "°C");
+  if (typeof point.wind_kmh === "number") {
+    details.push((language === "vi" ? "gió " : "wind ") + number(point.wind_kmh, language) + " km/h");
+  }
+  const rain = point.rain;
+  if (typeof rain?.rain_rate_mm_h === "number") {
+    const label = rain.data_class === "MODEL_ONLY"
+      ? (language === "vi" ? "mưa theo mô hình " : "model rain ")
+      : (language === "vi" ? "mưa ước tính " : "estimated rain ");
+    details.push(label + number(rain.rain_rate_mm_h, language) + (language === "vi" ? " mm/giờ" : " mm/h"));
+  }
+  const imminence = rain?.imminence;
+  if (imminence?.not_probability === true && imminence.level) {
+    const level = imminence.level.toUpperCase();
+    const signal = level === "HIGH"
+      ? (language === "vi" ? "tín hiệu đối lưu cao" : "high convective signal")
+      : level === "ELEVATED"
+        ? (language === "vi" ? "tín hiệu đối lưu tăng" : "elevated convective signal")
+        : "";
+    if (signal) details.push(signal + (language === "vi" ? "; không phải xác suất mưa" : "; not a rain probability"));
+  }
+  if (!details.length) return "";
+  return (pointNames[pointId] || point.name || pointId) + ": " + details.join(", ");
+}
+
 function formatWeather(
   bundle: WeatherBundle,
   rawText: string,
@@ -174,17 +216,30 @@ function formatWeather(
   const window = targetWindow(rawText, nowMs);
   const pointIdsToRead = pointIds(rawText);
   const modelPoints = bundle.model_72h?.points || {};
+  const localPoints = bundle.local_now?.points || {};
+  const localNowLines = pointIdsToRead
+    .map((id) => localNowLine(id, localPoints[id], language))
+    .filter(Boolean);
+  const localNowText = localNowLines.length
+    ? (language === "vi" ? "Nowcast hiện tại (ước tính): " : "Current local nowcast (estimated): ") +
+      localNowLines.join("; ") + ". "
+    : "";
   const forecasts = pointIdsToRead
     .map((id) => forecastLine(id, modelPoints[id] || [], window, language))
     .filter(Boolean);
   const updated = bundle.generated_at ? localStamp(bundle.generated_at) : "không rõ giờ";
   const observation = bundle.groundtruth?.atmosphere?.vvpq;
+  const observationAge = observation?.observed_at
+    ? nowMs - Date.parse(observation.observed_at)
+    : Number.NaN;
   let observationText = "";
   if (
     observation?.status === "FRESH" &&
     observation.data_class === "ACTUAL" &&
     observation.observed_at &&
-    Date.now() - Date.parse(observation.observed_at) <= 30 * 60 * 1000
+    Number.isFinite(observationAge) &&
+    observationAge >= -60_000 &&
+    observationAge <= 30 * 60 * 1000
   ) {
     const facts: string[] = [];
     if (typeof observation.temperature_c === "number") facts.push(number(observation.temperature_c, language) + "°C");
@@ -202,17 +257,10 @@ function formatWeather(
     : (language === "vi"
       ? "Weather Lab chưa có bước dự báo mới trong khung giờ đó. "
       : "Weather Lab has no forecast step in that time window. ");
-  const local = bundle.local_now?.points?.duong_dong;
-  const imminence = local?.rain?.imminence?.level;
-  const convectiveText = imminence === "HIGH"
-    ? (language === "vi"
-      ? "Nowcast còn thấy tín hiệu đối lưu cao; đây là tín hiệu vệ tinh/ước tính, không phải xác suất mưa. "
-      : "Nowcast shows a high convective signal; this is satellite-derived analysis, not a rain probability. ")
-    : "";
   const source = language === "vi"
     ? "Weather Lab cập nhật lúc " + updated + " giờ Việt Nam."
     : "Weather Lab updated at " + updated + " Vietnam time.";
-  return observationText + placeText + convectiveText + source;
+  return observationText + localNowText + placeText + source;
 }
 
 export async function loadWeatherAnswer(

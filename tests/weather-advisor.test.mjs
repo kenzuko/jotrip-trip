@@ -28,7 +28,11 @@ const weatherBundle = {
     points: {
       duong_dong: {
         name: "Dương Đông", temperature_c: 27.3, wind_kmh: 16.5,
-        rain: { rain_rate_mm_h: 0.44, imminence: { level: "HIGH" } },
+        rain: { rain_rate_mm_h: 0.44, data_class: "ESTIMATED_NOW", imminence: { level: "HIGH", not_probability: true } },
+      },
+      an_thoi: {
+        name: "An Thới", temperature_c: 28.2, wind_kmh: 26.8,
+        rain: { rain_rate_mm_h: 0, data_class: "ESTIMATED_NOW", imminence: { level: "HIGH", not_probability: true } },
       },
     },
   },
@@ -38,6 +42,11 @@ const weatherBundle = {
         time_iso: "2026-09-27T09:00:00+00:00",
         temperature_c: 28.7, wind_kmh: 12, gust_kmh: 29,
         rain_3h_mm: 0.5, data_class: "MODEL_ONLY",
+      }],
+      an_thoi: [{
+        time_iso: "2026-09-27T16:00:00+07:00",
+        temperature_c: 27.6, wind_kmh: 23.2, gust_kmh: 31.4,
+        rain_3h_mm: 1.35, data_class: "MODEL_ONLY",
       }],
     },
   },
@@ -111,7 +120,16 @@ test("weather questions use fresh Weather Lab observations and forecast with pro
     assert.match(result.answerText, /16:00.*28,7°C.*12 km\/h.*0,5 mm\/3 giờ/);
     assert.match(result.answerText, /Weather Lab cập nhật lúc 27\/09 13:10/);
     assert.match(result.answerText, /tín hiệu đối lưu cao/);
+    assert.match(result.answerText, /Nowcast hiện tại \(ước tính\): Dương Đông: 27,3°C, gió 16,5 km\/h, mưa ước tính 0,44 mm\/giờ/);
     assert.doesNotMatch(result.answerText, /khách sạn|Bắc đảo/);
+
+    const south = await advisor.answerAdvisor({}, {
+      rawText: "Thời tiết An Thới chiều nay thế nào?",
+      language: "vi",
+      mode: "weather",
+    });
+    assert.match(south.answerText, /Nowcast hiện tại \(ước tính\): An Thới:/);
+    assert.doesNotMatch(south.answerText, /Dương Đông/);
   });
 });
 

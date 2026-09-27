@@ -72,8 +72,9 @@ function clockLabel(minutes: number): string {
 function stampLabel(value: number, language: TripLanguage): string {
   const day = localPart(value, "day", { day: "2-digit" });
   const month = localPart(value, "month", { month: "2-digit" });
-  const time = localPart(value, "hour", { hour: "2-digit", hourCycle: "h23" }) + ":" +
-    localPart(value, "minute", { minute: "2-digit" });
+  const hour = localPart(value, "hour", { hour: "2-digit", hourCycle: "h23" });
+  const minute = localPart(value, "minute", { minute: "2-digit" });
+  const time = hour.padStart(2, "0") + ":" + minute.padStart(2, "0");
   return language === "vi" ? day + "/" + month + " lúc " + time : day + "/" + month + " at " + time;
 }
 
@@ -186,7 +187,7 @@ function answerFromPayload(
     }
     const scheduled = clock(record.scheduled_time || record.estimated_time);
     if (scheduled === null || scheduled < window.start || scheduled >= window.end) return false;
-    if (remainingOnly && (record.actual_time || /DEPARTED|ARRIVED|CANCEL|CANCELLED|CANCELED|HỦY/iu.test((record.status_code || "") + " " + (record.status || "")))) return false;
+    if (remainingOnly && (record.actual_time || /DEPARTED|ARRIVED|CANCEL|CANCELLED|CANCELED|HỦY|ĐÃ\s*CẤT\s*CÁNH|ĐÃ\s*HẠ\s*CÁNH|ĐÃ\s*ĐẾN/iu.test((record.status_code || "") + " " + (record.status || "")))) return false;
     return true;
   });
   const unique = new Map<string, { flight: string; time: number }>();
@@ -212,7 +213,7 @@ function answerFromPayload(
         " trong khung " + window.label + ". Bảng được cập nhật " + freshLabel +
         " giờ Việt Nam; lịch và trạng thái có thể thay đổi.";
     }
-    return "Bảng bay trực tiếp ghi nhận " + flights.length + " chuyến " + directionLabel + destinationLabel +
+    return "Bảng bay trực tiếp ghi nhận " + flights.length + " chuyến bay " + directionLabel + destinationLabel +
       " còn theo lịch " + window.label + ": " + times.join(", ") +
       ". Cập nhật " + freshLabel + " giờ Việt Nam; giờ bay và trạng thái có thể thay đổi.";
   }

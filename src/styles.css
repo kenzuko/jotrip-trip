@@ -2182,5 +2182,6 @@ a {
   line-height: 1.55;
   color: #49625b;
 }
+.lead-privacy-note a { text-decoration: underline; text-underline-offset: 2px; font-weight: 600; }
 .handoff-form .consent-row span { line-height: 1.5; }
 .handoff-form .consent-row input { flex: 0 0 auto; }

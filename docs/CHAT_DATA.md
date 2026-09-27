@@ -19,7 +19,7 @@ Legacy `chat_sessions`, `chat_messages`, `chat_events` and `trip_intent_events` 
 
 ## Privacy gates before public launch
 
-Booking-lead retention is approved and implemented by migration 0011. Before launch, publish a reviewed privacy notice after the legal entity and privacy contact are confirmed, and establish a deletion-request channel for separately submitted contact details. Do not request passports or payment details in chat. Browser session IDs are bearer identifiers, not authenticated accounts, and must never grant access to private booking/contact records. The V2 self-service delete action does not delete a separately consented lead.
+Booking-lead retention is approved and implemented by migration 0011. The booking form now shows the owner-supplied interim privacy contacts, phuquoclux@gmail.com and +84 817 060 066, under the JoTrip service brand. Before public launch, identify the legal entity/controller and review the full privacy notice. Do not request passports or payment details in chat. Browser session IDs are bearer identifiers, not authenticated accounts, and must never grant access to private booking/contact records. The V2 self-service delete action does not delete a separately consented lead.
 
 ## Deployment gates
 

@@ -1081,7 +1081,12 @@ export default function App() {
                       {leadStatus === "sending" ? "Đang gửi..." : "Gửi cho JoTrip"}
                     </button>
                     {datesPending && <p className="lead-error">Bạn cập nhật ngày đi ở phía trên trước khi gửi để JoTrip nhận đúng chuyến nha.</p>}
-                    <p className="lead-privacy-note">Bạn có thể yêu cầu JoTrip xoá thông tin liên hệ qua kênh đã trao đổi. Xoá lịch sử chat không tự xoá yêu cầu này.</p>
+                    <p className="lead-privacy-note">
+                      Cần hỏi về dữ liệu hoặc yêu cầu xoá thông tin đã gửi? Liên hệ JoTrip qua{" "}
+                      <a href="mailto:phuquoclux@gmail.com">phuquoclux@gmail.com</a> hoặc{" "}
+                      <a href="tel:+84817060066">+84 817 060 066</a>. JoTrip sẽ xác minh yêu cầu trước khi xử lý.
+                      Xoá lịch sử chat không tự xoá yêu cầu này.
+                    </p>
                     {leadStatus === "sent" && (
                       <p className="lead-success">JoTrip đã nhận thông tin liên hệ và tóm tắt chuyến đi. Nhân viên sẽ kiểm tra dịch vụ trước khi xác nhận với bạn.</p>
                     )}

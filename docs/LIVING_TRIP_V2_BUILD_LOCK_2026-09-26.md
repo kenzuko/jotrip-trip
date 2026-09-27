@@ -42,7 +42,7 @@ Text-first, natural conversations that directly update a responsive visual plann
 
 1. The remote D1 read-only audit and verified encrypted backup/restore are complete. Reconcile the migration ledger against the existing schema and confirm owner custody of the recovery key; only then review the minimal migration path and apply it after explicit production approval.
 2. Run real D1 smoke tests for simultaneous writes, retries, restoration and deletion. Local D1 checks do not prove remote readiness.
-3. Booking-lead retention is approved and implemented. Before public launch, confirm the legal entity and privacy contact, publish a reviewed privacy notice, and verify the staff identity-check workflow. The staff-only erasure endpoint does not verify customer identity on its own; the current inline disclosure is not a complete legal privacy notice.
+3. Booking-lead retention is approved and implemented. Before public launch, confirm the legal entity/controller, publish a reviewed privacy notice and verify the staff identity-check workflow. The owner-supplied interim contact is `phuquoclux@gmail.com` / `+84 817 060 066`. The staff-only erasure endpoint does not verify customer identity on its own; the current inline disclosure is not a complete legal privacy notice.
 4. Review real photo rights/guest consent and precise geography; optimize authorized images and lazy-load.
 5. Inspect mobile Chromium/WebKit screenshots, test on a real iPhone and consider preview deployment only after the above gates. No CMS, Weather, Airport or Transit changes.
 

@@ -1,6 +1,6 @@
 # JoTrip Living Trip V2 - booking data boundary (draft)
 
-Status: engineering handoff, **not a published privacy notice or legal review**. No remote database migration, preview deployment or production changes are authorized by this document.
+Status: engineering handoff, **not a published privacy notice or legal review**. The owner supplied an interim privacy contact for operations; JoTrip is used as the service brand, not represented as a legal entity. No remote database migration, preview deployment or production changes are authorized by this document.
 
 ## Two independent records
 
@@ -36,9 +36,18 @@ These windows apply to the D1 booking-lead copy and are separate from the 90-day
 
 The Worker lifecycle endpoint is staff-only and requires the separate `LEAD_ADMIN_TOKEN`. `record_contact` updates the contact timestamp, `mark_unresponsive` changes state without resetting the clock, and `mark_fulfilled` records the actual completion time. Daily cleanup purges expired D1 lead and consent rows and removes expired tombstones. CRM exports and backup copies need the same deletion request handled in their own systems.
 
+## Interim privacy contact for operations
+
+The owner supplied these customer-facing channels on 27 September 2026:
+
+- Email: [phuquoclux@gmail.com](mailto:phuquoclux@gmail.com)
+- Phone: [+84 817 060 066](tel:+84817060066)
+
+The booking form displays them under the JoTrip service brand for questions or requests about a submitted booking lead. JoTrip is the brand label only; this document does not invent or claim a registered legal entity. Staff must verify a request before erasing a lead. The full public privacy notice and legal controller identity still need review before public launch.
+
 ## Remaining decisions before public launch
 
-- Confirm the public-facing legal entity and privacy contact channel; the public privacy notice remains an engineering draft until these are supplied and reviewed.
+- Confirm the legal entity/controller responsible for this service and complete a reviewed public privacy notice. The interim contact channel above is supplied; it does not replace the entity identity or legal review.
 - Define access control for staff viewing contacts and any existing CRM export. This endpoint handles the D1 copy only; external copies require their own deletion workflow.
 - Review applicable legal obligations with qualified local advice. This engineering document makes no claim of regulatory compliance.
 - Before any production migration, reconcile the migration ledger against the reviewed schema and confirm owner custody of the recovery key. The verified full backup and restore checkpoint is recorded in the PR discussion; no production migration or Worker deployment is performed by this PR.

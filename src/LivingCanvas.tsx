@@ -39,31 +39,22 @@ export function LivingWelcome({
 }) {
   return (
     <section className="living-welcome" aria-labelledby="living-welcome-title">
-      <div className="living-section-heading">
-        <span>CHỌN CẢM HỨNG HOẶC KỂ CHUYẾN ĐI CỦA BẠN</span>
-        <h2 id="living-welcome-title">Bạn muốn Phú Quốc của mình như thế nào?</h2>
-      </div>
-      <div className="living-stories">
-        {stories.map((story, index) => (
+      <p id="living-welcome-title" className="fresh-examples-title">Gợi ý để bắt đầu</p>
+      <div className="example-chips">
+        {stories.map((story) => (
           <button
-            className={"living-story living-story--" + story.id}
+            className={"example-chip example-chip--" + story.id}
             key={story.id}
             type="button"
             disabled={disabled}
             onClick={() => onExplore(story.prompt)}
             aria-label={story.title + ". " + story.description}
           >
-            <span className="living-story-art" aria-hidden="true">
-              <span className="living-story-sun" />
-              <span className="living-story-island" />
-              <span className="living-story-sea" />
+            <span className="example-chip-copy">
+              <span className="mobile-example">{story.title}</span>
+              <small>{story.description}</small>
             </span>
-            <span className="living-story-copy">
-              <small>0{index + 1} / {story.eyebrow}</small>
-              <strong>{story.title}</strong>
-              <span>{story.description}</span>
-              <em>Khám phá hướng này <span aria-hidden="true">↗</span></em>
-            </span>
+            <span className="example-chip-arrow" aria-hidden="true">↗</span>
           </button>
         ))}
       </div>

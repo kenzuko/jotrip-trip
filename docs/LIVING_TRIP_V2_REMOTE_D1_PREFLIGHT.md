@@ -54,6 +54,20 @@ Do not apply any migration or deploy if the DB identity differs from `wrangler.j
 
 Migration 0009 introduces authoritative trip sessions, turns and deletion tombstones. Migration 0010 formalizes booking leads, adds separate consent records and a minimal erasure audit. Migration 0011 adds the approved booking-lead retention lifecycle. Migrations 0009-0011 pass against actual local D1 in CI; 0009-0010 were also exercised on the separate synthetic preview D1. The live schema has been inspected read-only: six V2/booking tables are absent, the legacy chat table has 44 rows, and the migration ledger has zero records. Do not apply legacy migrations blindly.
 
+### Read-only migration-ledger reconciliation review
+
+The logged audit found **0** rows in `d1_migrations`, and Wrangler reports `0000-0011` as pending. The production schema nevertheless matches `0000_bootstrap_all.sql` across the 17 legacy application tables (columns, defaults, foreign keys and indexes); the bootstrap file contains the baseline DDL from `0001-0004`. The schema comparison and backup checkpoint are recorded in [the PR discussion](https://github.com/kenzuko/jotrip-trip/pull/6#issuecomment-5846845948).
+
+| Migration range | Effect reviewed in this branch | Required check before any live run |
+|---|---|---|
+| `0000-0004` | Baseline table/index creation uses `IF NOT EXISTS`; those objects already match the recorded bootstrap schema. | Reconfirm the same database UUID and exact baseline schema. |
+| `0005-0006` | Add pricing and hotel-rate columns with `ALTER TABLE`; these are additive and not included in the bootstrap schema. | Confirm every target column is still absent. A column added outside the migration ledger would make the migration fail. |
+| `0007-0008` | Create watch-notification and destination-context tables. | Confirm those tables remain absent or exactly compatible. |
+| `0009-0010` | Create V2 trip state, booking leads, consent and erasure-audit tables. | Recheck for a runtime-created `booking_leads` table and inspect its exact schema and rows before applying. |
+| `0011` | Adds lead-lifecycle fields, backfills `last_contact_at`, adds indexes and creates the expired-leads view. | Repeat the rehearsal on a fresh restore of the full backup; the recorded backup rehearsal covered `0005-0010`, while `0011` was added later. Preserve any lead rows discovered by the fresh check. |
+
+If the fresh checks still match, the candidate is the complete pending sequence `0000-0011` in numeric order through Wrangler, so the migration ledger records the same work that was applied. Do not manually insert migration-ledger rows or skip older entries. This is a read-only review, **not authorization to run it**. Stop if any schema, table, column or row-count assumption differs. A live run still requires the fresh backup/restore rehearsal, an agreed rollback owner, confirmation of recovery-key custody and explicit production approval.
+
 ## D. Controlled preview only (future, requires approval)
 
 1. Review read-only output and backup with the owner. Resolve legacy migration drift rather than blindly running every pending migration.

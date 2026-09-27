@@ -839,7 +839,8 @@ export default function App() {
             </div>
 
             {result && (<>
-            <TripPulse
+            {(result.parsed.mode === "trip_plan" || summaryBits.length > 0) && (
+              <TripPulse
               summary={summaryBits}
               aiSignals={(result.aiSignals || []).map((signal) => ({
                 slow_pace: "Muốn ít di chuyển",
@@ -853,7 +854,8 @@ export default function App() {
               selectedArea={activeDecisionArea}
               tradeoff={activeDecision && result ? decisionTradeoffs(activeDecision, result.parsed.interests, result.parsed.stayPreferences) : null}
               onSelectArea={setActiveDecisionArea}
-            />
+              />
+            )}
 
             {preAdvice.length > 0 && (
               <section className="pre-advice">

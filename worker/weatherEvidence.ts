@@ -79,10 +79,10 @@ function localStamp(value: string): string {
     part(stamp, "month", { month: "2-digit" }) + " " + localClock(stamp);
 }
 
-function number(value: unknown, language: TripLanguage): string {
+function number(value: unknown, language: TripLanguage, maximumFractionDigits = 1): string {
   if (typeof value !== "number" || !Number.isFinite(value)) return "";
   const locale = language === "vi" ? "vi-VN" : language === "ru" ? "ru-RU" : language === "zh" ? "zh-CN" : language === "ko" ? "ko-KR" : "en-US";
-  return new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value);
+  return new Intl.NumberFormat(locale, { maximumFractionDigits }).format(value);
 }
 
 function unavailable(language: TripLanguage): string {
@@ -191,7 +191,7 @@ function localNowLine(
     const label = rain.data_class === "MODEL_ONLY"
       ? (language === "vi" ? "mưa theo mô hình " : "model rain ")
       : (language === "vi" ? "mưa ước tính " : "estimated rain ");
-    details.push(label + number(rain.rain_rate_mm_h, language) + (language === "vi" ? " mm/giờ" : " mm/h"));
+    details.push(label + number(rain.rain_rate_mm_h, language, 2) + (language === "vi" ? " mm/giờ" : " mm/h"));
   }
   const imminence = rain?.imminence;
   if (imminence?.not_probability === true && imminence.level) {

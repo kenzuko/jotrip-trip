@@ -8,14 +8,14 @@ Implementation principle:
 
 > **AI understands the traveler. The engine calculates. Data decides. JoTrip operates.**
 
-## V2 development status - 26/09/2026 (draft, not deployed)
+## V2 development status - 27/09/2026 (draft, not deployed)
 
-The existing baseline Worker was previously reported operational; this V2 branch has **not** been deployed or tested against remote D1.
+The existing baseline Worker was previously reported operational. This V2 branch has not been deployed. Production D1 was inspected read-only; a separate synthetic preview D1 was used for SQL regression, with no production migration.
 
 Implemented foundation:
 
 - conversational homepage built around “Tri thức Phú Quốc biết trò chuyện”
-- server-authoritative multi-turn context with idempotent clientTurnId and refresh restoration (requires additive D1 migrations 0009 and 0010 for full chat + booking readiness)
+- server-authoritative multi-turn context with idempotent clientTurnId and refresh restoration (migrations 0009-0011 are covered in local D1 CI for full chat + booking readiness)
 - multilingual search/intent parsing: VI / EN / KO / RU / 中文
 - pre-read human advice before detail surfaces
 - animated JoTrip Guide states: idle / thinking / talking / pointing
@@ -24,6 +24,7 @@ Implemented foundation:
 - anonymous chat session ID
 - D1 schemas for accounts, trips, chat history, intent analytics and price watches
 - private chat demand analytics endpoint
+- approved booking-lead retention: 90 days after last human contact for open/unresponsive leads, 30 days after trip completion for fulfilled leads, and 180-day contact-free tombstones after verified erasure
 - deterministic Trip Scenario / Pareto engine
 - provider-neutral route decision layer using JoTrip's own travel matrix for distance/time evidence
 - 7-seat car temporary rule: **15,000 VND/km**
@@ -54,12 +55,17 @@ That private floor never becomes a public price automatically.
 
 ## Cloudflare
 
-Current Git deployment can keep:
+The Workers Builds settings shown in the dashboard are:
 
-- Build command: `None`
-- Deploy command: `npx wrangler deploy`
+- Build command: `npm run build`
+- Deploy command: `npm run deploy` (`package.json` maps this to `wrangler deploy`)
+- Version command: `npx wrangler versions upload`
+- Root directory: `/`
+- Production branch: `main`; builds for non-production branches are disabled.
 
-Before V2 preview deployment: verify the existing `jotrip-trip-db` binding, back up the remote database, inspect migration history and apply additive migrations 0009 and 0010 only after schema reconciliation and approval. The database ID is present in Wrangler config; runtime secrets must never be committed.
+`wrangler versions upload` uploads a Worker version without deploying it; the deploy command handles deployment. It is only useful when a separately addressable version is needed. See [Cloudflare's version deployment guide](https://developers.cloudflare.com/workers/configuration/versions-and-deployments/) and [Workers Builds configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/).
+
+Before any preview Worker deployment, reconcile the remote migration ledger with its existing legacy schema and confirm owner custody of the recovery key. The encrypted full backup and isolated restore were verified on 2026-09-26. No live migration is authorized by this PR; never apply 0000-0011 blindly. The database ID is present in `wrangler.jsonc`; runtime secrets must never be committed.
 
 Workers AI is **not required for V0**.
 

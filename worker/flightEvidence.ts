@@ -32,11 +32,32 @@ type FlightPayload = {
   };
 };
 
+type OfficialFlightItem = {
+  flightNo?: string;
+  cityName?: string;
+  route?: string;
+  scheduledTime?: string | null;
+  estimatedTime?: string | null;
+  actualTime?: string | null;
+  notesVn?: string;
+  notesEn?: string;
+  status?: string;
+  remarks?: string;
+};
+
+type OfficialFlightResponse = {
+  success?: boolean;
+  data?: OfficialFlightItem[];
+};
+
 const LIVE_URL = "https://jotrip-airport-live.kenzuko.workers.dev";
-// The airport Worker caches for 30s, serves stale while revalidating for 90s,
-// and its official API requests can take up to 10s on a cache miss.
+const OFFICIAL_API_URL = "https://sunairport.com/phuquoc/cms/api/flights";
+// The live proxy caches for 30s and may revalidate stale responses for 90s.
+// Accept only a three-minute live response; if the proxy is stale, use the
+// same official JSON API directly instead of counting an archived snapshot.
 const MAX_AGE_MS = 3 * 60 * 1000;
 const FLIGHT_FETCH_TIMEOUT_MS = 12_000;
+const LIVE_PROXY_TIMEOUT_MS = 2_500;
 const TZ = "Asia/Ho_Chi_Minh";
 
 function localPart(value: number, key: string, options: Intl.DateTimeFormatOptions): string {
@@ -68,6 +89,26 @@ function clock(value: string | null | undefined): number | null {
   const parts = value.split(":").map(Number);
   if (parts[0] > 23 || parts[1] > 59) return null;
   return parts[0] * 60 + parts[1];
+}
+
+function sourceClock(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const text = value.trim();
+  const colon = text.match(/^(\d{1,2}):(\d{2})$/);
+  const compact = text.match(/^(\d{2})(\d{2})(?:\d{2})?$/);
+  const hour = colon ? Number(colon[1]) : compact ? Number(compact[1]) : Number.NaN;
+  const minute = colon ? Number(colon[2]) : compact ? Number(compact[2]) : Number.NaN;
+  if (!Number.isInteger(hour) || hour > 23 || !Number.isInteger(minute) || minute > 59) return null;
+  return String(hour).padStart(2, "0") + ":" + String(minute).padStart(2, "0");
+}
+
+function vietnamTimestamp(value: number): string {
+  return localPart(value, "year", { year: "numeric" }) + "-" +
+    localPart(value, "month", { month: "2-digit" }) + "-" +
+    localPart(value, "day", { day: "2-digit" }) + "T" +
+    localPart(value, "hour", { hour: "2-digit", hourCycle: "h23" }) + ":" +
+    localPart(value, "minute", { minute: "2-digit" }) + ":" +
+    localPart(value, "second", { second: "2-digit" }) + "+07:00";
 }
 
 function clockLabel(minutes: number): string {
@@ -153,33 +194,42 @@ function unavailable(language: TripLanguage): string {
   return copy[language];
 }
 
-function answerFromPayload(
-  rawText: string,
-  language: TripLanguage,
-  payload: FlightPayload,
-  nowMs: number,
-): string {
+function isFreshLivePayload(payload: FlightPayload, nowMs: number): boolean {
   const today = localDateKey(nowMs);
   const latest = payload.latest;
   const health = payload.health;
   const collectedAt = freshnessTime(payload);
   const states = [health?.state, health?.status, latest?.report_state].filter(Boolean);
   const hasReadyState = states.some((state) => readyState(state));
+  const sourceMode = health?.source_mode;
+  const liveSource =
+    (sourceMode === "OFFICIAL_JSON_API_LIVE_PROXY" && health?.live_proxy === true) ||
+    sourceMode === "OFFICIAL_JSON_API_DIRECT";
   const age = nowMs - collectedAt;
-  if (
-    !latest ||
-    !Array.isArray(latest.records) ||
-    !hasReadyState ||
-    health?.live_proxy !== true ||
-    health?.source_mode !== "OFFICIAL_JSON_API_LIVE_PROXY" ||
-    latest.quality?.source_mode !== "OFFICIAL_JSON_API_LIVE_PROXY" ||
-    (latest.source_date && latest.source_date !== today) ||
-    (health?.source_date && health.source_date !== today) ||
-    health?.fallback_used === true ||
-    !Number.isFinite(collectedAt) ||
-    age < -2 * 60 * 1000 ||
-    age > MAX_AGE_MS
-  ) return unavailable(language);
+  return Boolean(
+    latest &&
+    Array.isArray(latest.records) &&
+    hasReadyState &&
+    liveSource &&
+    latest.quality?.source_mode === sourceMode &&
+    (latest.source_date === undefined || latest.source_date === today) &&
+    (health?.source_date === undefined || health.source_date === today) &&
+    health?.fallback_used !== true &&
+    Number.isFinite(collectedAt) &&
+    age >= -2 * 60 * 1000 &&
+    age <= MAX_AGE_MS
+  );
+}
+
+function answerFromPayload(
+  rawText: string,
+  language: TripLanguage,
+  payload: FlightPayload,
+  nowMs: number,
+): string {
+  const latest = payload.latest;
+  const collectedAt = freshnessTime(payload);
+  if (!isFreshLivePayload(payload, nowMs) || !latest) return unavailable(language);
 
   const text = rawText.toLocaleLowerCase();
   const arrival = isArrivalQuestion(text);
@@ -241,14 +291,89 @@ function answerFromPayload(
     ". Updated " + freshLabel + " Vietnam time; schedules and statuses can change.";
 }
 
-export async function loadFlightAnswer(
-  rawText: string,
-  language: TripLanguage,
-  fetcher: typeof fetch = fetch,
-  nowMs = Date.now(),
-): Promise<string> {
+function officialRecord(item: OfficialFlightItem, direction: "arrival" | "departure"): FlightRecord {
+  return {
+    direction,
+    operating_flight_number: item.flightNo?.trim() || "",
+    station: item.cityName?.trim() || "",
+    route: item.route?.trim() || "",
+    scheduled_time: sourceClock(item.scheduledTime),
+    estimated_time: sourceClock(item.estimatedTime),
+    actual_time: sourceClock(item.actualTime),
+    status: item.notesVn || item.notesEn || item.status || item.remarks || "",
+  };
+}
+
+async function fetchOfficialBoard(
+  type: "A" | "D",
+  day: string,
+  fetcher: typeof fetch,
+  signal: AbortSignal,
+  cacheBuster: number,
+): Promise<OfficialFlightItem[]> {
+  const url = new URL(OFFICIAL_API_URL);
+  url.searchParams.set("type", type);
+  url.searchParams.set("date", day);
+  url.searchParams.set("limit", "100");
+  url.searchParams.set("_t", String(cacheBuster));
+  const response = await fetcher(url.toString(), {
+    method: "GET",
+    cache: "no-store",
+    headers: { accept: "application/json", "cache-control": "no-cache" },
+    signal,
+  });
+  if (!response.ok) throw new Error("official_flight_api_http_" + response.status);
+  const body = await response.json() as OfficialFlightResponse;
+  if (body.success !== true || !Array.isArray(body.data)) {
+    throw new Error("official_flight_api_invalid_shape");
+  }
+  return body.data;
+}
+
+async function fetchOfficialPayload(
+  fetcher: typeof fetch,
+  day: string,
+  signal: AbortSignal,
+  cacheBuster: number,
+): Promise<FlightPayload> {
+  const [arrivals, departures] = await Promise.all([
+    fetchOfficialBoard("A", day, fetcher, signal, cacheBuster),
+    fetchOfficialBoard("D", day, fetcher, signal, cacheBuster),
+  ]);
+  if (!arrivals.length || !departures.length) throw new Error("official_flight_api_empty_board");
+  const fetchedAt = Date.now();
+  const timestamp = vietnamTimestamp(fetchedAt);
+  const sourceMode = "OFFICIAL_JSON_API_DIRECT";
+  return {
+    latest: {
+      report_state: "REPORT_READY",
+      source_date: day,
+      collected_at_vn: timestamp,
+      quality: { source_mode: sourceMode },
+      records: [
+        ...arrivals.map((item) => officialRecord(item, "arrival")),
+        ...departures.map((item) => officialRecord(item, "departure")),
+      ],
+    },
+    health: {
+      state: "REPORT_READY",
+      source_date: day,
+      collected_at_vn: timestamp,
+      source_mode: sourceMode,
+      fallback_used: false,
+    },
+  };
+}
+
+async function tryLiveProxy(
+  fetcher: typeof fetch,
+  nowMs: number,
+  signal: AbortSignal,
+): Promise<FlightPayload | null> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FLIGHT_FETCH_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), LIVE_PROXY_TIMEOUT_MS);
+  const abortProxy = () => controller.abort();
+  signal.addEventListener("abort", abortProxy, { once: true });
   try {
     const url = new URL(LIVE_URL);
     url.searchParams.set("date", localDateKey(nowMs));
@@ -259,9 +384,39 @@ export async function loadFlightAnswer(
       headers: { accept: "application/json", "cache-control": "no-cache" },
       signal: controller.signal,
     });
-    if (!response.ok) return unavailable(language);
+    if (!response.ok) return null;
     const payload = await response.json() as FlightPayload;
-    return answerFromPayload(rawText, language, payload, nowMs);
+    return isFreshLivePayload(payload, nowMs) ? payload : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+    signal.removeEventListener("abort", abortProxy);
+  }
+}
+
+export async function loadFlightAnswer(
+  rawText: string,
+  language: TripLanguage,
+  fetcher: typeof fetch = fetch,
+  nowMs = Date.now(),
+): Promise<string> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FLIGHT_FETCH_TIMEOUT_MS);
+  try {
+    const proxied = await tryLiveProxy(fetcher, nowMs, controller.signal);
+    if (proxied) return answerFromPayload(rawText, language, proxied, nowMs);
+    try {
+      const payload = await fetchOfficialPayload(
+        fetcher,
+        localDateKey(nowMs),
+        controller.signal,
+        Date.now(),
+      );
+      return answerFromPayload(rawText, language, payload, Date.now());
+    } catch {
+      return unavailable(language);
+    }
   } catch {
     return unavailable(language);
   } finally {

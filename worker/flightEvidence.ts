@@ -18,8 +18,11 @@ type FlightPayload = {
     source_date?: string;
     collected_at_vn?: string;
     records?: FlightRecord[];
+    quality?: { source_mode?: string };
   };
   health?: {
+    live_proxy?: boolean;
+    source_mode?: string;
     state?: string;
     status?: string;
     source_date?: string;
@@ -30,7 +33,10 @@ type FlightPayload = {
 };
 
 const LIVE_URL = "https://jotrip-airport-live.kenzuko.workers.dev";
-const MAX_AGE_MS = 15 * 60 * 1000;
+// The airport Worker caches for 30s, serves stale while revalidating for 90s,
+// and its official API requests can take up to 10s on a cache miss.
+const MAX_AGE_MS = 3 * 60 * 1000;
+const FLIGHT_FETCH_TIMEOUT_MS = 12_000;
 const TZ = "Asia/Ho_Chi_Minh";
 
 function localPart(value: number, key: string, options: Intl.DateTimeFormatOptions): string {
@@ -67,6 +73,10 @@ function clock(value: string | null | undefined): number | null {
 function clockLabel(minutes: number): string {
   return String(Math.floor(minutes / 60)).padStart(2, "0") + ":" +
     String(minutes % 60).padStart(2, "0");
+}
+
+function flightTime(record: FlightRecord): number | null {
+  return clock(record.estimated_time) ?? clock(record.scheduled_time);
 }
 
 function stampLabel(value: number, language: TripLanguage): string {
@@ -160,6 +170,9 @@ function answerFromPayload(
     !latest ||
     !Array.isArray(latest.records) ||
     !hasReadyState ||
+    health?.live_proxy !== true ||
+    health?.source_mode !== "OFFICIAL_JSON_API_LIVE_PROXY" ||
+    latest.quality?.source_mode !== "OFFICIAL_JSON_API_LIVE_PROXY" ||
     (latest.source_date && latest.source_date !== today) ||
     (health?.source_date && health.source_date !== today) ||
     health?.fallback_used === true ||
@@ -176,6 +189,8 @@ function answerFromPayload(
   const remainingOnly = /còn|remaining|left|아직|还剩|還剩/iu.test(text);
   const records = latest.records.filter((record) => {
     if ((record.direction || "").toLowerCase() !== direction) return false;
+    const status = normalize((record.status_code || "") + " " + (record.status || ""));
+    if (/CANCEL|HUY/.test(status)) return false;
     if (destination) {
       const station = normalize(record.station);
       const route = normalize(record.route);
@@ -185,14 +200,14 @@ function answerFromPayload(
         : route.endsWith("-" + destination.code);
       if (!stationMatch && !routeMatch) return false;
     }
-    const scheduled = clock(record.scheduled_time || record.estimated_time);
+    const scheduled = flightTime(record);
     if (scheduled === null || scheduled < window.start || scheduled >= window.end) return false;
-    if (remainingOnly && (record.actual_time || /DEPARTED|ARRIVED|CANCEL|CANCELLED|CANCELED|HỦY|ĐÃ\s*CẤT\s*CÁNH|ĐÃ\s*HẠ\s*CÁNH|ĐÃ\s*ĐẾN/iu.test((record.status_code || "") + " " + (record.status || "")))) return false;
+    if (remainingOnly && (record.actual_time || /DEPARTED|ARRIVED|ĐÃ\s*CẤT\s*CÁNH|ĐÃ\s*HẠ\s*CÁNH|ĐÃ\s*ĐẾN/iu.test((record.status_code || "") + " " + (record.status || "")))) return false;
     return true;
   });
   const unique = new Map<string, { flight: string; time: number }>();
   for (const record of records) {
-    const scheduled = clock(record.scheduled_time || record.estimated_time);
+    const scheduled = flightTime(record);
     if (scheduled === null) continue;
     const flight = record.operating_flight_number || "";
     const key = flight || record.route + "-" + scheduled;
@@ -233,7 +248,7 @@ export async function loadFlightAnswer(
   nowMs = Date.now(),
 ): Promise<string> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 4000);
+  const timer = setTimeout(() => controller.abort(), FLIGHT_FETCH_TIMEOUT_MS);
   try {
     const url = new URL(LIVE_URL);
     url.searchParams.set("date", localDateKey(nowMs));

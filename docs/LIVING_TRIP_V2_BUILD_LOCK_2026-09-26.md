@@ -1,6 +1,6 @@
 # JoTrip Living Trip V2 - clean rebuild lock (26/09/2026)
 
-Status: isolated draft PR #6. The owner has authorized deleting or renaming obsolete repository code. The existing remote D1 contains legacy chat records that this branch preserves; no production migration, DNS change or untested deployment is authorized.
+Status: isolated draft PR #6. The owner has authorized deleting or renaming obsolete repository code and testing an isolated Cloudflare Worker Preview. The existing production D1 contains legacy chat records that this branch preserves; no production migration, production deployment or DNS change is authorized.
 
 ## Product contract
 
@@ -44,6 +44,6 @@ Text-first, natural conversations that directly update a responsive visual plann
 2. Run real D1 smoke tests for simultaneous writes, retries, restoration and deletion. Local D1 checks do not prove remote readiness.
 3. Booking-lead retention is approved and implemented. Before public launch, confirm the legal entity/controller, publish a reviewed privacy notice and verify the staff identity-check workflow. The owner-supplied interim contact is `phuquoclux@gmail.com` / `+84 817 060 066`. The staff-only erasure endpoint does not verify customer identity on its own; the current inline disclosure is not a complete legal privacy notice.
 4. Review real photo rights/guest consent and precise geography; optimize authorized images and lazy-load.
-5. Inspect mobile Chromium/WebKit screenshots, test on a real iPhone and consider preview deployment only after the above gates. No CMS, Weather, Airport or Transit changes.
+5. Use only the isolated Worker Preview and synthetic D1 for owner QA; this does not clear any production migration or deployment gate. Inspect mobile screenshots and test on a real iPhone before public launch. No CMS, Weather, Airport or Transit changes.
 
 The previously requested recovery ZIP is **optional**, not a deployment blocker. If it becomes available, compare it selectively for reusable tests or business logic; do not merge the old session architecture wholesale.

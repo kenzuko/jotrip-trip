@@ -2,7 +2,7 @@
 
 ## Current deployment state (27 September 2026)
 
-Living Trip V2 remains an isolated draft PR and has not been deployed as a Worker. The production D1 was inspected read-only. Its legacy schema and zero-entry migration ledger need reconciliation before any live migration. The full production export was encrypted, stored off-platform, downloaded/decrypted and restored in isolated SQLite on 2026-09-26; integrity and the 44 existing chat messages were verified. A separate preview D1 contains synthetic data only and passed SQL regression for the previously applied migrations 0000 and 0005-0010. Production D1 and Worker remain unchanged.
+Living Trip V2 remains an isolated draft PR. The production D1 was inspected read-only. Its legacy schema and zero-entry migration ledger need reconciliation before any live migration. The full production export was encrypted, stored off-platform, downloaded/decrypted and restored in isolated SQLite on 2026-09-26; integrity and the 44 existing chat messages were verified. A separate preview D1 contains synthetic data only and passed SQL regression for migrations 0000 and 0005-0010. The branch-scoped preview workflow described below uses only that preview D1; production D1, Worker and DNS remain unchanged.
 
 See [the remote D1 preflight and backup runbook](LIVING_TRIP_V2_REMOTE_D1_PREFLIGHT.md). Do not apply migrations 0000-0011 blindly. Before any production mutation, reconcile the migration ledger, confirm owner custody of the recovery key, review a rollback plan and obtain explicit approval.
 
@@ -19,7 +19,7 @@ The dashboard currently shows:
 
 `wrangler versions upload` uploads a new Worker version without deploying it. It is useful when testing a version URL separately; ordinary deployment is handled by the deploy command. Cloudflare documents the distinction in its [versions and deployments guide](https://developers.cloudflare.com/workers/configuration/versions-and-deployments/).
 
-Do not enable preview builds for this draft branch or treat a successful build as approval to migrate D1 or deploy a Worker. If a preview Worker is separately approved later, set its secrets and test the real Worker-to-D1 flow before considering production.
+Non-production Workers Builds remain disabled. For this owner-approved test, a branch-scoped GitHub Actions workflow uses `npx wrangler preview`, with a separate `previews.d1_databases` binding to the synthetic preview D1. It applies only migration 0011 through a temporary migration config containing that single SQL file, then checks `/api/health`. It does not use `npm run deploy`, change the Workers Builds dashboard settings, bind to production D1, or alter DNS. A successful Preview is for owner QA only and is not production approval.
 
 ## D1 binding and migration safety
 

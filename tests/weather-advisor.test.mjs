@@ -57,13 +57,15 @@ const flightPayload = {
     report_state: "REPORT_READY",
     source_date: vietnamToday,
     collected_at_vn: "2026-09-27T13:08:00+07:00",
+    quality: { source_mode: "OFFICIAL_JSON_API_LIVE_PROXY" },
     records: [
-      { direction: "departure", operating_flight_number: "VN1232", station: "HA NOI", route: "PQC-HAN", scheduled_time: "13:55", status: "LÀM THỦ TỤC LÚC" },
+      { direction: "departure", operating_flight_number: "VN1232", station: "HA NOI", route: "PQC-HAN", scheduled_time: "13:55", estimated_time: "14:05", status: "LÀM THỦ TỤC LÚC" },
       { direction: "departure", operating_flight_number: "VJ452", station: "HA NOI", route: "PQC-HAN", scheduled_time: "15:40", status: "LÀM THỦ TỤC LÚC" },
       { direction: "departure", operating_flight_number: "9G1230", station: "HA NOI", route: "PQC-HAN", scheduled_time: "17:45", status: "LÀM THỦ TỤC LÚC" },
       { direction: "departure", operating_flight_number: "VJ442", station: "HA NOI", route: "PQC-HAN", scheduled_time: "19:20", status: "LÀM THỦ TỤC LÚC" },
       { direction: "departure", operating_flight_number: "VJ440", station: "HA NOI", route: "PQC-HAN", scheduled_time: "10:55", status: "ĐÃ CẤT CÁNH" },
       { direction: "departure", operating_flight_number: "VJ412", station: "HO CHI MINH", route: "PQC-SGN", scheduled_time: "16:20", status: "LÀM THỦ TỤC LÚC" },
+      { direction: "departure", operating_flight_number: "VN9999", station: "HA NOI", route: "PQC-HAN", scheduled_time: "16:25", status: "HỦY" },
     ],
   },
   health: {
@@ -71,6 +73,8 @@ const flightPayload = {
     status: "REPORT_READY",
     source_date: vietnamToday,
     collected_at_vn: "2026-09-27T13:08:00+07:00",
+    live_proxy: true,
+    source_mode: "OFFICIAL_JSON_API_LIVE_PROXY",
     fallback_used: false,
   },
 };
@@ -172,17 +176,33 @@ test("flight questions use the fresh airport board and never replay the old trip
     });
     assert.equal(result.mode, "flight_status");
     assert.match(result.answerText, /3 chuyến bay.*Hà Nội/);
-    assert.match(result.answerText, /VN1232 13:55/);
+    assert.match(result.answerText, /VN1232 14:05/);
     assert.match(result.answerText, /VJ452 15:40/);
     assert.match(result.answerText, /9G1230 17:45/);
     assert.doesNotMatch(result.answerText, /19:20|khách sạn|Bắc đảo/);
   });
 });
 
+test("archive snapshots are never presented as a live flight board", async () => {
+  const fallback = structuredClone(flightPayload);
+  fallback.health.live_proxy = false;
+  fallback.health.source_mode = "GITHUB_SNAPSHOT_FALLBACK";
+  fallback.latest.quality.source_mode = "OFFICIAL_JSON_API";
+  await withFlightFeed(fallback, async () => {
+    const result = await advisor.answerAdvisor({}, {
+      rawText: "Chiều nay còn bao nhiêu chuyến bay đi Hà Nội?",
+      language: "vi",
+      mode: "flight_status",
+    });
+    assert.match(result.answerText, /chưa đọc được bảng bay trực tiếp đủ mới/i);
+    assert.doesNotMatch(result.answerText, /3 chuyến|14:05/);
+  });
+});
+
 test("stale flight boards do not produce a misleading current count", async () => {
   const stale = structuredClone(flightPayload);
-  stale.latest.collected_at_vn = "2026-09-27T12:10:00+07:00";
-  stale.health.collected_at_vn = "2026-09-27T12:10:00+07:00";
+  stale.latest.collected_at_vn = "2026-09-27T13:06:00+07:00";
+  stale.health.collected_at_vn = "2026-09-27T13:06:00+07:00";
   await withFlightFeed(stale, async () => {
     const result = await advisor.answerAdvisor({}, {
       rawText: "Chiều nay còn bao nhiêu chuyến bay đi Hà Nội?",

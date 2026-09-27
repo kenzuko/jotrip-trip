@@ -1,6 +1,6 @@
 -- Living Trip V2: separately consented booking leads.
 -- Compatible with the legacy runtime-created booking_leads table.
--- No automatic lead deletion: retention must be approved by the operator.
+-- Migration 0011 adds the separately approved lifecycle and retention policy.
 CREATE TABLE IF NOT EXISTS booking_leads (
   id TEXT PRIMARY KEY,
   session_id TEXT,

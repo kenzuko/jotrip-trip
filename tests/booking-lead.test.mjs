@@ -8,6 +8,12 @@ const bundle = await build({
 });
 const worker = (await import("data:text/javascript;base64," +
   Buffer.from(bundle.outputFiles[0].contents).toString("base64"))).default;
+const leadBundle = await build({
+  entryPoints: ["worker/bookingLead.ts"], bundle: true, format: "esm",
+  platform: "browser", target: "es2022", write: false,
+});
+const bookingLead = await import("data:text/javascript;base64," +
+  Buffer.from(leadBundle.outputFiles[0].contents).toString("base64"));
 
 class BookingDB {
   sessions = new Map([
@@ -26,6 +32,7 @@ class BookingDB {
   leads = new Map();
   consents = new Map();
   audit = new Map();
+  auditTimes = new Map();
   beforeBatch = null;
   prepare(sql) {
     return {
@@ -45,8 +52,31 @@ class BookingDB {
             return this.sessions.get(params[0]) || null;
           return null;
         },
+        run: async () => this.runStatement(sql, params),
       }),
     };
+  }
+  async runStatement(sql, params) {
+    const lead = this.leads.get(params[0]);
+    if (/lifecycle_status='OPEN'/i.test(sql)) {
+      if (!lead || lead.lifecycleStatus === "FULFILLED") return { meta: { changes: 0 } };
+      lead.lifecycleStatus = "OPEN";
+      lead.lastContactAt = new Date().toISOString();
+      lead.completedAt = null;
+      return { meta: { changes: 1 } };
+    }
+    if (/lifecycle_status='UNRESPONSIVE'/i.test(sql)) {
+      if (!lead || lead.lifecycleStatus === "FULFILLED") return { meta: { changes: 0 } };
+      lead.lifecycleStatus = "UNRESPONSIVE";
+      return { meta: { changes: 1 } };
+    }
+    if (/lifecycle_status='FULFILLED'/i.test(sql)) {
+      if (!lead || lead.lifecycleStatus === "FULFILLED") return { meta: { changes: 0 } };
+      lead.lifecycleStatus = "FULFILLED";
+      lead.completedAt = new Date().toISOString();
+      return { meta: { changes: 1 } };
+    }
+    throw Error("Unexpected D1 run: " + sql);
   }
   async batch(statements) {
     if (/INSERT OR IGNORE INTO booking_leads/i.test(statements[0].sql)) {
@@ -60,7 +90,11 @@ class BookingDB {
       const insert = !this.leads.has(id) && !this.audit.has(id) &&
         !this.tombstones.has(sessionId) && session &&
         session.trip_id === guardedTrip && session.version === guardedVersion;
-      if (insert) this.leads.set(id, { sessionId, contact, channel, language, note, context });
+      if (insert) this.leads.set(id, {
+        sessionId, contact, channel, language, note, context,
+        lifecycleStatus: "OPEN", createdAt: new Date().toISOString(),
+        lastContactAt: new Date().toISOString(), completedAt: null,
+      });
       const lead = this.leads.get(consentId);
       const consent = lead && !this.consents.has(consentId) &&
         lead.sessionId === consentSession && lead.contact === consentContact &&
@@ -68,10 +102,51 @@ class BookingDB {
       if (consent) this.consents.set(consentId, consentVersion);
       return [{ meta: { changes: insert ? 1 : 0 } }, { meta: { changes: consent ? 1 : 0 } }];
     }
+    if (/booking_leads_expired_v2/i.test(statements[0].sql)) {
+      const now = Date.now();
+      const expired = [...this.leads.entries()].filter(([, lead]) => {
+        const reference = lead.lifecycleStatus === "FULFILLED"
+          ? lead.completedAt
+          : lead.lastContactAt || lead.createdAt;
+        const age = now - Date.parse(reference || "");
+        return lead.lifecycleStatus === "FULFILLED"
+          ? Number.isFinite(age) && age >= 30 * 86_400_000
+          : ["OPEN", "UNRESPONSIVE"].includes(lead.lifecycleStatus) &&
+            Number.isFinite(age) && age >= 90 * 86_400_000;
+      }).map(([id]) => id);
+      let tombstonesAdded = 0;
+      for (const id of expired) {
+        if (!this.audit.has(id)) {
+          this.audit.set(id, "operational_cleanup");
+          this.auditTimes.set(id, now);
+          tombstonesAdded++;
+        }
+      }
+      let consentsDeleted = 0;
+      for (const id of expired) if (this.consents.delete(id)) consentsDeleted++;
+      for (const id of expired) this.leads.delete(id);
+      let tombstonesExpired = 0;
+      for (const [id, erasedAt] of this.auditTimes) {
+        if (erasedAt <= now - 180 * 86_400_000) {
+          this.audit.delete(id);
+          this.auditTimes.delete(id);
+          tombstonesExpired++;
+        }
+      }
+      return [
+        { meta: { changes: tombstonesAdded } },
+        { meta: { changes: consentsDeleted } },
+        { meta: { changes: expired.length } },
+        { meta: { changes: tombstonesExpired } },
+      ];
+    }
     if (/INSERT OR IGNORE INTO booking_lead_erasure_audit/i.test(statements[0].sql)) {
       const [reason, id] = statements[0].params;
       const existed = this.leads.has(id);
-      if (existed) this.audit.set(id, reason);
+      if (existed) {
+        this.audit.set(id, reason);
+        this.auditTimes.set(id, Date.now());
+      }
       const hadConsent = this.consents.delete(id);
       this.leads.delete(id);
       return [
@@ -222,3 +297,98 @@ test("erased lead cannot be recreated by a delayed browser retry", async () => {
   assert.equal((await replay.json()).error, "lead_erased");
   assert.equal(db.leads.size, 0);
 });
+
+test("staff-only lifecycle records human contact and makes fulfilled leads final", async () => {
+  const db = new BookingDB();
+  const saved = await worker.fetch(post("/api/booking/lead", {
+    sessionId: "session-booking-0001", ...leadIdentity,
+    contact: "guest@example.com", consent: true,
+  }), { DB: db });
+  const { id } = await saved.json();
+  const env = { DB: db, LEAD_ADMIN_TOKEN: "staff-only", INTERNAL_API_TOKEN: "analytics-readonly" };
+
+  const denied = await worker.fetch(post("/api/internal/booking-lead/lifecycle", {
+    leadId: id, action: "mark_unresponsive",
+  }), env);
+  assert.equal(denied.status, 401);
+
+  const lead = db.leads.get(id);
+  lead.lastContactAt = "2000-01-01T00:00:00.000Z";
+  const unresponsive = await worker.fetch(post("/api/internal/booking-lead/lifecycle", {
+    leadId: id, action: "mark_unresponsive",
+  }, "staff-only"), env);
+  assert.equal(unresponsive.status, 200);
+  assert.equal((await unresponsive.json()).status, "UNRESPONSIVE");
+  assert.equal(lead.lastContactAt, "2000-01-01T00:00:00.000Z");
+
+  const contacted = await worker.fetch(post("/api/internal/booking-lead/lifecycle", {
+    leadId: id, action: "record_contact",
+  }, "staff-only"), env);
+  assert.equal(contacted.status, 200);
+  assert.equal((await contacted.json()).status, "OPEN");
+  assert.notEqual(lead.lastContactAt, "2000-01-01T00:00:00.000Z");
+
+  const fulfilled = await worker.fetch(post("/api/internal/booking-lead/lifecycle", {
+    leadId: id, action: "mark_fulfilled",
+  }, "staff-only"), env);
+  assert.equal(fulfilled.status, 200);
+  assert.equal((await fulfilled.json()).status, "FULFILLED");
+  assert.ok(lead.completedAt);
+
+  const lateContact = await worker.fetch(post("/api/internal/booking-lead/lifecycle", {
+    leadId: id, action: "record_contact",
+  }, "staff-only"), env);
+  assert.equal(lateContact.status, 409);
+  assert.equal(lead.lifecycleStatus, "FULFILLED");
+});
+
+test("scheduled lead retention deletes expired lead data and ages out tombstones", async () => {
+  const db = new BookingDB();
+  const stale = new Date(Date.now() - 91 * 86_400_000).toISOString();
+  const done = new Date(Date.now() - 31 * 86_400_000).toISOString();
+  const almostStale = new Date(Date.now() - 89 * 86_400_000).toISOString();
+  const almostDone = new Date(Date.now() - 29 * 86_400_000).toISOString();
+  db.leads.set("old-open", {
+    contact: "old-open@example.invalid", context: "{}", lifecycleStatus: "OPEN",
+    createdAt: stale, lastContactAt: stale,
+  });
+  db.leads.set("old-unresponsive", {
+    contact: "old-unresponsive@example.invalid", context: "{}", lifecycleStatus: "UNRESPONSIVE",
+    createdAt: stale, lastContactAt: stale,
+  });
+  db.leads.set("old-fulfilled", {
+    contact: "old-fulfilled@example.invalid", context: "{}", lifecycleStatus: "FULFILLED",
+    createdAt: done, lastContactAt: done, completedAt: done,
+  });
+  db.leads.set("fresh-open", {
+    contact: "fresh-open@example.invalid", context: "{}", lifecycleStatus: "OPEN",
+    createdAt: almostStale, lastContactAt: almostStale,
+  });
+  db.leads.set("fresh-fulfilled", {
+    contact: "fresh-fulfilled@example.invalid", context: "{}", lifecycleStatus: "FULFILLED",
+    createdAt: almostDone, lastContactAt: almostDone, completedAt: almostDone,
+  });
+  db.consents.set("old-open", "booking_contact_v2");
+  const now = Date.now();
+  db.audit.set("old-erasure", "verified_customer_request");
+  db.auditTimes.set("old-erasure", now - 181 * 86_400_000);
+  db.audit.set("recent-erasure", "verified_customer_request");
+  db.auditTimes.set("recent-erasure", now - 179 * 86_400_000);
+
+  const result = await bookingLead.purgeExpiredBookingLeads({ DB: db });
+  assert.equal(result.ok, true);
+  assert.equal(result.leadsDeleted, 3);
+  assert.equal(result.tombstonesAdded, 3);
+  assert.equal(result.tombstonesExpired, 1);
+  assert.equal(result.consentsDeleted, 1);
+  assert.equal(db.leads.has("old-open"), false);
+  assert.equal(db.leads.has("old-unresponsive"), false);
+  assert.equal(db.leads.has("old-fulfilled"), false);
+  assert.equal(db.leads.has("fresh-open"), true);
+  assert.equal(db.leads.has("fresh-fulfilled"), true);
+  assert.equal(db.consents.has("old-open"), false);
+  assert.equal(db.audit.get("old-open"), "operational_cleanup");
+  assert.equal(db.audit.has("old-erasure"), false);
+  assert.equal(db.audit.has("recent-erasure"), true);
+});
+

@@ -8,7 +8,7 @@ export const REQUIRED = Object.freeze({
   trip_turns_v2: ["session_id", "client_turn_id", "trip_id", "input_text", "response_json", "created_at"],
   trip_deleted_sessions_v2: ["session_id", "deleted_at"],
   booking_leads: ["id", "session_id", "contact", "contact_channel", "language", "note",
-    "trip_context_json", "status", "created_at"],
+    "trip_context_json", "status", "created_at", "lifecycle_status", "last_contact_at", "completed_at"],
   booking_lead_consents_v2: ["lead_id", "consent_version", "consent_at"],
   booking_lead_erasure_audit: ["lead_id", "erased_at", "reason"],
 });
@@ -61,6 +61,13 @@ function tableDefinitions(sql) {
         throw new Error("Duplicate unconditional CREATE TABLE");
     } else definitions.set(tableName, columns);
     create.lastIndex = end;
+  }
+  // Migration 0011 adds lifecycle fields to legacy booking_leads tables.
+  // Include additive columns so the read-only analyzer can evaluate migration chains.
+  const addColumn = /ALTER\s+TABLE\s+(?:(?:"main"|main)\.)?["'\x60\[]?([a-z_][\w]*)["'\x60\]]?\s+ADD\s+(?:COLUMN\s+)?["'\x60\[]?([a-z_][\w]*)/ig;
+  while ((match = addColumn.exec(noComments)) !== null) {
+    const columns = definitions.get(match[1].toLowerCase());
+    if (columns) columns.add(match[2].toLowerCase());
   }
   return definitions;
 }

@@ -38,7 +38,9 @@ jobs:
           npx wrangler d1 execute jotrip-trip-db --local --file migrations/0009_trip_turn_state.sql
           npx wrangler d1 execute jotrip-trip-db --local --file tests/fixtures/v2-d1-smoke.sql
           npx wrangler d1 execute jotrip-trip-db --local --file migrations/0010_booking_lead_privacy.sql
+          npx wrangler d1 execute jotrip-trip-db --local --file migrations/0011_booking_lead_retention.sql
           npx wrangler d1 execute jotrip-trip-db --local --file tests/fixtures/v2-booking-lead-smoke.sql
+          npx wrangler d1 execute jotrip-trip-db --local --file tests/fixtures/v2-booking-retention-smoke.sql
           npx wrangler d1 execute jotrip-trip-db --local --file tests/fixtures/v2-booking-version-smoke.sql
       - name: Read-only schema export preflight against actual local D1
         run: |
@@ -48,7 +50,10 @@ jobs:
         run: |
           npx wrangler d1 execute jotrip-trip-db --local --persist-to /tmp/jotrip-v2-legacy --file tests/fixtures/v2-legacy-booking-schema.sql
           npx wrangler d1 execute jotrip-trip-db --local --persist-to /tmp/jotrip-v2-legacy --file migrations/0010_booking_lead_privacy.sql
+          npx wrangler d1 execute jotrip-trip-db --local --persist-to /tmp/jotrip-v2-legacy --file migrations/0011_booking_lead_retention.sql
           npx wrangler d1 execute jotrip-trip-db --local --persist-to /tmp/jotrip-v2-legacy --file tests/fixtures/v2-booking-lead-smoke.sql
+          npx wrangler d1 execute jotrip-trip-db --local --persist-to /tmp/jotrip-v2-legacy --file tests/fixtures/v2-booking-retention-backfill.sql
+          npx wrangler d1 execute jotrip-trip-db --local --persist-to /tmp/jotrip-v2-legacy --file tests/fixtures/v2-booking-retention-smoke.sql
       - name: Build production assets
         run: npm run build
       - name: Local Worker HTTP end-to-end (local D1 only; never remote)
@@ -74,7 +79,7 @@ jobs:
             rm -rf "$persist_dir"
           }
           trap cleanup EXIT
-          for migration in 0000_bootstrap_all.sql 0005_pricing_guardrails.sql 0006_hotel_rate_rules.sql 0007_watch_notifications.sql 0008_destination_context.sql 0009_trip_turn_state.sql 0010_booking_lead_privacy.sql; do
+          for migration in 0000_bootstrap_all.sql 0005_pricing_guardrails.sql 0006_hotel_rate_rules.sql 0007_watch_notifications.sql 0008_destination_context.sql 0009_trip_turn_state.sql 0010_booking_lead_privacy.sql 0011_booking_lead_retention.sql; do
             if ! npx wrangler d1 execute jotrip-trip-db --local --persist-to "$persist_dir" --file="migrations/$migration" > "$persist_dir/migration.log" 2>&1; then
               echo "::error::Local D1 migration failed: $migration"
               cat "$persist_dir/migration.log"

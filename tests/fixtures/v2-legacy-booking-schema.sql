@@ -11,3 +11,5 @@ CREATE TABLE IF NOT EXISTS booking_leads (
   status TEXT NOT NULL DEFAULT 'NEW',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+INSERT INTO booking_leads(id, contact, created_at)
+VALUES ('legacy-retention-seed', 'legacy@example.invalid', '2024-01-01 12:00:00');

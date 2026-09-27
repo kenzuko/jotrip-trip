@@ -116,6 +116,43 @@ const retriedLead = await call("/api/booking/lead", {
 assert.equal(retriedLead.status, 200);
 assert.equal(retriedLead.payload.alreadyReceived, true);
 
+const deniedLifecycle = await call("/api/internal/booking-lead/lifecycle", {
+  method: "POST",
+  body: { leadId, action: "mark_unresponsive" },
+});
+assert.equal(deniedLifecycle.status, 401);
+
+const unresponsiveLead = await call("/api/internal/booking-lead/lifecycle", {
+  method: "POST",
+  body: { leadId, action: "mark_unresponsive" },
+  token: staffToken,
+});
+assert.equal(unresponsiveLead.status, 200);
+assert.equal(unresponsiveLead.payload.status, "UNRESPONSIVE");
+
+const reopenedLead = await call("/api/internal/booking-lead/lifecycle", {
+  method: "POST",
+  body: { leadId, action: "record_contact" },
+  token: staffToken,
+});
+assert.equal(reopenedLead.status, 200);
+assert.equal(reopenedLead.payload.status, "OPEN");
+
+const fulfilledLead = await call("/api/internal/booking-lead/lifecycle", {
+  method: "POST",
+  body: { leadId, action: "mark_fulfilled" },
+  token: staffToken,
+});
+assert.equal(fulfilledLead.status, 200);
+assert.equal(fulfilledLead.payload.status, "FULFILLED");
+
+const finalizedLeadContact = await call("/api/internal/booking-lead/lifecycle", {
+  method: "POST",
+  body: { leadId, action: "record_contact" },
+  token: staffToken,
+});
+assert.equal(finalizedLeadContact.status, 409);
+
 const deniedErasure = await call("/api/internal/booking-lead/erase", {
   method: "POST",
   body: { leadId, reason: "verified_customer_request" },
@@ -165,4 +202,4 @@ const blockedLeadReplay = await call("/api/booking/lead", {
 assert.equal(blockedLeadReplay.status, 410);
 assert.equal(blockedLeadReplay.payload.error, "lead_erased");
 
-console.log("Local Worker HTTP e2e passed: legacy route, saved turns, retries, restore, consent, stale version, independent lead erasure and session tombstone.");
+console.log("Local Worker HTTP e2e passed: saved turns, retries, restore, consent, lifecycle authorization/transitions, lead erasure and session tombstone.");

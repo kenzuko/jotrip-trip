@@ -134,8 +134,9 @@ export async function saveBookingLead(env: Env, payload: BookingLeadPayload) {
   const [inserted] = await env.DB.batch([
     env.DB.prepare(
       `INSERT OR IGNORE INTO booking_leads
-       (id,session_id,contact,contact_channel,language,note,trip_context_json,status)
-       SELECT ?,?,?,?,?,?,?,'NEW' FROM trip_sessions_v2
+       (id,session_id,contact,contact_channel,language,note,trip_context_json,status,
+        lifecycle_status,last_contact_at)
+       SELECT ?,?,?,?,?,?,?,'NEW','OPEN',CURRENT_TIMESTAMP FROM trip_sessions_v2
        WHERE session_id=? AND trip_id=? AND version=?
          AND NOT EXISTS (SELECT 1 FROM trip_deleted_sessions_v2 WHERE session_id=?)
          AND NOT EXISTS (SELECT 1 FROM booking_lead_erasure_audit WHERE lead_id=?)`,
@@ -156,6 +157,84 @@ export async function saveBookingLead(env: Env, payload: BookingLeadPayload) {
     return { ok: false, error: erasedAfter ? "lead_erased" : "stale_trip_refresh_required" };
   }
   return { ok: true, id, status: "NEW", alreadyReceived: false };
+}
+
+export type BookingLeadLifecycleAction =
+  | "record_contact"
+  | "mark_unresponsive"
+  | "mark_fulfilled";
+
+/** Update only operational state; the contact and trip summary never leave D1. */
+export async function updateBookingLeadLifecycle(
+  env: Env,
+  leadId: string,
+  action: string,
+) {
+  if (!env.DB) return { ok: false, error: "db_not_bound" };
+  if (!LEAD_ID.test(leadId)) return { ok: false, error: "invalid_lead_id" };
+  if (action !== "record_contact" &&
+      action !== "mark_unresponsive" &&
+      action !== "mark_fulfilled") {
+    return { ok: false, error: "invalid_action" };
+  }
+
+  let sql: string;
+  let status: "OPEN" | "UNRESPONSIVE" | "FULFILLED";
+  if (action === "record_contact") {
+    status = "OPEN";
+    sql = "UPDATE booking_leads SET lifecycle_status='OPEN', " +
+      "last_contact_at=CURRENT_TIMESTAMP, completed_at=NULL " +
+      "WHERE id=? AND lifecycle_status IN ('OPEN','UNRESPONSIVE')";
+  } else if (action === "mark_unresponsive") {
+    status = "UNRESPONSIVE";
+    sql = "UPDATE booking_leads SET lifecycle_status='UNRESPONSIVE' " +
+      "WHERE id=? AND lifecycle_status IN ('OPEN','UNRESPONSIVE')";
+  } else {
+    status = "FULFILLED";
+    sql = "UPDATE booking_leads SET lifecycle_status='FULFILLED', " +
+      "completed_at=CURRENT_TIMESTAMP " +
+      "WHERE id=? AND lifecycle_status IN ('OPEN','UNRESPONSIVE')";
+  }
+
+  const result = await env.DB.prepare(sql).bind(leadId).run();
+  if (Number(result.meta.changes) !== 1) {
+    return { ok: false, error: "lead_not_found_or_finalized" };
+  }
+  return { ok: true, updated: true, status };
+}
+
+/** Purge lead data and expired replay tombstones in one D1 batch. */
+export async function purgeExpiredBookingLeads(env: Env) {
+  if (!env.DB) return { ok: false, error: "db_not_bound" };
+  try {
+    const results = await env.DB.batch([
+      env.DB.prepare(
+        "INSERT OR IGNORE INTO booking_lead_erasure_audit (lead_id,reason) " +
+        "SELECT id,'operational_cleanup' FROM booking_leads_expired_v2",
+      ),
+      env.DB.prepare(
+        "DELETE FROM booking_lead_consents_v2 " +
+        "WHERE lead_id IN (SELECT id FROM booking_leads_expired_v2)",
+      ),
+      env.DB.prepare(
+        "DELETE FROM booking_leads WHERE id IN " +
+        "(SELECT id FROM booking_leads_expired_v2)",
+      ),
+      env.DB.prepare(
+        "DELETE FROM booking_lead_erasure_audit " +
+        "WHERE datetime(erased_at) <= datetime('now','-180 days')",
+      ),
+    ]);
+    return {
+      ok: true,
+      tombstonesAdded: Number(results[0]?.meta?.changes || 0),
+      consentsDeleted: Number(results[1]?.meta?.changes || 0),
+      leadsDeleted: Number(results[2]?.meta?.changes || 0),
+      tombstonesExpired: Number(results[3]?.meta?.changes || 0),
+    };
+  } catch {
+    return { ok: false, error: "retention_purge_failed" };
+  }
 }
 
 /** Staff-only after identity verification through the existing customer channel.

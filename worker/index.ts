@@ -10,7 +10,7 @@ import { importTravelMatrix } from "./travelMatrixImport";
 import { buildDestinationContext } from "./destinationContext";
 import { importDestinationVenues } from "./destinationImport";
 import { answerAdvisor } from "./advisor";
-import { eraseBookingLead, saveBookingLead } from "./bookingLead";
+import { eraseBookingLead, purgeExpiredBookingLeads, saveBookingLead, updateBookingLeadLifecycle } from "./bookingLead";
 import { deleteTripSession, getTripSession, processTripTurn, purgeExpiredTripSessions } from "./tripTurn";
 
 type Env = {
@@ -155,9 +155,12 @@ export default {
       let bookingLeadReady = false;
       if (env.DB) {
         try {
-          await env.DB.prepare("SELECT 1 FROM booking_leads LIMIT 1").first();
+          await env.DB.prepare(
+            "SELECT lifecycle_status,last_contact_at,completed_at FROM booking_leads LIMIT 1",
+          ).first();
           await env.DB.prepare("SELECT 1 FROM booking_lead_consents_v2 LIMIT 1").first();
           await env.DB.prepare("SELECT 1 FROM booking_lead_erasure_audit LIMIT 1").first();
+          await env.DB.prepare("SELECT id FROM booking_leads_expired_v2 LIMIT 1").first();
           bookingLeadReady = true;
         } catch {
           bookingLeadReady = false;
@@ -193,6 +196,27 @@ export default {
         checkin?: string; checkout?: string;
       }>().catch(() => ({}));
       return processTripTurn(env, body, assistantTextFor);
+    }
+
+    if (url.pathname === "/api/internal/booking-lead/lifecycle" && request.method === "POST") {
+      if (!env.LEAD_ADMIN_TOKEN ||
+          request.headers.get("authorization") !== "Bearer " + env.LEAD_ADMIN_TOKEN) {
+        return json({ ok: false, error: "unauthorized" }, 401);
+      }
+      const body = await request.json<{
+        leadId?: string; action?: string;
+      }>().catch(() => ({}));
+      try {
+        const result = await updateBookingLeadLifecycle(
+          env, body.leadId || "", body.action || "",
+        );
+        const status = result.ok ? 200 :
+          result.error === "db_not_bound" ? 503 :
+          result.error === "lead_not_found_or_finalized" ? 409 : 400;
+        return json(result, status);
+      } catch {
+        return json({ ok: false, error: "lead_lifecycle_unavailable" }, 503);
+      }
     }
 
     if (url.pathname === "/api/internal/booking-lead/erase" && request.method === "POST") {
@@ -505,5 +529,14 @@ export default {
     const days = Number(env.TRIP_RETENTION_DAYS || "90");
     const result = await purgeExpiredTripSessions(env, Number.isFinite(days) ? days : 90);
     if (!result.ok) console.error("trip_retention_purge_failed", result.error);
+    const leadResult = await purgeExpiredBookingLeads(env);
+    if (!leadResult.ok) {
+      console.error("booking_lead_retention_purge_failed", leadResult.error);
+    } else if (leadResult.leadsDeleted || leadResult.tombstonesExpired) {
+      console.log("booking_lead_retention_purged", {
+        leadsDeleted: leadResult.leadsDeleted,
+        tombstonesExpired: leadResult.tombstonesExpired,
+      });
+    }
   },
 } satisfies ExportedHandler<Env>;

@@ -21,17 +21,30 @@ The browser sends `sessionId`, a stable client-generated lead UUID, the trip ID/
 
 `POST /api/internal/booking-lead/erase` requires a separate server-only `LEAD_ADMIN_TOKEN`, a lead UUID and a reason (`verified_customer_request` or `operational_cleanup`). It deletes the lead and its consent record, then keeps an audit containing only the erased lead ID, reason and time. It does not expose the contact in its response and cannot be called with the read-only analytics token or an anonymous session ID.
 
-The staff workflow must verify identity through the customer's existing channel **before** invoking erasure. There is intentionally no anonymous delete-by-contact endpoint, since it would permit other people to erase someone else's request. The audit also prevents a delayed retry from recreating an erased lead. The audit itself needs a separately reviewed retention policy.
+The staff workflow must verify identity through the customer's existing channel **before** invoking erasure. There is intentionally no anonymous delete-by-contact endpoint, since it would permit other people to erase someone else's request. The audit also prevents a delayed retry from recreating an erased lead. It stores only the lead ID, reason and timestamp; erase and automatic-retention tombstones expire after 180 days.
 
-## Unresolved decisions before public launch
+## Approved retention policy
 
-- Confirm the public-facing business name, privacy contact channel and wording in every supported language.
-- Approve the retention period for **open**, **fulfilled**, **withdrawn** and **unresponsive** booking requests. The 90-day chat rule does not apply to leads; there is **no automatic lead purge** until an operator-approved policy exists.
-- Define access control for staff viewing contacts, request verification and any existing CRM export or backup. This endpoint handles the D1 copy only; external copies require their own deletion workflow.
-- Review any applicable legal obligations with qualified local advice. This engineering document makes no claim of regulatory compliance.
-- Verify remote D1 schema and back up data before applying additive migration `0010_booking_lead_privacy.sql`. The legacy Worker previously created `booking_leads` at runtime; migration 0010 formalizes that schema and adds the consent and erasure-audit tables.
-- Set `LEAD_ADMIN_TOKEN` as a Cloudflare secret, never a repository variable. Keep it separate from `INTERNAL_API_TOKEN`. Test access and rollback in preview first.
+These windows apply to the D1 booking-lead copy and are separate from the 90-day inactive chat/session cleanup.
+
+| Record state | Retention |
+|---|---|
+| Open or unresponsive lead | Delete lead, contact, trip summary and consent 90 days after the last human contact. Submission time is the initial contact timestamp; staff record later contact through the internal lifecycle endpoint. |
+| Fulfilled lead | Delete lead, contact, trip summary and consent 30 days after the trip is completed. Staff mark completion only after the trip ends. |
+| Withdrawal or verified erasure | Delete lead and consent immediately. Keep a contact-free lead-ID audit tombstone for 180 days, then remove it. Identity is verified through the existing customer channel before staff invoke erasure. |
+| Encrypted full D1 backup | Keep only until migration and restore have been verified; rotate or delete it within 90 days after verification. The restore was verified on 2026-09-26, so the current backup is due for rotation or deletion by 2026-12-25. |
+
+The Worker lifecycle endpoint is staff-only and requires the separate `LEAD_ADMIN_TOKEN`. `record_contact` updates the contact timestamp, `mark_unresponsive` changes state without resetting the clock, and `mark_fulfilled` records the actual completion time. Daily cleanup purges expired D1 lead and consent rows and removes expired tombstones. CRM exports and backup copies need the same deletion request handled in their own systems.
+
+## Remaining decisions before public launch
+
+- Confirm the public-facing legal entity and privacy contact channel; the public privacy notice remains an engineering draft until these are supplied and reviewed.
+- Define access control for staff viewing contacts and any existing CRM export. This endpoint handles the D1 copy only; external copies require their own deletion workflow.
+- Review applicable legal obligations with qualified local advice. This engineering document makes no claim of regulatory compliance.
+- Before any production migration, reconcile the migration ledger against the reviewed schema and confirm owner custody of the recovery key. The verified full backup and restore checkpoint is recorded in the PR discussion; no production migration or Worker deployment is performed by this PR.
+- Set `LEAD_ADMIN_TOKEN` as a Cloudflare secret, never a repository variable. Keep it separate from `INTERNAL_API_TOKEN`.
+
 
 ## Test scope
 
-`tests/booking-lead.test.mjs` covers explicit consent, server-owned data minimization, stale-tab races, duplicate network retries, erased-lead replay, deleted/unknown sessions and separate staff authorization. The CI workflow exercises migrations 0009 and 0010, a real D1 version-locked insert and SQL lead/consent/erasure lifecycle against **local D1 only**. A second local D1 run checks compatibility with the old runtime-created table. Neither test validates the real remote D1 schema or backups.
+`tests/booking-lead.test.mjs` covers explicit consent, server-owned data minimization, stale-tab races, duplicate network retries, erased-lead replay, lifecycle authorization/transitions and scheduled expiry. The CI workflow exercises migrations 0009, 0010 and 0011, a real D1 version-locked insert and SQL lead/consent/erasure/retention lifecycle against **local D1 only**. A second local D1 run checks compatibility with the old runtime-created table. Neither test validates the real remote D1 schema or backups.

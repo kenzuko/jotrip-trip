@@ -5,18 +5,19 @@ import { inspectSchema } from "../tools/d1-schema-preflight.mjs";
 
 const migration9 = readFileSync("migrations/0009_trip_turn_state.sql", "utf8");
 const migration10 = readFileSync("migrations/0010_booking_lead_privacy.sql", "utf8");
+const migration11 = readFileSync("migrations/0011_booking_lead_retention.sql", "utf8");
 
-test("both reviewed V2 migrations satisfy the expected schema column contract", () => {
-  const result = inspectSchema(migration9 + "\n" + migration10);
+test("reviewed V2 migrations satisfy the expected schema column contract", () => {
+  const result = inspectSchema(migration9 + "\n" + migration10 + "\n" + migration11);
   assert.equal(result.state, "SCHEMA_COLUMNS_PRESENT");
   assert.deepEqual(result.missingTables, []);
   assert.deepEqual(result.incompatible, []);
   assert.equal(result.remoteMigrationApproved, false);
 });
 
-test("legacy booking table compatible with migration 0010 passes schema inspection", () => {
+test("legacy booking table plus migrations 0010 and 0011 pass schema inspection", () => {
   const legacy = readFileSync("tests/fixtures/v2-legacy-booking-schema.sql", "utf8");
-  const result = inspectSchema(migration9 + "\n" + legacy + "\n" + migration10);
+  const result = inspectSchema(migration9 + "\n" + legacy + "\n" + migration10 + "\n" + migration11);
   assert.equal(result.state, "SCHEMA_COLUMNS_PRESENT");
 });
 
@@ -46,7 +47,7 @@ test("partially applied V2 tables force stop instead of blind migrations", () =>
 
 test("schema parser accepts quoted table names and ignores constraints and commas in CHECK", () => {
   const result = inspectSchema(migration9 + "\n" +
-    migration10.replaceAll("CREATE TABLE IF NOT EXISTS ", 'CREATE TABLE IF NOT EXISTS "')
+    (migration10 + "\n" + migration11).replaceAll("CREATE TABLE IF NOT EXISTS ", 'CREATE TABLE IF NOT EXISTS "')
       .replaceAll(" (\n", '" (\n'));
   // The original migration has inline CHECK expressions; the parser must not
   // treat a comma inside them as a column delimiter.
@@ -55,7 +56,7 @@ test("schema parser accepts quoted table names and ignores constraints and comma
 
 test("IF NOT EXISTS never masks an incompatible legacy table", () => {
   const oldTable = "CREATE TABLE booking_leads(id TEXT PRIMARY KEY, contact TEXT);";
-  const result = inspectSchema(oldTable + "\n" + migration9 + "\n" + migration10);
+  const result = inspectSchema(oldTable + "\n" + migration9 + "\n" + migration10 + "\n" + migration11);
   assert.equal(result.state, "STOP_SCHEMA_DRIFT");
   assert.ok(result.incompatible.find(x => x.table === "booking_leads")
     .missingColumns.includes("trip_context_json"));

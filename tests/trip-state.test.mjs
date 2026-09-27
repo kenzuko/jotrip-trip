@@ -75,3 +75,13 @@ test("a weather follow-up keeps the trip facts without rebuilding a plan", () =>
   assert.equal(weather.parsed.adults, 2);
   assert.deepEqual(weather.nextNeeded, []);
 });
+
+
+test("a flight question is not sent back through the previous trip planner", () => {
+  const first = state.resolveTripTurn(null, "3 ngày 2 đêm, 2 người lớn, Safari");
+  const next = state.resolveTripTurn(first.parsed, "Chiều nay còn bao nhiêu chuyến bay đi Hà Nội?");
+  assert.equal(next.parsed.mode, "flight_status");
+  assert.equal(next.parsed.days, 3);
+  assert.equal(next.parsed.adults, 2);
+  assert.deepEqual(next.nextNeeded, []);
+});

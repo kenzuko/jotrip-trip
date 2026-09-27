@@ -9,7 +9,7 @@ export type ParsedTrip = {
   interests: string[];
   stayPreferences: string[];
   language: "vi" | "en" | "ko" | "ru" | "zh";
-  mode: "trip_plan" | "weather" | "food" | "cafe" | "things_to_do" | "where_to_stay" | "compare" | "contact";
+  mode: "trip_plan" | "weather" | "flight_status" | "food" | "cafe" | "things_to_do" | "where_to_stay" | "compare" | "contact";
   mentionedZone?: string;
   mentionedPlace?: string;
   raw: string;
@@ -165,7 +165,7 @@ export type TripBuildResponse = {
 
 export type AdvisorResponse = {
   ok: boolean;
-  mode: "trip_plan" | "weather" | "food" | "cafe" | "things_to_do" | "where_to_stay" | "compare" | "contact";
+  mode: "trip_plan" | "weather" | "flight_status" | "food" | "cafe" | "things_to_do" | "where_to_stay" | "compare" | "contact";
   language: "vi" | "en" | "ko" | "ru" | "zh";
   answerText: string;
   advice?: string[];

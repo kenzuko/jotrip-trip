@@ -839,7 +839,8 @@ export default function App() {
             </div>
 
             {result && (<>
-            {(result.parsed.mode === "trip_plan" || summaryBits.length > 0) && (
+            {(result.parsed.mode !== "weather" && result.parsed.mode !== "flight_status" &&
+              (result.parsed.mode === "trip_plan" || summaryBits.length > 0)) && (
               <TripPulse
               summary={summaryBits}
               aiSignals={(result.aiSignals || []).map((signal) => ({

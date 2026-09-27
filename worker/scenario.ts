@@ -2,6 +2,7 @@ export type TripLanguage = "vi" | "en" | "ko" | "ru" | "zh";
 
 export type AdvisorMode =
   | "trip_plan"
+  | "weather"
   | "food"
   | "cafe"
   | "things_to_do"
@@ -71,6 +72,7 @@ function detectMentionedZone(text:string) {
 }
 
 function detectAdvisorMode(text:string, interests:string[], stayPreferences:string[]): AdvisorMode {
+  if (/(?:thời\s*tiết|weather|forecast|dự\s*báo|mưa|nắng|bão|giông|gió|날씨|기상|비|погод|прогноз|дожд|天气|天氣|预报|預報|下雨|晴天)/iu.test(text)) return "weather";
   if (/liên\s*hệ|lien\s*he|đặt\s*phòng|dat\s*phong|booking|book\s*(?:it|this|room)|reserve|예약|брони|预订|預訂/i.test(text)) return "contact";
   if (/so\s*sánh|so\s*sanh|hơn\s*thua|hon\s*thua|compare|vs\.?|versus|비교|сравн|对比|比較/i.test(text)) return "compare";
   if (/ở\s*đâu|o\s*dau|khu\s*nào|khu\s*nao|where\s*(?:should|to)\s*stay|which\s*area|숙소|어디.*묵|где\s*(?:жить|останов)|住哪里|住哪裡|哪个区域|哪個區域/i.test(text)) return "where_to_stay";

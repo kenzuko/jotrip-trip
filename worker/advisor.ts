@@ -8,6 +8,7 @@ type Env = { DB?: D1Database };
 
 export type AdvisorMode =
   | "trip_plan"
+  | "weather"
   | "food"
   | "cafe"
   | "things_to_do"
@@ -152,6 +153,17 @@ export async function answerAdvisor(env:Env, req:AdvisorRequest) {
   const text=copy[language];
   const interests=req.interests||[];
   const stayPreferences=req.stayPreferences||[];
+
+  if(req.mode==="weather"){
+    const answers:Record<TripLanguage,string>={
+      vi:"JoTrip Trip hiện chưa có dữ liệu dự báo thời tiết trực tiếp, nên mình không muốn đoán chiều nay nắng hay mưa. Gửi mình ảnh hoặc đường dẫn dự báo, mình sẽ giúp xem nó ảnh hưởng lịch đi thế nào.",
+      en:"JoTrip Trip does not have a live weather feed yet, so I cannot verify this afternoon's forecast. Share a forecast screenshot or link and I will help assess its impact on your plans.",
+      ko:"JoTrip Trip에는 아직 실시간 날씨 정보가 연결되어 있지 않아 오늘 오후 날씨를 확인할 수 없어요. 예보 화면이나 링크를 보내 주시면 일정에 어떤 영향을 줄지 같이 살펴볼게요.",
+      ru:"В JoTrip Trip пока нет актуального прогноза погоды, поэтому я не буду угадывать погоду на сегодня. Пришлите скриншот или ссылку на прогноз — я помогу понять, как он повлияет на планы.",
+      zh:"JoTrip Trip目前还没有实时天气数据，所以我无法确认今天下午的天气。发来天气预报截图或链接，我可以帮你看看它会怎样影响行程。",
+    };
+    return {ok:true,mode:req.mode,language,answerText:answers[language]};
+  }
 
   if(req.mode==="food" || req.mode==="cafe" || req.mode==="things_to_do"){
     const intent=req.mode==="food"?"eat":req.mode==="cafe"?"cafe":"do";

@@ -60,3 +60,18 @@ test("a revised duration clears saved dates rather than showing stale priced res
   assert.equal(revised.parsed.checkin, undefined);
   assert.ok(revised.nextNeeded.includes("travel_dates"));
 });
+
+test("a weather question is not routed into trip planning", () => {
+  const turn = state.resolveTripTurn(null, "Thời tiết Phú Quốc chiều nay thế nào?");
+  assert.equal(turn.parsed.mode, "weather");
+  assert.deepEqual(turn.nextNeeded, []);
+});
+
+test("a weather follow-up keeps the trip facts without rebuilding a plan", () => {
+  const first = state.resolveTripTurn(null, "3 ngày 2 đêm, 2 người lớn, Safari");
+  const weather = state.resolveTripTurn(first.parsed, "Thời tiết Phú Quốc chiều nay thế nào?");
+  assert.equal(weather.parsed.mode, "weather");
+  assert.equal(weather.parsed.days, 3);
+  assert.equal(weather.parsed.adults, 2);
+  assert.deepEqual(weather.nextNeeded, []);
+});

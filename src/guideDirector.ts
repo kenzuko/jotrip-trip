@@ -101,6 +101,22 @@ export function directGuide(
     };
   }
 
+  if (parsed.parsed.mode === "weather") {
+    const replies: Record<string, string> = {
+      vi: "JoTrip Trip chưa có dữ liệu dự báo thời tiết trực tiếp, nên mình không muốn đoán. Gửi mình nguồn dự báo, mình sẽ giúp xem ảnh hưởng tới lịch đi.",
+      en: "JoTrip Trip has no live weather feed yet, so I will not guess. Share a forecast source and I can help assess its impact on the trip.",
+      ko: "JoTrip Trip에는 아직 실시간 날씨 정보가 없어서 추측하지 않을게요. 예보를 보내 주시면 일정에 미칠 영향을 같이 살펴볼게요.",
+      ru: "В JoTrip Trip пока нет актуального прогноза, поэтому я не буду угадывать. Пришлите прогноз, и я помогу оценить его влияние на поездку.",
+      zh: "JoTrip Trip目前没有实时天气数据，所以我不会猜测。发来预报后，我可以帮你判断它对行程的影响。",
+    };
+    return {
+      state: "warning",
+      action: "none",
+      target: "prompt",
+      text: replies[parsed.parsed.language] || replies.vi,
+    };
+  }
+
   if (parsed.parsed.mode === "compare") {
     return {
       state: "compare",
